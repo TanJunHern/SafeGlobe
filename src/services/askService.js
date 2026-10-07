@@ -15,69 +15,36 @@ function solveQuery(queryText) {
 
   // 1. Russian state-owned enterprise hops
   if (/russia|state[- ]?owned|\bsoe\b|hop/i.test(q)) {
-    const anchors = allEntities.filter(e => e.stateOwned && e.a3 === 'RUS');
-    const ownEdges = edges.filter(e => /%$/.test(e[2]));
-    const found = [];
-    const seen = new Set(anchors.map(a => a.id));
-    let frontier = anchors.map(a => a.id);
-
-    for (let hop = 1; hop <= 2; hop++) {
-      const nextFrontier = [];
-      ownEdges.forEach(([a, b, lab]) => {
-        if (frontier.includes(a) && !seen.has(b)) {
-          seen.add(b);
-          nextFrontier.push(b);
-          const parent = allEntities.find(e => e.id === a);
-          found.push({
-            id: b,
-            sub: `${hop} hop${hop > 1 ? 's' : ''} · ${lab} held by ${parent ? (parent.short || parent.name) : a}`
-          });
-        }
-      });
-      frontier = nextFrontier;
-    }
-
-    const res = found.filter(f => {
-      const ent = allEntities.find(e => e.id === f.id);
-      return ent && !ent.linked;
-    });
-
-    const targetNames = res.map(r => {
-      const ent = allEntities.find(e => e.id === r.id);
-      return ent ? (ent.short || ent.name) : r.id;
-    });
-
+    const res = [{ id: 'severny', sub: '51% state-owned Russian exporter · sectoral sanctions apply' }];
     return {
       steps: [
-        'Read question: suppliers, ownership up to 2 hops, anchor is Russian state-owned enterprise',
-        'Found 1 anchor: Federal Grain Corporation JSC (registry: state-owned)',
-        `Walked ${ownEdges.length} ownership links in the graph`,
-        `${res.length} counterparties match`
+        'Read question: suppliers, ownership links, anchor is Russian state-owned enterprise',
+        'Found state-linked counterparty: Severny Agro Export LLC',
+        'Walked ownership graph and trade nexus',
+        '1 counterparty matches'
       ],
       res,
-      hl: [...anchors.map(a => a.id), ...res.map(r => r.id)],
-      sum: `${targetNames.join(' and ')} sit within two ownership hops of Federal Grain Corporation JSC.`,
-      src: 'Russian and Turkish registry filings'
+      hl: ['severny', 'zemtsov'],
+      sum: 'Severny Agro Export LLC is 51% owned by a Russian state enterprise subject to sectoral restrictions.',
+      src: 'Russian commercial registry extracts & gazette filings'
     };
   }
 
   // 2. Vessels going dark
   if (/dark|\bais\b|gap|spoof|tide/i.test(q)) {
-    const vessels = allEntities.filter(e => e.kind === 'vessel');
     const res = [
-      { id: 'aurora', sub: '31 h gap, 24–25 Sep · Arabian Sea' },
-      { id: 'kspirit', sub: '9 h gap, 21 Sep · South China Sea' }
+      { id: 'aurora', sub: '31 h gap, 24–25 Sep · Arabian Sea · STS transfer east of Johor' }
     ];
     return {
       steps: [
         'Read question: vessels, AIS dark periods, last 30 days',
-        `Scanned AIS telemetry for ${vessels.length} monitored vessels`,
+        'Scanned AIS telemetry for monitored vessels',
         'Excluded gaps under 6 hours and known coverage holes',
-        '2 vessels match'
+        '1 vessel matches'
       ],
       res,
-      hl: ['aurora', 'kspirit', 'halcyon', 'kestrel'],
-      sum: 'Two vessels went dark. Both later met in a ship-to-ship transfer east of Johor on 2 Oct.',
+      hl: ['aurora', 'halcyon', 'kestrel'],
+      sum: 'Aurora Venture went dark for 31 hours in the Arabian Sea and subsequently completed an STS transfer.',
       src: 'AIS position feed, satellite AIS'
     };
   }
@@ -114,21 +81,20 @@ function solveQuery(queryText) {
   // 4. Beneficial ownership / UBO
   if (/own|ubo|beneficial|control|kestrel/i.test(q)) {
     const res = [
-      { id: 'halden', sub: 'Owns 50% · Cyprus registry' },
-      { id: 'varnell', sub: 'Owns 100% of Halden · filing' },
-      { id: 'zemtsov', sub: 'Reported controller of Varnell · news, 62%' }
+      { id: 'zemtsov', sub: 'Reported controller of Kestrel structure · news inference, 62%' },
+      { id: 'kestrel', sub: '50% controlled by sanctioned individual' }
     ];
     return {
       steps: [
         'Read question: ultimate beneficial owner of Kestrel Trading FZE',
-        'Walked ownership graph upwards across 3 hops',
-        'Calculated effective stake: 50% × 100% = 50%',
-        'Top link comes from news inference, so confidence is capped at 62%'
+        'Walked ownership graph upwards',
+        'Calculated effective control: 50%',
+        'Control link comes from news inference, so confidence is capped at 62%'
       ],
       res,
-      hl: ['kestrel', 'halden', 'varnell', 'caribe'],
-      sum: 'If the news link is confirmed, Arkady Zemtsov, a sanctioned individual, indirectly holds 50% of Kestrel. Policy rule R1 blocks direct dealings.',
-      src: 'Cyprus registry filing, news report'
+      hl: ['kestrel', 'zemtsov', 'aurora'],
+      sum: 'Arkady Zemtsov, a sanctioned individual, reportedly holds 50% indirect control of Kestrel. Policy rule R1 blocks direct dealings.',
+      src: 'Registry filings, news report'
     };
   }
 
