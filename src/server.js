@@ -16,6 +16,7 @@ const policiesRouter = require('./routes/policies');
 const casesRouter = require('./routes/cases');
 const askRouter = require('./routes/ask');
 const statsRouter = require('./routes/stats');
+const uploadsRouter = require('./routes/uploads');
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/policies', policiesRouter);
 app.use('/api/cases', casesRouter);
 app.use('/api/ask', askRouter);
 app.use('/api/stats', statsRouter);
+app.use('/api/uploads', uploadsRouter);
 
 // Forward /api/intake to entities router
 app.post('/api/intake', (req, res, next) => {
