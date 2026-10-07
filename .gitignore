@@ -1,0 +1,6 @@
+node_modules/
+.env
+data/safe_globe.db*
+npm-debug.log*
+.DS_Store
+Thumbs.db
