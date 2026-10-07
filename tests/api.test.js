@@ -338,6 +338,90 @@ test('API Integration Tests', async (t) => {
     assert.ok(data.entity.factors.some(f => f[1].includes('Marcus Vance')));
   });
 
+  await t.test('GET /api/places/autocomplete should return address predictions with coordinates', async () => {
+    const res = await fetch(`${BASE_URL}/api/places/autocomplete?input=Marina+Bay`);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.status, 'OK');
+    assert.ok(Array.isArray(data.predictions));
+    assert.ok(data.predictions.length > 0);
+    const match = data.predictions[0];
+    assert.ok(match.description);
+    assert.ok(typeof match.lat === 'number');
+    assert.ok(typeof match.lng === 'number');
+    assert.ok(match.city);
+    assert.ok(match.country);
+  });
+
+  await t.test('GET /api/places/geocode should resolve address to exact coordinates', async () => {
+    const res = await fetch(`${BASE_URL}/api/places/geocode?address=71+Robinson+Road`);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.status, 'OK');
+    assert.ok(data.result);
+    assert.equal(data.result.city, 'Singapore');
+    assert.equal(data.result.country, 'SGP');
+    assert.ok(Math.abs(data.result.lat - 1.2785) < 0.01);
+    assert.ok(Math.abs(data.result.lng - 103.8492) < 0.01);
+  });
+
+  await t.test('POST /api/intake with exact coordinates should store ll for plotting on globe', async () => {
+    // 1. Business intake with exact address and coordinates
+    const orgRes = await fetch(`${BASE_URL}/api/intake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Horizon Energy Trading Pte Ltd',
+        type: 'org',
+        country: 'SGP',
+        reg: 'UEN 202611223Z',
+        operatingAddresses: 'Marina Bay Financial Centre, 10 Marina Boulevard, Singapore 018983',
+        ll: [103.8536, 1.2798],
+        city: 'Singapore',
+        docStatus: 'verified'
+      })
+    });
+    assert.equal(orgRes.status, 201);
+    const orgData = await orgRes.json();
+    assert.ok(orgData.entity.id);
+    assert.deepEqual(orgData.entity.ll, [103.8536, 1.2798]);
+    assert.equal(orgData.entity.operatingAddresses, 'Marina Bay Financial Centre, 10 Marina Boulevard, Singapore 018983');
+
+    // Verify GET /api/entities/:id returns exact coordinates
+    const getOrg = await fetch(`${BASE_URL}/api/entities/${orgData.entity.id}`);
+    assert.equal(getOrg.status, 200);
+    const orgDetail = await getOrg.json();
+    assert.deepEqual(orgDetail.ll, [103.8536, 1.2798]);
+
+    // 2. Individual intake with exact residential address and coordinates
+    const perRes = await fetch(`${BASE_URL}/api/intake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Dmitri Voronov',
+        type: 'person',
+        nationality: 'SGP',
+        dob: '1982-11-20',
+        residentialAddress: '12 Marina Boulevard, Marina Bay Suites, Singapore 018982',
+        ll: [103.8540, 1.2805],
+        city: 'Singapore',
+        docStatus: 'pending'
+      })
+    });
+    assert.equal(perRes.status, 201);
+    const perData = await perRes.json();
+    assert.ok(perData.entity.id);
+    assert.deepEqual(perData.entity.ll, [103.8540, 1.2805]);
+    assert.equal(perData.entity.residentialAddress, '12 Marina Boulevard, Marina Bay Suites, Singapore 018982');
+
+    // Verify GET /api/entities/:id returns exact coordinates for person
+    const getPer = await fetch(`${BASE_URL}/api/entities/${perData.entity.id}`);
+    assert.equal(getPer.status, 200);
+    const perDetail = await getPer.json();
+    assert.deepEqual(perDetail.ll, [103.8540, 1.2805]);
+  });
+
+
 
   const { getDb } = require('../src/db');
   const db = getDb();

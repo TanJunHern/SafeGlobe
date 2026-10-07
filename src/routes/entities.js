@@ -57,7 +57,9 @@ router.post('/intake', (req, res) => {
     dob = '',
     nationality = '',
     idDoc = '',
-    residentialAddress = ''
+    residentialAddress = '',
+    city = '',
+    ll = null
   } = req.body;
 
   if (!name || typeof name !== 'string') {
@@ -206,6 +208,17 @@ router.post('/intake', (req, res) => {
     ? 'Verified via data feed · ' + attachedFeed.filename
     : (screenResult.quadrant === 'gaps' ? 'Pending basic details · intake' : 'Counterparty intake screen');
 
+  let resolvedLl = null;
+  if (Array.isArray(ll) && ll.length === 2 && isFinite(ll[0]) && isFinite(ll[1])) {
+    resolvedLl = [Number(ll[0]), Number(ll[1])];
+  } else if (ll && typeof ll === 'object' && isFinite(ll.lng) && isFinite(ll.lat)) {
+    resolvedLl = [Number(ll.lng), Number(ll.lat)];
+  }
+
+  if (resolvedLl) {
+    screenResult.factors.unshift(['+', `Geographic location verified via Google Places (${resolvedLl[1].toFixed(4)}°, ${resolvedLl[0].toFixed(4)}°)`]);
+  }
+
   const newEntity = {
     id,
     kind: type,
@@ -215,7 +228,8 @@ router.post('/intake', (req, res) => {
     role,
     a3: country,
     jurisdiction: country,
-    city: cpiRow ? cpiRow.name : country,
+    city: city || (cpiRow ? cpiRow.name : country),
+    ll: resolvedLl,
     reg: reg || (type === 'person' ? (idDoc || 'ID-ON-FILE') : 'REG-PENDING'),
     risk: screenResult.risk,
     conf: screenResult.confidence,
