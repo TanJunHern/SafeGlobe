@@ -373,7 +373,17 @@ class SqliteDatabase {
       links: entity.links,
       signals: entity.signals,
       pep: entity.pep,
-      lists: entity.lists
+      lists: entity.lists,
+      // Organization fields
+      tradingNames: entity.tradingNames || entity.trading_names || '',
+      operatingAddresses: entity.operatingAddresses || entity.operating_addresses || '',
+      controllers: entity.controllers || entity.directors_ubos || '',
+      // Individual fields
+      aliases: entity.aliases || entity.name_variants || '',
+      dob: entity.dob || entity.date_of_birth || '',
+      nationality: entity.nationality || '',
+      idDoc: entity.idDoc || entity.id_document || '',
+      residentialAddress: entity.residentialAddress || entity.residential_address || ''
     };
 
     stmt.run(
@@ -407,6 +417,7 @@ class SqliteDatabase {
     return {
       id: row.id,
       kind: row.kind,
+      type: row.kind,
       name: row.name,
       short: row.short_name,
       role: row.role,
