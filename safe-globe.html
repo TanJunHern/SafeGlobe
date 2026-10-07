@@ -937,6 +937,13 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
       <div class="field" id="intake-country-field"><label for="intake-country">Country / Jurisdiction</label><select id="intake-country"></select></div>
       <div class="field" id="intake-reg-field"><label for="intake-reg">Registration number / IMO</label><input id="intake-reg" type="text" placeholder="e.g. UEN 202419820E or IMO 9412345"></div>
       <div class="field"><label for="intake-role">Role / Service provided</label><input id="intake-role" type="text" placeholder="e.g. Bunker supplier, Grain trader, Logistics provider"></div>
+      <div class="field" id="intake-doc-field"><label for="intake-doc-status">Initial verification status</label>
+        <select id="intake-doc-status">
+          <option value="pending" selected>Pending basic details & documentation (Routes to: Fill the gaps)</option>
+          <option value="verified">Verified registration on file (Routes to: Auto-clear & monitor)</option>
+          <option value="flagged">Flagged for review / Adverse media (Routes to: Investigate)</option>
+        </select>
+      </div>
       <div class="check-row"><label><input type="checkbox" id="intake-watch" checked> Add to ongoing monitoring watchlist</label></div>
     </div>
     <div class="sheet-foot"><span class="faint" style="font-size:12px;margin-right:auto;align-self:center">Screened against 41 sanctions lists, PEP and custom sources</span><button class="btn ghost" data-close type="button">Cancel</button><button class="btn primary" id="intake-submit" type="button"><svg class="ic sm"><use href="#i-search"/></svg>Run Sentry screening</button></div>
@@ -2245,6 +2252,7 @@ function openIntakeModal(defaultName){
   $('#intake-name').value = defaultName || '';
   $('#intake-reg').value = 'UEN ' + Math.floor(100000000 + Math.random()*900000000) + 'X';
   $('#intake-role').value = 'Commodities supplier';
+  if($('#intake-doc-status')) $('#intake-doc-status').value = 'pending';
   $('#intake-modal').hidden = false;
   setTimeout(()=>$('#intake-name').focus(), 50);
 }
@@ -2264,66 +2272,190 @@ $('#intake-submit').addEventListener('click', async ()=>{
   const a3 = $('#intake-country').value || 'SGP';
   const reg = $('#intake-reg').value.trim() || 'REG-PENDING';
   const role = $('#intake-role').value.trim() || 'Supplier';
+  const docStatus = $('#intake-doc-status') ? $('#intake-doc-status').value : 'pending';
 
   $('#intake-modal').hidden = true;
   toast(`Running Sentry screening on “${name}”…`);
 
   // Local screening calculation
   const cpi = cpiOf(a3) || 50;
-  const risk = cpi < 35 ? 65 : 16;
-  const conf = 88;
-  const newId = 'org_' + Date.now();
+  let risk = 18;
+  let conf = 55;
+  let trigger = 'Pending basic details · intake';
+  let factors = [];
+  let findings = [];
+  let raise = 'Send a Smart DDQ to request trade licence and shareholder registry';
 
-  const newOrg = {
-    id: newId,
-    kind: 'org',
-    name: name,
-    short: name.split(/\s+/).slice(0, 2).join(' '),
-    role: role,
-    a3: a3,
-    city: cname(a3),
-    ll: COUNTRY.get(a3) ? COUNTRY.get(a3).cent : [103.8, 1.3],
-    reg: reg,
-    risk: risk,
-    conf: conf,
-    owner: 'Grace Teo',
-    trigger: 'Counterparty intake screen',
-    since: '2026',
-    claimed: false,
-    factors: [
+  if (docStatus === 'pending') {
+    risk = cpi < 35 ? 58 : 18;
+    conf = 55;
+    trigger = 'Pending basic details · intake';
+    factors = [
+      ["-", "Trade licence and corporate register pending upload"],
+      ["-", "Ultimate beneficial ownership (UBO) chart unverified"],
+      ["+", "Zero matches on 41 international sanctions lists or PEP databases"]
+    ];
+    findings = [
+      {
+        agent: "Sentry",
+        title: "Preliminary sanctions & PEP screening passed",
+        detail: "No matches found on 41 international watchlists. Basic identity details submitted.",
+        risk: "Low",
+        conf: 70,
+        status: "Open",
+        src: "Built-in sanctions lists (41)"
+      },
+      {
+        agent: "Doc forensics",
+        title: "Pending basic details & documentation",
+        detail: "Corporate registry filings, shareholder register, and trade licence are pending submission.",
+        risk: "Low",
+        conf: 50,
+        status: "Open",
+        src: "Intake document checklist"
+      }
+    ];
+  } else if (docStatus === 'flagged') {
+    risk = 74;
+    conf = 62;
+    trigger = 'Adverse media / similarity flag';
+    factors = [
+      ["-", "News report flags potential high-risk trade nexus"],
+      ["+", "Local corporate entity registration exists"]
+    ];
+    findings = [
+      {
+        agent: "Web",
+        title: "Adverse media and ownership similarity flag",
+        detail: "Recent reports connect counterparty name or partners to higher-risk trade arrangements.",
+        risk: "High",
+        conf: 62,
+        status: "Open",
+        src: "Web news monitor and corporate filings"
+      }
+    ];
+    raise = 'Send Smart DDQ to clarify beneficial ownership and commercial activities';
+  } else {
+    // Verified
+    risk = cpi < 35 ? 65 : 14;
+    conf = 92;
+    trigger = 'Verified intake · filings confirmed';
+    factors = [
       ["+", "Registration number verified against national gazette"],
       ["+", "No matches on 41 sanctions lists or PEP databases"]
-    ],
-    findings: [
+    ];
+    findings = [
       {
         agent: "Sentry",
         title: "Screened against 41 sanctions lists & PEP",
-        detail: "No matches found on international watchlists. Automated check passed.",
+        detail: "No matches found on international watchlists. Verified filings on record.",
         risk: "Low",
         conf: 95,
         status: "Auto-cleared",
         reason: "Clean record across UN, US, EU, UK and local watchlists.",
         src: "Built-in sanctions lists and Vendor X sanctions API"
       }
-    ]
-  };
+    ];
+  }
 
-  ORGS.unshift(newOrg);
-  ENT.set(newId, newOrg);
-  CASES.unshift(Object.assign(newOrg, { caseId: 'RV-26-' + String(4200 + Math.floor(Math.random()*500)) }));
+  const newId = (type === 'vessel' ? 'ves_' : type === 'person' ? 'per_' : 'org_') + Date.now();
+
+  if (type === 'vessel') {
+    const newVessel = {
+      id: newId,
+      kind: 'vessel',
+      name: name,
+      type: role || 'Tanker',
+      imo: reg,
+      mmsi: '5630' + Math.floor(10000 + Math.random()*89999),
+      flag: cname(a3) || 'Singapore',
+      built: 2020,
+      dwt: '45,000',
+      risk: risk,
+      conf: conf,
+      owner: 'Grace Teo',
+      trigger: trigger,
+      route: [[103.8, 1.3], [104.2, 1.4]],
+      speed: 1/200,
+      start: 0.1,
+      dest: 'Singapore anchorage',
+      names: [['2020', name]],
+      flags: [['2020', cname(a3) || 'Singapore']],
+      links: [],
+      signals: [{ t: 'Just now', c: risk >= 50 ? 'bad' : 'ok', x: trigger }],
+      factors: factors,
+      findings: findings,
+      raise: raise
+    };
+    newVessel.R = prepRoute(newVessel.route);
+    newVessel.frac = newVessel.start;
+    newVessel.dir = 1;
+    newVessel.ang = 0;
+    newVessel.cur = posAt(newVessel.R, newVessel.frac);
+    newVessel.kn = 12;
+    VESSELS.unshift(newVessel);
+    ENT.set(newId, newVessel);
+    CASES.unshift(Object.assign(newVessel, { caseId: 'RV-26-' + String(4200 + Math.floor(Math.random()*500)) }));
+  } else if (type === 'person') {
+    const newPerson = {
+      id: newId,
+      kind: 'person',
+      name: name,
+      role: role || 'Director',
+      a3: a3,
+      risk: risk,
+      conf: conf,
+      owner: 'Grace Teo',
+      trigger: trigger,
+      lists: [],
+      pep: (risk >= 50),
+      note: 'Added during counterparty intake.',
+      factors: factors,
+      findings: findings,
+      raise: raise
+    };
+    PEOPLE.unshift(newPerson);
+    ENT.set(newId, newPerson);
+    CASES.unshift(Object.assign(newPerson, { caseId: 'RV-26-' + String(4200 + Math.floor(Math.random()*500)) }));
+  } else {
+    const newOrg = {
+      id: newId,
+      kind: 'org',
+      name: name,
+      short: name.split(/\s+/).slice(0, 2).join(' '),
+      role: role,
+      a3: a3,
+      city: cname(a3),
+      ll: COUNTRY.get(a3) ? COUNTRY.get(a3).cent : [103.8, 1.3],
+      reg: reg,
+      risk: risk,
+      conf: conf,
+      owner: 'Grace Teo',
+      trigger: trigger,
+      since: '2026',
+      claimed: false,
+      factors: factors,
+      findings: findings,
+      raise: raise
+    };
+    ORGS.unshift(newOrg);
+    ENT.set(newId, newOrg);
+    CASES.unshift(Object.assign(newOrg, { caseId: 'RV-26-' + String(4200 + Math.floor(Math.random()*500)) }));
+  }
 
   // Call server if available
   try {
-    fetch('/v1/screen', {
+    fetch('/api/intake', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ entity: 'organisation', name, jurisdiction: a3, watch: true })
+      body: JSON.stringify({ name, type, country: a3, reg, role, docStatus, watch: true })
     }).catch(()=>{});
   } catch(err){}
 
   renderWatch();
   renderReviews();
-  toast(`“${name}” screened: Risk ${risk}/100, Confidence ${conf}%`);
+  const q = quad(ENT.get(newId));
+  toast(`“${name}” onboarded: Route ${Q[q].short} (${trigger})`);
   select(newId);
 });
 
