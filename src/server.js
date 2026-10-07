@@ -99,6 +99,14 @@ function startServer(port = config.port) {
       console.log(`[Safe Globe] Ready for local testing and Google Cloud Run deployment.`);
       resolve(server);
     });
+
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`[Safe Globe] Error: Port ${port} is already in use by another running instance of the server.`);
+      } else {
+        console.error('[Safe Globe] Server startup error:', err);
+      }
+    });
   });
 }
 
