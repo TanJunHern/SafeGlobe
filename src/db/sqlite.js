@@ -504,7 +504,16 @@ class SqliteDatabase {
     const rows = this.db.prepare('SELECT * FROM sources').all();
     return rows.map(r => {
       let kv = [];
-      try { kv = JSON.parse(r.config_json || '[]'); } catch (e) {}
+      let config = {};
+      try {
+        const parsed = JSON.parse(r.config_json || '[]');
+        if (Array.isArray(parsed)) {
+          kv = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+          kv = parsed.kv || [];
+          config = parsed;
+        }
+      } catch (e) {}
       return {
         id: r.id,
         label: r.label,
@@ -513,12 +522,17 @@ class SqliteDatabase {
         cover: r.cover,
         trust: r.trust,
         health: r.health,
-        kv
+        kv,
+        config
       };
     });
   }
 
   addSource(source) {
+    const configData = source.config_json 
+      ? (typeof source.config_json === 'string' ? source.config_json : JSON.stringify(source.config_json))
+      : JSON.stringify({ kv: source.kv || [], ...(source.config || {}) });
+
     this.db.prepare(`
       INSERT OR REPLACE INTO sources (id, label, type, how, cover, trust, health, config_json)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -530,9 +544,13 @@ class SqliteDatabase {
       source.cover,
       source.trust,
       source.health || 'new',
-      JSON.stringify(source.kv || [])
+      configData
     );
     return source;
+  }
+
+  deleteSource(id) {
+    return this.db.prepare('DELETE FROM sources WHERE id = ?').run(id);
   }
 
   updateSourceHealth(id, health) {
@@ -652,7 +670,8 @@ class SqliteDatabase {
     // Also save physical copy to data/uploads
     let finalPath = storage_path;
     try {
-      const uploadDir = path.join(__dirname, '../../data/uploads', file_type === 'custom_policy' ? 'policies' : 'feeds');
+      const folderName = (file_type === 'custom_policy' || file_type === 'pdf_document' || file_type === 'pdf_source') ? 'policies' : 'feeds';
+      const uploadDir = path.join(__dirname, '../../data/uploads', folderName);
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }

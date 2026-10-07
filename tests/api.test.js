@@ -215,13 +215,65 @@ test('API Integration Tests', async (t) => {
     assert.equal(data.uploadedFile.filename, 'Maritime_Covenants_2026.pdf');
   });
 
-  // Clean up transient test entities and uploads
+  await t.test('POST /api/sources with PDF document should store source & file in DB and disk', async () => {
+    const res = await fetch(`${BASE_URL}/api/sources`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        label: 'MAS Enforcement Gazette Oct 2026',
+        type: 'PDF document',
+        how: 'Parsed PDF document, entity extraction active',
+        cover: 'Organisations, people',
+        trust: 'High',
+        category: 'Regulatory enforcement gazette',
+        filename: 'mas_enforcement_oct2026.pdf',
+        fileSize: 1024,
+        mimeType: 'application/pdf',
+        content: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp...'
+      })
+    });
+    assert.equal(res.status, 201);
+    const data = await res.json();
+    assert.equal(data.status, 'created');
+    assert.ok(data.source.id);
+    assert.equal(data.source.label, 'MAS Enforcement Gazette Oct 2026');
+    assert.equal(data.source.type, 'PDF document');
+    assert.ok(data.uploadedFile);
+    assert.equal(data.uploadedFile.filename, 'mas_enforcement_oct2026.pdf');
+
+    // Test GET /api/sources returns the new source
+    const getRes = await fetch(`${BASE_URL}/api/sources`);
+    assert.equal(getRes.status, 200);
+    const getData = await getRes.json();
+    assert.ok(getData.sources.some(s => s.id === data.source.id));
+  });
+
+  await t.test('POST /api/sources/test should simulate PDF entity extraction probe', async () => {
+    const res = await fetch(`${BASE_URL}/api/sources/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'PDF document',
+        filename: 'sanctions_gazette_2026.pdf'
+      })
+    });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.success, true);
+    assert.ok(data.logs.some(l => l.includes('PDF document structure')));
+    assert.ok(data.logs.some(l => l.includes('AI entity extractor')));
+  });
+
+  // Clean up transient test entities, sources, and uploads
   const { getDb } = require('../src/db');
   const db = getDb();
   const baseIds = ['halcyon', 'kestrel', 'severny', 'aurora', 'zemtsov'];
+  const baseSourceIds = ['s1', 's2', 's3', 's4'];
   const placeholders = baseIds.map(() => '?').join(',');
+  const srcPlaceholders = baseSourceIds.map(() => '?').join(',');
   try {
     db.db.prepare('DELETE FROM uploaded_files').run();
+    db.db.prepare('DELETE FROM sources WHERE id NOT IN (' + srcPlaceholders + ')').run(...baseSourceIds);
     db.db.prepare('DELETE FROM cases WHERE entity_id NOT IN (' + placeholders + ')').run(...baseIds);
     db.db.prepare('DELETE FROM alerts WHERE entity_id NOT IN (' + placeholders + ')').run(...baseIds);
     db.db.prepare('DELETE FROM entities WHERE id NOT IN (' + placeholders + ')').run(...baseIds);
