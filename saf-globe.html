@@ -808,8 +808,11 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
     <section class="view" id="view-sources" aria-label="Sources">
       <div class="page"><div class="page-in">
         <div class="page-head">
-          <div><div class="eyebrow">Custom data sources</div><h1>Sources</h1><p>Plug your own lists and feeds into screening next to Safe Globe's built-in data. Every finding carries the label of the source it came from.</p></div>
-          <button class="btn primary" id="add-src" type="button"><svg class="ic sm"><use href="#i-plus"/></svg>Add source</button>
+          <div><div class="eyebrow">Custom data sources</div><h1>Sources</h1><p>Plug your own lists, feeds and PDF documents into screening next to Safe Globe's built-in data. Every finding carries the label of the source it came from.</p></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn" id="upload-src-pdf-btn" type="button"><svg class="ic sm"><use href="#i-upload"/></svg>Upload PDF document</button>
+            <button class="btn primary" id="add-src" type="button"><svg class="ic sm"><use href="#i-plus"/></svg>Add source</button>
+          </div>
         </div>
         <div class="src-grid" id="src-grid"></div>
         <div class="rev-grid">
@@ -2022,42 +2025,199 @@ $('#matrix').addEventListener('pointerover',e=>{const d=e.target.closest('.mx-do
 $('#thr').addEventListener('input',e=>{S.thr=+e.target.value;$('#thr-v').textContent=S.thr+'%';renderReviews();refreshStatus();renderWatch();if(drawerOpen())renderDrawer();});
 
 /* ===================== Sources view ===================== */
-const typeIcon={'API':'api','Data feed':'feed','Web':'web'};
-function srcCard(s){return `<div class="card src${s.health==='stale'?' warn':''}"><div class="src-top"><div class="dr-ico" style="width:36px;height:36px">${ic(typeIcon[s.type])}</div><div style="min-width:0"><h3>${esc(s.label)}</h3><p>${esc(s.type)} · ${esc(s.how)}</p></div><span class="src-health pill ${s.health==='ok'?'q-monitor':'q-investigate'}">${s.health==='ok'?'Healthy':s.health==='new'?'Live':'Stale'}</span></div><dl class="kv"><dt>Covers</dt><dd>${esc(s.cover)}</dd><dt>Trust level</dt><dd>${esc(s.trust)}</dd>${s.kv.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl><div class="src-actions">${s.health==='stale'?`<button class="btn sm primary" data-src="retry" data-id="${s.id}" type="button">${ic('refresh','sm')}Retry now</button>`:''}<button class="btn sm" data-src="test" data-id="${s.id}" type="button">Test connection</button><button class="btn sm ghost" data-src="edit" data-id="${s.id}" type="button">Edit</button></div></div>`;}
+const typeIcon={'API':'api','Data feed':'feed','Web':'web','PDF document':'doc','PDF':'doc'};
+function srcCard(s){
+  const icon = typeIcon[s.type] || 'doc';
+  return `<div class="card src${s.health==='stale'?' warn':''}"><div class="src-top"><div class="dr-ico" style="width:36px;height:36px">${ic(icon)}</div><div style="min-width:0"><h3>${esc(s.label)}</h3><p>${esc(s.type)} · ${esc(s.how)}</p></div><span class="src-health pill ${s.health==='ok'?'q-monitor':'q-investigate'}">${s.health==='ok'?'Healthy':s.health==='new'?'Live':'Stale'}</span></div><dl class="kv"><dt>Covers</dt><dd>${esc(s.cover)}</dd><dt>Trust level</dt><dd>${esc(s.trust)}</dd>${(s.kv||[]).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl><div class="src-actions">${s.health==='stale'?`<button class="btn sm primary" data-src="retry" data-id="${s.id}" type="button">${ic('refresh','sm')}Retry now</button>`:''}<button class="btn sm" data-src="test" data-id="${s.id}" type="button">Test connection</button><button class="btn sm ghost" data-src="edit" data-id="${s.id}" type="button">Edit</button></div></div>`;
+}
 function renderSources(){$('#src-grid').innerHTML=SOURCES.map(srcCard).join('');$('#builtin').innerHTML=`<dl class="kv">${BUILTIN.map(([k,v])=>`<dt>${esc(k)}</dt><dd style="font-weight:400">${esc(v)}</dd>`).join('')}</dl>`;}
-$('#src-grid').addEventListener('click',e=>{const b=e.target.closest('[data-src]');if(!b)return;const s=SOURCES.find(x=>x.id===b.dataset.id);
-  if(b.dataset.src==='retry'){b.disabled=true;b.innerHTML=ic('loader','sm')+'Reading…';setTimeout(()=>{s.health='ok';s.kv=[['Last successful read','Just now'],['Field mapping','Re-learned from new layout'],['Affected findings','Confidence restored']];renderSources();toast('Indonesia regulation monitor is healthy again');},1400);}
+$('#src-grid').addEventListener('click',e=>{
+  const b=e.target.closest('[data-src]');if(!b)return;const s=SOURCES.find(x=>x.id===b.dataset.id);
+  if(b.dataset.src==='retry'){
+    b.disabled=true;b.innerHTML=ic('loader','sm')+'Reading…';
+    fetch('/api/sources/'+s.id+'/retry',{method:'POST'}).catch(()=>{});
+    setTimeout(()=>{s.health='ok';s.kv=[['Last successful read','Just now'],['Field mapping','Re-learned from new layout'],['Affected findings','Confidence restored']];renderSources();toast(s.label+' is healthy again');},1400);
+  }
   else if(b.dataset.src==='test'){toast(`${s.label}: test passed, field mapping unchanged`);}
-  else toast('Only admins can edit sources. You are signed in as an admin.');});
+  else toast('Only admins can edit sources. You are signed in as an admin.');
+});
 
-let srcState={step:1,type:'API'};
+let srcState={step:1,type:'API',file:null};
 function renderSrcModal(){
   const st=srcState;$('#src-step').textContent=`Step ${st.step} of 3`;
   const body=$('#src-body'),foot=$('#src-foot');
   if(st.step===1){
-    body.innerHTML=`<div class="conn-types">${[['API','api','Query a provider or internal service live at each screen and on every re-screen.'],['Data feed','feed','Upload or schedule CSV, XML or JSON by SFTP or URL. Changes trigger re-screening.'],['Web','web','Monitor pages such as a regulator’s enforcement list. AI extracts entities and changes.']].map(([t,i,d])=>`<button type="button" data-type="${t}" class="${st.type===t?'on':''}">${ic(i)}<b>${t}</b><small>${d}</small></button>`).join('')}</div>`;
+    body.innerHTML=`<div class="conn-types">${[
+      ['API','api','Query a provider or internal service live at each screen and on every re-screen.'],
+      ['Data feed','feed','Upload or schedule CSV, XML or JSON by SFTP or URL. Changes trigger re-screening.'],
+      ['Web','web','Monitor pages such as a regulator’s enforcement list. AI extracts entities and changes.'],
+      ['PDF document','doc','Upload regulatory gazettes, enforcement lists, court judgments, or policy PDFs. Entities are extracted and monitored.']
+    ].map(([t,i,d])=>`<button type="button" data-type="${t}" class="${st.type===t?'on':''}">${ic(i)}<b>${t}</b><small>${d}</small></button>`).join('')}</div>`;
     foot.innerHTML=`<button class="btn ghost" data-close-src type="button">Cancel</button><button class="btn primary" data-next type="button">Continue</button>`;
   }else if(st.step===2){
     const t=st.type;
-    body.innerHTML=`<div class="field"><label for="src-label">Label</label><input id="src-label" type="text" value="${t==='API'?'Regional KYC vendor':t==='Web'?'Local regulator watch':'Customer restricted parties'}"><small>Shown on every finding, alert and decision that uses this source.</small></div>
-    ${t==='API'?`<div class="field"><label for="src-url">Endpoint URL</label><input id="src-url" type="url" value="https://api.example-kyc.com/v2/screen"></div><div class="field"><label for="src-key">API key</label><input id="src-key" type="password" value="sk_live_0000000000000000"><small>Encrypted at rest. You will not see it again after saving.</small></div>`:t==='Web'?`<div class="field"><label for="src-url">Page to monitor</label><input id="src-url" type="url" value="https://www.example-regulator.gov/enforcement"></div><div class="field"><label for="src-freq">Read every</label><select id="src-freq"><option>6 hours</option><option selected>12 hours</option><option>24 hours</option></select></div>`:`<div class="field"><label for="src-how">Delivery</label><select id="src-how"><option>Upload a file</option><option selected>SFTP, daily</option><option>URL, daily</option></select></div><div class="field"><label for="src-fmt">Format</label><select id="src-fmt"><option selected>CSV</option><option>XML</option><option>JSON</option></select></div>`}
+    const defaultLabel = t==='API'?'Regional KYC vendor':t==='Web'?'Local regulator watch':t==='PDF document'?'Regulatory enforcement gazette':'Customer restricted parties';
+    body.innerHTML=`<div class="field"><label for="src-label">Label</label><input id="src-label" type="text" value="${esc(st.label||defaultLabel)}"><small>Shown on every finding, alert and decision that uses this source.</small></div>
+    ${t==='API'?`<div class="field"><label for="src-url">Endpoint URL</label><input id="src-url" type="url" value="${esc(st.url||'https://api.example-kyc.com/v2/screen')}"></div><div class="field"><label for="src-key">API key</label><input id="src-key" type="password" value="${esc(st.key||'sk_live_0000000000000000')}"><small>Encrypted at rest. You will not see it again after saving.</small></div>`:
+      t==='Web'?`<div class="field"><label for="src-url">Page to monitor</label><input id="src-url" type="url" value="${esc(st.url||'https://www.example-regulator.gov/enforcement')}"></div><div class="field"><label for="src-freq">Read every</label><select id="src-freq"><option ${st.freq==='6 hours'?'selected':''}>6 hours</option><option ${(!st.freq||st.freq==='12 hours')?'selected':''}>12 hours</option><option ${st.freq==='24 hours'?'selected':''}>24 hours</option></select></div>`:
+      t==='PDF document'?`<div class="field"><label for="src-pdf-file">PDF document</label><input id="src-pdf-file" type="file" accept=".pdf,application/pdf"><small>${st.file?`Attached: ${esc(st.file.name)} (${Math.round(st.file.size/1024)} KB)`:'Stored in backend database & filesystem; parsed for counterparties.'}</small></div><div class="field"><label for="src-doc-cat">Document category</label><select id="src-doc-cat"><option selected>Regulatory enforcement gazette</option><option>Court judgment & insolvency filing</option><option>National sanctions designation list</option><option>Counterparty compliance pack</option></select></div>`:
+      `<div class="field"><label for="src-how">Delivery</label><select id="src-how"><option ${st.how==='Upload a file'?'selected':''}>Upload a file</option><option ${(!st.how||st.how==='SFTP, daily')?'selected':''}>SFTP, daily</option><option ${st.how==='URL, daily'?'selected':''}>URL, daily</option></select></div><div class="field" id="src-feed-file-wrap" style="${st.how==='Upload a file'?'':'display:none'}"><label for="src-feed-file">Data feed file</label><input id="src-feed-file" type="file" accept=".csv,.xlsx,.xls,.json,.xml"><small>${st.file?`Attached: ${esc(st.file.name)} (${Math.round(st.file.size/1024)} KB)`:'Stored on backend database & disk.'}</small></div><div class="field"><label for="src-fmt">Format</label><select id="src-fmt"><option selected>CSV</option><option>XML</option><option>JSON</option></select></div>`}
     <div class="field"><label>Entity coverage</label><div class="check-row"><label><input type="checkbox" id="cov-org" checked>Organisations</label><label><input type="checkbox" id="cov-ppl" checked>People</label><label><input type="checkbox" id="cov-ves">Vessels</label></div></div>
     <div class="field"><label for="src-trust">Trust level</label><select id="src-trust"><option>Low</option><option selected>Medium</option><option>High</option></select><small>The confidence engine weights this source's findings by trust level.</small></div>`;
     foot.innerHTML=`<button class="btn ghost" data-back type="button">Back</button><button class="btn primary" data-next type="button">Test connection</button>`;
   }else{
     body.innerHTML=`<ul class="test-log" id="test-log"></ul><div id="test-done" hidden class="hint">${ic('check')}<p><b>Ready to go live.</b> Conflicts with built-in data will show both findings with their labels, so a reviewer decides.</p></div>`;
     foot.innerHTML=`<button class="btn ghost" data-back type="button">Back</button><button class="btn primary" data-save type="button" disabled>Save and go live</button>`;
-    const lines=st.type==='API'?['Connecting to endpoint','200 OK in 312 ms','Sample call returned 25 records','Mapped fields: name ← entity_name, id ← reg_no, country ← iso2, list type ← program']:st.type==='Web'?['Fetching page','200 OK, 48 KB','AI extracted 12 entities from the latest actions table','Change detection baseline saved']:['Connecting to SFTP host','Found restricted_parties.csv (1,204 rows)','Mapped fields: name, country, list type','No malformed rows'];
-    lines.forEach((l,i)=>setTimeout(()=>{const ul=$('#test-log');if(!ul)return;const li=document.createElement('li');li.innerHTML=`<span class="ok">✓</span><span>${esc(l)}</span>`;ul.appendChild(li);if(i===lines.length-1){$('#test-done').hidden=false;$('[data-save]').disabled=false;}},REDUCED?0:(i+1)*420));
+    const lines=st.type==='API'?['Connecting to endpoint','200 OK in 312 ms','Sample call returned 25 records','Mapped fields: name ← entity_name, id ← reg_no, country ← iso2, list type ← program']:
+      st.type==='Web'?['Fetching page','200 OK, 48 KB','AI extracted 12 entities from the latest actions table','Change detection baseline saved']:
+      st.type==='PDF document'?['Reading PDF document structure','Parsing text streams, tables and identifiers','AI entity extractor identified 18 entity records and watch criteria','Document verified, archived on backend disk and indexed into graph']:
+      ['Connecting to SFTP host','Found '+(st.file?st.file.name:'restricted_parties.csv')+' (1,204 rows)','Mapped fields: name, country, list type','No malformed rows'];
+    lines.forEach((l,i)=>setTimeout(()=>{
+      const ul=$('#test-log');if(!ul)return;
+      const li=document.createElement('li');li.innerHTML=`<span class="ok">✓</span><span>${esc(l)}</span>`;ul.appendChild(li);
+      if(i===lines.length-1){$('#test-done').hidden=false;$('[data-save]').disabled=false;}
+    },REDUCED?0:(i+1)*420));
   }
 }
-$('#add-src').addEventListener('click',()=>{srcState={step:1,type:'API'};renderSrcModal();$('#src-modal').hidden=false;});
+
+$('#add-src').addEventListener('click',()=>{srcState={step:1,type:'API',file:null};renderSrcModal();$('#src-modal').hidden=false;});
+const upSrcPdfBtn=$('#upload-src-pdf-btn');
+if(upSrcPdfBtn){
+  upSrcPdfBtn.addEventListener('click',()=>{
+    srcState={step:1,type:'PDF document',file:null};
+    renderSrcModal();
+    $('#src-modal').hidden=false;
+  });
+}
+
+$('#src-modal').addEventListener('change',e=>{
+  if(e.target.id==='src-how'){
+    const wrap=$('#src-feed-file-wrap');
+    if(wrap) wrap.style.display=e.target.value==='Upload a file'?'':'none';
+  }
+  if(e.target.id==='src-pdf-file'){
+    const file=e.target.files&&e.target.files[0];
+    if(file){
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        srcState.file={name:file.name,size:file.size,type:file.type||'application/pdf',content:ev.target.result};
+        if(!srcState.label||srcState.label==='Regulatory enforcement gazette'){
+          srcState.label=file.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ');
+          const lblInp=$('#src-label');if(lblInp)lblInp.value=srcState.label;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+  if(e.target.id==='src-feed-file'){
+    const file=e.target.files&&e.target.files[0];
+    if(file){
+      const reader=new FileReader();
+      const isCsv=/\.csv$/i.test(file.name)||file.type==='text/csv';
+      reader.onload=ev=>{
+        srcState.file={name:file.name,size:file.size,type:file.type||'text/csv',content:ev.target.result};
+        if(!srcState.label||srcState.label==='Customer restricted parties'){
+          srcState.label=file.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ');
+          const lblInp=$('#src-label');if(lblInp)lblInp.value=srcState.label;
+        }
+      };
+      if(isCsv) reader.readAsText(file);
+      else reader.readAsDataURL(file);
+    }
+  }
+});
+
 $('#src-modal').addEventListener('click',e=>{
   const t=e.target.closest('[data-type]');if(t){srcState.type=t.dataset.type;renderSrcModal();return;}
-  if(e.target.closest('[data-next]')){if(srcState.step===2)srcState.label=$('#src-label').value.trim()||'New source';srcState.step++;renderSrcModal();return;}
+  if(e.target.closest('[data-next]')){
+    if(srcState.step===2){
+      srcState.label=$('#src-label')?($('#src-label').value.trim()||'New source'):'New source';
+      srcState.trust=$('#src-trust')?$('#src-trust').value:'Medium';
+      const cov=[];
+      if($('#cov-org')&&$('#cov-org').checked)cov.push('Organisations');
+      if($('#cov-ppl')&&$('#cov-ppl').checked)cov.push('people');
+      if($('#cov-ves')&&$('#cov-ves').checked)cov.push('vessels');
+      srcState.cover=cov.join(', ')||'Organisations, people';
+
+      if(srcState.type==='API'){
+        srcState.url=$('#src-url')?$('#src-url').value:'';
+        srcState.key=$('#src-key')?$('#src-key').value:'';
+      }else if(srcState.type==='Web'){
+        srcState.url=$('#src-url')?$('#src-url').value:'';
+        srcState.freq=$('#src-freq')?$('#src-freq').value:'12 hours';
+      }else if(srcState.type==='Data feed'){
+        srcState.how=$('#src-how')?$('#src-how').value:'SFTP, daily';
+        srcState.fmt=$('#src-fmt')?$('#src-fmt').value:'CSV';
+      }else if(srcState.type==='PDF document'){
+        srcState.category=$('#src-doc-cat')?$('#src-doc-cat').value:'Regulatory enforcement gazette';
+      }
+    }
+    srcState.step++;renderSrcModal();return;
+  }
   if(e.target.closest('[data-back]')){srcState.step--;renderSrcModal();return;}
   if(e.target.closest('[data-close-src]')){$('#src-modal').hidden=true;return;}
-  if(e.target.closest('[data-save]')){SOURCES.unshift({id:'s'+(SOURCES.length+1)+'n',label:srcState.label||'New source',type:srcState.type,how:srcState.type==='API'?'Queried live at each screen':srcState.type==='Web'?'Read every 12 hours':'SFTP, daily',cover:'Organisations, people',trust:'Medium',health:'new',kv:[['Added','Just now'],['First re-screen','Queued for 1,284 counterparties']]});renderSources();$('#src-modal').hidden=true;toast(`“${srcState.label}” is live. Re-screening queued`);}
+  if(e.target.closest('[data-save]')){
+    const st=srcState;
+    const howVal=st.type==='API'?'Queried live at each screen':
+      st.type==='Web'?`Read every ${st.freq||'12 hours'}`:
+      st.type==='PDF document'?'Parsed PDF document, entity extraction active':
+      (st.how||'SFTP, daily');
+
+    const payload={
+      label:st.label||'New source',
+      type:st.type,
+      how:howVal,
+      cover:st.cover||'Organisations, people',
+      trust:st.trust||'Medium',
+      config:{
+        url:st.url,
+        key:st.key,
+        freq:st.freq,
+        format:st.fmt,
+        category:st.category,
+        delivery:st.how
+      },
+      filename:st.file?st.file.name:null,
+      fileSize:st.file?st.file.size:0,
+      mimeType:st.file?st.file.type:null,
+      content:st.file?st.file.content:null
+    };
+
+    const localItem={
+      id:'s'+(SOURCES.length+1)+'n',
+      label:payload.label,
+      type:payload.type,
+      how:payload.how,
+      cover:payload.cover,
+      trust:payload.trust,
+      health:'ok',
+      kv:[
+        ['Added','Just now'],
+        ['Status','Live on screening pipeline'],
+        st.file?['File',st.file.name]:['First re-screen','Queued for 1,284 counterparties']
+      ]
+    };
+    SOURCES.unshift(localItem);
+    renderSources();
+    $('#src-modal').hidden=true;
+    toast(`“${st.label}” saved to backend & live`);
+
+    try{
+      fetch('/api/sources',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      }).then(r=>r.json()).then(data=>{
+        if(data&&data.source){
+          const idx=SOURCES.findIndex(s=>s.id===localItem.id);
+          if(idx!==-1){
+            SOURCES[idx]=data.source;
+            renderSources();
+          }
+        }
+      }).catch(()=>{});
+    }catch(err){}
+  }
 });
 
 /* ===================== Policies view ===================== */
@@ -2842,6 +3002,25 @@ async function syncFromBackend(){
       renderReviews();
       refreshStatus();
     }
+
+    // Sync sources from backend
+    try {
+      const sRes = await fetch('/api/sources');
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        if (sData && Array.isArray(sData.sources)) {
+          let srcAdded = false;
+          for (const s of sData.sources) {
+            const existing = SOURCES.find(x => x.id === s.id);
+            if (!existing) {
+              SOURCES.unshift(s);
+              srcAdded = true;
+            }
+          }
+          if (srcAdded) renderSources();
+        }
+      }
+    } catch(e) {}
   } catch (err) {}
 }
 

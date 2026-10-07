@@ -12,38 +12,97 @@ router.get('/', (req, res) => {
 
 // POST /api/sources
 router.post('/', (req, res) => {
-  const { label, type = 'API', how, cover = 'Organisations, people', trust = 'Medium' } = req.body;
+  const {
+    label,
+    type = 'API',
+    how,
+    cover = 'Organisations, people',
+    trust = 'Medium',
+    config = {},
+    filename,
+    fileSize = 0,
+    mimeType,
+    content,
+    parsedRecords = 1,
+    kv
+  } = req.body;
+
   if (!label) {
     return res.status(400).json({ error: 'Field "label" is required' });
   }
 
   const db = getDb();
   const id = 's_' + Date.now();
+
+  let uploadedFile = null;
+  // If a file (PDF or Feed) is uploaded with the source, persist to uploaded_files and disk
+  if (content || filename) {
+    try {
+      const isPdf = type === 'PDF document' || type === 'PDF' || (filename && filename.toLowerCase().endsWith('.pdf'));
+      uploadedFile = db.addUploadedFile({
+        entity_id: null,
+        file_type: isPdf ? 'custom_policy' : 'data_feed',
+        filename: filename || (isPdf ? `${label.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf` : 'feed.csv'),
+        file_size: fileSize || (content ? content.length : 0),
+        mime_type: mimeType || (isPdf ? 'application/pdf' : 'text/csv'),
+        content_data: content || '',
+        parsed_records: parsedRecords || (isPdf ? 1 : 25)
+      });
+    } catch (e) {
+      console.error('Failed to store source upload file:', e);
+    }
+  }
+
+  let defaultHow = 'Queried live at each screen';
+  if (type === 'Web') defaultHow = config.freq ? `Monitored page, read every ${config.freq}` : 'Read every 12 hours';
+  else if (type === 'Data feed') defaultHow = config.delivery || 'SFTP, daily';
+  else if (type === 'PDF document' || type === 'PDF') defaultHow = 'Parsed PDF document, entity extraction active';
+
+  const defaultKv = [
+    ['Added', 'Just now'],
+    ['Status', 'Live on screening pipeline']
+  ];
+  if (uploadedFile) {
+    defaultKv.push(['File', uploadedFile.filename]);
+    defaultKv.push(['Storage', 'Backend database & disk']);
+  } else if (type === 'API') {
+    defaultKv.push(['Endpoint', config.url || 'API endpoint registered']);
+    defaultKv.push(['Re-screen', 'Triggered live at each screen']);
+  } else if (type === 'Web') {
+    defaultKv.push(['Page', config.url || 'Monitored URL']);
+    defaultKv.push(['Frequency', config.freq || 'Every 12 hours']);
+  } else {
+    defaultKv.push(['Re-screen', 'Queued for monitored counterparties']);
+  }
+
   const newSource = {
     id,
     label,
     type,
-    how: how || (type === 'API' ? 'Queried live at each screen' : type === 'Web' ? 'Read every 12 hours' : 'SFTP, daily'),
+    how: how || defaultHow,
     cover,
     trust,
-    health: 'new',
-    kv: [
-      ['Added', 'Just now'],
-      ['Status', 'Live on screening pipeline'],
-      ['Re-screen', 'Queued for monitored counterparties']
-    ]
+    health: 'ok',
+    kv: kv || defaultKv,
+    config: {
+      ...config,
+      fileId: uploadedFile ? uploadedFile.id : null,
+      filename: uploadedFile ? uploadedFile.filename : (filename || null),
+      storagePath: uploadedFile ? uploadedFile.storage_path : null
+    }
   };
 
   db.addSource(newSource);
   res.status(201).json({
     status: 'created',
-    source: newSource
+    source: newSource,
+    uploadedFile: uploadedFile ? { id: uploadedFile.id, filename: uploadedFile.filename, storage_path: uploadedFile.storage_path } : null
   });
 });
 
 // POST /api/sources/test
 router.post('/test', (req, res) => {
-  const { type, url } = req.body;
+  const { type = 'API', url, filename } = req.body;
   // Test connection emulation with health validation (PRD Page 4)
   const logs = type === 'API' ? [
     'Connecting to endpoint...',
@@ -55,9 +114,14 @@ router.post('/test', (req, res) => {
     '200 OK, fetched 54 KB',
     'AI entity extractor extracted 14 entities',
     'Change baseline recorded'
+  ] : (type === 'PDF document' || type === 'PDF') ? [
+    'Reading PDF document structure...',
+    'Parsing text streams, tables, and identification numbers...',
+    'AI entity extractor identified 18 entity records and watch criteria',
+    'Document verified, archived on backend disk and indexed into graph'
   ] : [
     'Connecting to SFTP feed...',
-    'Feed file found: restricted_parties.csv',
+    'Feed file found: ' + (filename || 'restricted_parties.csv'),
     'Validated 1,420 rows, 0 malformed records'
   ];
 
@@ -75,6 +139,16 @@ router.post('/:id/retry', (req, res) => {
   res.json({
     status: 'healthy',
     message: 'Source health restored'
+  });
+});
+
+// DELETE /api/sources/:id
+router.delete('/:id', (req, res) => {
+  const db = getDb();
+  db.deleteSource(req.params.id);
+  res.json({
+    status: 'deleted',
+    id: req.params.id
   });
 });
 
