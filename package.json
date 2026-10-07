@@ -1,0 +1,28 @@
+{
+  "name": "safe-globe",
+  "version": "1.0.0",
+  "description": "Safe Globe - AI-native global screening platform for counterparties, vessels, and country risk",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "test": "node --test --test-concurrency=1 tests/screening.test.js tests/api.test.js"
+  },
+  "keywords": [
+    "compliance",
+    "kyc",
+    "sanctions",
+    "screening",
+    "anti-money-laundering",
+    "vessels",
+    "ai-agents"
+  ],
+  "author": "Safe Globe Team",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.6",
+    "express": "^5.2.1"
+  }
+}
