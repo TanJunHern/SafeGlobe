@@ -1361,7 +1361,7 @@ const lSel=gLabels.selectAll('text').data(FEATURES).join('text').attr('class','c
 [pSphere,backdrop].forEach(s=>s.on('click',()=>{if(S.sel)clearSelection();}));
 
 /* pins */
-let pinSel;
+let pinSel, vesSel;
 function getPlottedEntities(){
   const list = [];
   ORGS.forEach(o => {
@@ -1408,7 +1408,9 @@ function rebindPins(){
     }
     select(o.id);
   });
-  refreshStatus();
+  if (typeof vesSel !== 'undefined' && vesSel) {
+    refreshStatus();
+  }
   dirty = true;
 }
 rebindPins();
@@ -1423,7 +1425,7 @@ const darkSel=gRoutes.selectAll('path.dark-seg').data(darkV).join('path').attr('
 const darkLbl=gRoutes.selectAll('text.dark-label').data(darkV).join('text').attr('class','dark-label').text(v=>v.darkLabel);
 darkV.forEach(v=>{const pts=[];for(let i=0;i<=24;i++)pts.push(posAt(v.R,lerp(v.dark[0],v.dark[1],i/24)));v.darkLine={type:'LineString',coordinates:pts};v.darkMid=posAt(v.R,(v.dark[0]+v.dark[1])/2);});
 const wakeSel=gWakes.selectAll('g').data(VESSELS).join(enter=>{const g=enter.append('g');[.1,.22,.42].forEach((o,i)=>g.append('path').attr('class','wake').attr('stroke-opacity',o).attr('stroke-width',1+i*.7));return g;});
-const vesSel=gVessels.selectAll('g.vessel').data(VESSELS).join(enter=>{
+vesSel=gVessels.selectAll('g.vessel').data(VESSELS).join(enter=>{
   const g=enter.append('g').attr('class','vessel').attr('data-id',v=>v.id);
   g.append('circle').attr('class','v-hit').attr('r',13);
   g.append('circle').attr('class','v-halo').attr('r',9);
@@ -1569,9 +1571,21 @@ function renderDynamic(now){
 }
 const qColorVar=q=>({escalate:'high',investigate:'mid',gaps:'slate',monitor:'low'})[q];
 function refreshStatus(){
-  pinSel.each(function(o){const q=quad(o);this.setAttribute('class','pin st-'+q+(o.linked?' linked':'')+(S.sel&&S.sel.id===o.id?' sel':'')+(S.hl&&S.hl.has(o.id)?' hl':''));this.querySelector('.p-pulse').style.display=q==='escalate'&&!o.linked?'':'none';});
-  vesSel.each(function(v){const q=quad(v);this.setAttribute('class','vessel st-'+q+(v._dark?' dark':'')+(S.sel&&S.sel.id===v.id?' sel':'')+(S.hl&&S.hl.has(v.id)?' hl':''));});
-  root.classed('dim',!!S.hl);
+  if(pinSel){
+    pinSel.each(function(o){
+      const q=quad(o);
+      this.setAttribute('class','pin st-'+q+(o.linked?' linked':'')+(S.sel&&S.sel.id===o.id?' sel':'')+(S.hl&&S.hl.has(o.id)?' hl':''));
+      const pulse=this.querySelector('.p-pulse');
+      if(pulse) pulse.style.display=q==='escalate'&&!o.linked?'':'none';
+    });
+  }
+  if(vesSel){
+    vesSel.each(function(v){
+      const q=quad(v);
+      this.setAttribute('class','vessel st-'+q+(v._dark?' dark':'')+(S.sel&&S.sel.id===v.id?' sel':'')+(S.hl&&S.hl.has(v.id)?' hl':''));
+    });
+  }
+  if(root) root.classed('dim',!!S.hl);
   dirty=true;
 }
 
