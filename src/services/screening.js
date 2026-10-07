@@ -19,7 +19,7 @@ function calculateQuadrant(risk, conf, threshold = 80) {
   return 'monitor'; // low-risk, high-confidence
 }
 
-function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP', registration = '', watch = true }) {
+function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP', registration = '', docStatus = 'verified', watch = true }) {
   const db = getDb();
   const cpiRow = db.getCpiByCode(jurisdiction);
   const cpiScore = cpiRow ? cpiRow.score : 50;
@@ -107,6 +107,31 @@ function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP
         status: 'Open',
         src: 'Transparency International CPI 2025'
       });
+    } else if (docStatus === 'pending') {
+      risk = cpiScore < 35 ? 58 : 18;
+      conf = 55;
+      autoCleared = false;
+      findings.push({
+        agent: 'Sentry',
+        title: 'Screened against 41 sanctions lists & PEP',
+        detail: 'Preliminary automated check passed. Counterparty corporate documentation pending.',
+        risk: 'Low',
+        conf: 70,
+        status: 'Open',
+        src: 'Built-in sanctions lists and Vendor X sanctions API'
+      });
+      findings.push({
+        agent: 'Doc forensics',
+        title: 'Pending basic details & documentation',
+        detail: 'Trade licence, registration extract, and beneficial ownership register pending submission.',
+        risk: 'Low',
+        conf: 50,
+        status: 'Open',
+        src: 'Intake document checklist'
+      });
+      factors.push(['-', 'Trade licence and corporate register pending upload']);
+      factors.push(['-', 'Ultimate beneficial ownership (UBO) chart unverified']);
+      factors.push(['+', 'Zero matches on 41 international watchlists or PEP databases']);
     } else {
       risk = Math.max(8, 40 - Math.round(cpiScore / 3));
       conf = 92;

@@ -38,7 +38,7 @@ router.get('/:id', (req, res) => {
 
 // POST /api/intake (PRD B.1 Baseline Counterparty Intake)
 router.post('/intake', (req, res) => {
-  const { name, type = 'org', country = 'SGP', reg = '', role = 'Supplier', watch = true } = req.body;
+  const { name, type = 'org', country = 'SGP', reg = '', role = 'Supplier', docStatus = 'pending', watch = true } = req.body;
 
   if (!name || typeof name !== 'string') {
     return res.status(400).json({ error: 'Field "name" is required' });
@@ -50,6 +50,7 @@ router.post('/intake', (req, res) => {
     entity: type,
     jurisdiction: country,
     registration: reg,
+    docStatus,
     watch: Boolean(watch)
   });
 
@@ -70,7 +71,7 @@ router.post('/intake', (req, res) => {
     conf: screenResult.confidence,
     confidence: screenResult.confidence,
     owner: 'Grace Teo',
-    trigger: 'Counterparty intake screen',
+    trigger: screenResult.quadrant === 'gaps' ? 'Pending basic details · intake' : 'Counterparty intake screen',
     since: '2026',
     claimed: false,
     factors: screenResult.factors,
