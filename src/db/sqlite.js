@@ -135,6 +135,19 @@ class SqliteDatabase {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS uploaded_files (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT,
+        file_type TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        file_size INTEGER DEFAULT 0,
+        mime_type TEXT,
+        content_data TEXT,
+        parsed_records INTEGER DEFAULT 1,
+        storage_path TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
     `);
   }
 
@@ -630,6 +643,61 @@ class SqliteDatabase {
 
   getCpiByCode(a3) {
     return this.db.prepare('SELECT a3, name, score, rank FROM cpi WHERE a3 = ?').get(a3);
+  }
+
+  // --- Uploaded Files (Data Feeds & Custom Policies) ---
+  addUploadedFile({ id, entity_id, file_type, filename, file_size = 0, mime_type = '', content_data = '', parsed_records = 1, storage_path = '' }) {
+    const fileId = id || ('up_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
+    
+    // Also save physical copy to data/uploads
+    let finalPath = storage_path;
+    try {
+      const uploadDir = path.join(__dirname, '../../data/uploads', file_type === 'custom_policy' ? 'policies' : 'feeds');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+      finalPath = path.join(uploadDir, `${fileId}_${safeName}`);
+
+      let buffer;
+      if (content_data && typeof content_data === 'string' && content_data.startsWith('data:')) {
+        const base64Data = content_data.split(',')[1] || '';
+        buffer = Buffer.from(base64Data, 'base64');
+      } else {
+        buffer = Buffer.from(content_data || '', 'utf8');
+      }
+      fs.writeFileSync(finalPath, buffer);
+    } catch (e) {
+      // Non-fatal if disk write fails
+    }
+
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO uploaded_files 
+      (id, entity_id, file_type, filename, file_size, mime_type, content_data, parsed_records, storage_path)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(fileId, entity_id || null, file_type, filename, file_size, mime_type, content_data, parsed_records, finalPath);
+    return this.getUploadedFileById(fileId);
+  }
+
+  getUploadedFiles(entity_id = null) {
+    if (entity_id) {
+      return this.db.prepare(`
+        SELECT id, entity_id, file_type, filename, file_size, mime_type, parsed_records, storage_path, created_at 
+        FROM uploaded_files 
+        WHERE entity_id = ? 
+        ORDER BY created_at DESC
+      `).all(entity_id);
+    }
+    return this.db.prepare(`
+      SELECT id, entity_id, file_type, filename, file_size, mime_type, parsed_records, storage_path, created_at 
+      FROM uploaded_files 
+      ORDER BY created_at DESC
+    `).all();
+  }
+
+  getUploadedFileById(id) {
+    return this.db.prepare('SELECT * FROM uploaded_files WHERE id = ?').get(id);
   }
 
   close() {

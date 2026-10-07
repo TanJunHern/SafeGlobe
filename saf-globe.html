@@ -2097,13 +2097,28 @@ $('#upload-pol-file').addEventListener('change',e=>{
   CUSTOM_RULES.push(newRule);
   renderPolicies();
   toast(`“${file.name}” compiled: 1 rule added, screening active`);
-  try{
-    fetch('/api/policies/compile',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({title:file.name})
-    }).catch(()=>{});
-  }catch(err){}
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try{
+      fetch('/api/policies/compile',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          title: file.name,
+          filename: file.name,
+          size: file.size,
+          mimeType: file.type || 'application/pdf',
+          content: ev.target.result
+        })
+      }).catch(()=>{});
+    }catch(err){}
+  };
+  if(/\.txt$/i.test(file.name) || file.type === 'text/plain') {
+    reader.readAsText(file);
+  } else {
+    reader.readAsDataURL(file);
+  }
 });
 
 /* ===================== views & global keys ===================== */
@@ -2405,28 +2420,43 @@ $('#intake-feed-file').addEventListener('change', e=>{
         }
       }
       
-      intakeAttachedFeed = { filename: file.name, size: file.size, records };
+      intakeAttachedFeed = { filename: file.name, size: file.size, records, content: text, mimeType: 'text/csv' };
       renderIntakeAttachments();
       toast(`Data feed “${file.name}” attached (${records} records)`);
     };
     reader.readAsText(file);
   } else {
-    intakeAttachedFeed = { filename: file.name, size: file.size, records: 1 };
-    renderIntakeAttachments();
-    toast(`Data feed “${file.name}” attached`);
+    const reader = new FileReader();
+    reader.onload = ev => {
+      intakeAttachedFeed = { filename: file.name, size: file.size, records: 1, content: ev.target.result, mimeType: file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+      renderIntakeAttachments();
+      toast(`Data feed “${file.name}” attached`);
+    };
+    reader.readAsDataURL(file);
   }
 });
 
 $('#intake-policy-file').addEventListener('change', e=>{
   const file = e.target.files && e.target.files[0];
   if(!file) return;
-  intakeAttachedPolicy = {
-    filename: file.name,
-    size: file.size,
-    title: file.name.replace(/\.[^.]+$/, '')
+  const isTxt = /\.txt$/i.test(file.name) || file.type === 'text/plain';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    intakeAttachedPolicy = {
+      filename: file.name,
+      size: file.size,
+      title: file.name.replace(/\.[^.]+$/, ''),
+      content: ev.target.result,
+      mimeType: file.type || (isTxt ? 'text/plain' : 'application/pdf')
+    };
+    renderIntakeAttachments();
+    toast(`Custom policy “${file.name}” attached & compiled`);
   };
-  renderIntakeAttachments();
-  toast(`Custom policy “${file.name}” attached & compiled`);
+  if(isTxt){
+    reader.readAsText(file);
+  } else {
+    reader.readAsDataURL(file);
+  }
 });
 
 $('#intake-submit').addEventListener('click', async ()=>{

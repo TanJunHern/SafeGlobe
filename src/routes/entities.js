@@ -57,9 +57,19 @@ router.post('/intake', (req, res) => {
   const id = (type === 'vessel' ? 'ves_' : type === 'person' ? 'per_' : 'org_') + Date.now();
   const cpiRow = db.getCpiByCode(country);
 
-  // If Data Feed attached, store source and add finding
+  // If Data Feed attached, store file, register source and add finding
   if (attachedFeed) {
     try {
+      db.addUploadedFile({
+        entity_id: id,
+        file_type: 'data_feed',
+        filename: attachedFeed.filename || 'feed.csv',
+        file_size: attachedFeed.size || 0,
+        mime_type: (attachedFeed.filename && attachedFeed.filename.endsWith('.csv')) ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        content_data: attachedFeed.content || '',
+        parsed_records: attachedFeed.records || 1
+      });
+
       db.addSource({
         id: 's_feed_' + Date.now(),
         label: 'Feed · ' + (attachedFeed.filename || 'feed.csv'),
@@ -85,9 +95,19 @@ router.post('/intake', (req, res) => {
     screenResult.confidence = Math.max(screenResult.confidence, 90);
   }
 
-  // If Custom Policy attached, record compiled policy and add finding
+  // If Custom Policy attached, store file, record compiled policy and add finding
   if (attachedPolicy) {
     try {
+      db.addUploadedFile({
+        entity_id: id,
+        file_type: 'custom_policy',
+        filename: attachedPolicy.filename || 'deal_policy.pdf',
+        file_size: attachedPolicy.size || 0,
+        mime_type: (attachedPolicy.filename && attachedPolicy.filename.endsWith('.pdf')) ? 'application/pdf' : 'text/plain',
+        content_data: attachedPolicy.content || '',
+        parsed_records: 1
+      });
+
       const policyId = 'R' + (db.getPolicies().length + 1);
       db.addPolicy({
         id: policyId,

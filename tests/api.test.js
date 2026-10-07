@@ -162,12 +162,66 @@ test('API Integration Tests', async (t) => {
     assert.ok(text.includes('id="map"'));
   });
 
-  // Clean up transient test entities
+  await t.test('POST /api/intake with attachments should store uploaded files in DB & disk', async () => {
+    const res = await fetch(`${BASE_URL}/api/intake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Baltic Grain Carriers OU',
+        type: 'org',
+        country: 'EST',
+        role: 'Grain Shipper',
+        attachedFeed: {
+          filename: 'baltic_intake_feed.csv',
+          size: 140,
+          records: 2,
+          content: 'name,reg,country\nBaltic Grain Carriers OU,14981123,EST'
+        },
+        attachedPolicy: {
+          filename: 'baltic_deal_covenant.pdf',
+          size: 256,
+          content: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp...'
+        }
+      })
+    });
+    assert.equal(res.status, 201);
+    const data = await res.json();
+    assert.ok(data.entity.id);
+
+    // Verify uploads endpoint
+    const upRes = await fetch(`${BASE_URL}/api/uploads?entity_id=${data.entity.id}`);
+    assert.equal(upRes.status, 200);
+    const upData = await upRes.json();
+    assert.equal(upData.total, 2);
+    assert.ok(upData.uploads.some(u => u.file_type === 'data_feed' && u.filename === 'baltic_intake_feed.csv'));
+    assert.ok(upData.uploads.some(u => u.file_type === 'custom_policy' && u.filename === 'baltic_deal_covenant.pdf'));
+  });
+
+  await t.test('POST /api/policies/compile should persist policy document to uploaded_files', async () => {
+    const res = await fetch(`${BASE_URL}/api/policies/compile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Maritime_Covenants_2026.pdf',
+        filename: 'Maritime_Covenants_2026.pdf',
+        size: 512,
+        content: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrp...'
+      })
+    });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.status, 'compiled');
+    assert.ok(data.uploadedFile);
+    assert.equal(data.uploadedFile.filename, 'Maritime_Covenants_2026.pdf');
+  });
+
+  // Clean up transient test entities and uploads
   const { getDb } = require('../src/db');
   const db = getDb();
   const baseIds = ['halcyon', 'kestrel', 'severny', 'aurora', 'zemtsov'];
   const placeholders = baseIds.map(() => '?').join(',');
   try {
+    db.db.prepare('DELETE FROM uploaded_files').run();
     db.db.prepare('DELETE FROM cases WHERE entity_id NOT IN (' + placeholders + ')').run(...baseIds);
     db.db.prepare('DELETE FROM alerts WHERE entity_id NOT IN (' + placeholders + ')').run(...baseIds);
     db.db.prepare('DELETE FROM entities WHERE id NOT IN (' + placeholders + ')').run(...baseIds);
