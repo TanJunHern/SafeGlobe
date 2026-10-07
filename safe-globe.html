@@ -2516,12 +2516,79 @@ $('#test-api-btn').addEventListener('click', async ()=>{
 
 /* ===================== boot ===================== */
 let introCancelled=false;
+async function syncFromBackend(){
+  try {
+    const res = await fetch('/api/entities');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !Array.isArray(data.entities)) return;
+    
+    let added = false;
+    for (const e of data.entities) {
+      if (!ENT.has(e.id)) {
+        const item = {
+          id: e.id,
+          kind: e.kind || 'org',
+          name: e.name,
+          short: e.short || e.short_name || e.name.split(/\s+/).slice(0, 2).join(' '),
+          role: e.role || 'Counterparty',
+          a3: e.a3 || e.jurisdiction || 'SGP',
+          city: e.city || cname(e.a3 || e.jurisdiction || 'SGP'),
+          ll: e.ll || (COUNTRY.get(e.a3 || e.jurisdiction) ? COUNTRY.get(e.a3 || e.jurisdiction).cent : [103.8, 1.3]),
+          reg: e.reg || e.reg_no || 'REG-ON-FILE',
+          risk: e.risk || 50,
+          conf: e.conf || e.confidence || 80,
+          owner: e.owner || 'Sofia Lim',
+          trigger: e.trigger || e.trigger_event || 'Counterparty record',
+          since: e.since || '2026',
+          claimed: Boolean(e.claimed),
+          factors: e.factors || [],
+          findings: e.findings || [],
+          raise: e.raise || ''
+        };
+        if (item.kind === 'vessel') {
+          item.type = item.role;
+          item.imo = item.reg;
+          item.mmsi = '563000000';
+          item.flag = cname(item.a3) || 'Singapore';
+          item.route = [[103.8, 1.3], [104.2, 1.4]];
+          item.R = prepRoute(item.route);
+          item.frac = 0.1;
+          item.dir = 1;
+          item.ang = 0;
+          item.cur = posAt(item.R, item.frac);
+          item.kn = 12;
+          item.signals = [];
+          item.links = [];
+          VESSELS.unshift(item);
+        } else if (item.kind === 'person') {
+          item.lists = [];
+          item.pep = item.risk >= 50;
+          item.note = 'Record from Safe Globe database';
+          PEOPLE.unshift(item);
+        } else {
+          ORGS.unshift(item);
+        }
+        ENT.set(item.id, item);
+        CASES.unshift(Object.assign(item, { caseId: 'RV-26-' + String(4300 + Math.floor(Math.random()*500)) }));
+        added = true;
+      }
+    }
+    if (added) {
+      renderWatch();
+      renderReviews();
+      refreshStatus();
+    }
+  } catch (err) {}
+}
+
 function boot(){
   if(innerWidth<=1180)view.classList.add('watch-closed');
   readColors();renderLegend();renderWatch();renderAlerts();renderReviews();renderCalib();renderSources();renderPolicies();
   computeLayout();
   cSel.each(function(){this.style.fill=C['land-none'];});
   refreshStatus();
+  syncFromBackend();
   runTicker();setInterval(runTicker,5200);
   $('#theme-btn use').setAttribute('href',isDark()?'#i-sun':'#i-moon');
   requestAnimationFrame(frame);

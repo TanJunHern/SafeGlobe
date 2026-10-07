@@ -162,5 +162,16 @@ test('API Integration Tests', async (t) => {
     assert.ok(text.includes('id="map"'));
   });
 
+  // Clean up transient test entities
+  const { getDb } = require('../src/db');
+  const db = getDb();
+  const baseIds = ['halcyon', 'kestrel', 'severny', 'aurora', 'zemtsov'];
+  const placeholders = baseIds.map(() => '?').join(',');
+  try {
+    db.db.prepare('DELETE FROM cases WHERE entity_id NOT IN (' + placeholders + ')').run(...baseIds);
+    db.db.prepare('DELETE FROM alerts WHERE entity_id NOT IN (' + placeholders + ')').run(...baseIds);
+    db.db.prepare('DELETE FROM entities WHERE id NOT IN (' + placeholders + ')').run(...baseIds);
+  } catch (e) {}
+
   await stopServer();
 });
