@@ -1849,8 +1849,8 @@ function solve(k,text){
     return {steps:['Read the question: suppliers, ownership up to 2 hops, anchor is a Russian state-owned company','Found 1 anchor: Federal Grain Corporation JSC (registry: state-owned)',`Walked ${own.length} ownership links in the graph`,`${res.length} counterparties match`],res,hl:[...anchors.map(a=>a.id),...res.map(r=>r.id)],sum:`${res.map(r=>ENT.get(r.id).short).join(' and ')} sit within two ownership hops of Federal Grain Corporation JSC.`,src:'Russian and Turkish registry filings'};
   }
   if(k==='dark'){
-    const res=[{id:'aurora',sub:'31 h gap, 24–25 Sep · Arabian Sea'},{id:'kspirit',sub:'9 h gap, 21 Sep · South China Sea'}];
-    return {steps:['Read the question: vessels, AIS dark periods, last 30 days','Scanned AIS history for 55 monitored vessels','Excluded gaps under 6 hours and known coverage holes','2 vessels match'],res,hl:['aurora','kspirit','halcyon','kestrel'],sum:'Two vessels went dark. Both later met in a ship-to-ship transfer east of Johor on 2 Oct.',src:'AIS position feed, satellite AIS'};
+    const res=[{id:'aurora',sub:'31 h gap, 24–25 Sep · Arabian Sea'}];
+    return {steps:['Read the question: vessels, AIS dark periods, last 30 days','Scanned AIS history for 55 monitored vessels','Excluded gaps under 6 hours and known coverage holes','1 vessel matches'],res,hl:['aurora','halcyon','kestrel'],sum:'Aurora Venture went dark, then completed a ship-to-ship transfer east of Johor on 2 Oct.',src:'AIS position feed, satellite AIS'};
   }
   if(k==='cpi'){
     const m=(text||'').match(/(\d{1,3})/);const n=m?clamp(+m[1],1,100):30;
@@ -1998,11 +1998,11 @@ $('#src-modal').addEventListener('click',e=>{
 function renderPolicies(){
   const cpiLow=ORGS.filter(o=>!o.linked&&cpiOf(o.a3)!=null&&cpiOf(o.a3)<40);
   const rules=[
-    {id:'R1',sec:'§3.2',t:'Block direct dealings with any entity 50% or more owned, in aggregate, by sanctioned persons.',hits:['kestrel','caribe'],note:'Ownership summed across all paths in the graph'},
+    {id:'R1',sec:'§3.2',t:'Block direct dealings with any entity 50% or more owned, in aggregate, by sanctioned persons.',hits:['kestrel'],note:'Ownership summed across all paths in the graph'},
     {id:'R2',sec:'§4.1',t:'Apply enhanced due diligence to counterparties in countries scoring below 40 on CPI 2025.',hits:cpiLow.map(o=>o.id),note:'Uses the loaded CPI 2025 scores'},
     {id:'R3',sec:'§5.4',t:'Vessels with an AIS gap over 12 hours in the last 90 days need a Tide review before any fixture.',hits:['aurora'],note:'Gaps under 6 hours and known coverage holes are ignored'},
-    {id:'R4',sec:'§3.6',t:'Counterparties linked to a politically exposed person need sign-off from a senior reviewer.',hits:['lagos'],note:''},
-    {id:'R5',sec:'§7.2',t:'A ship-to-ship transfer involving a vessel tied to a counterparty triggers a review within 2 business days.',hits:['aurora','kspirit'],note:''},
+    {id:'R4',sec:'§3.6',t:'Counterparties linked to a politically exposed person need sign-off from a senior reviewer.',hits:['kestrel'],note:''},
+    {id:'R5',sec:'§7.2',t:'A ship-to-ship transfer involving a vessel tied to a counterparty triggers a review within 2 business days.',hits:['aurora'],note:''},
     {id:'R6',sec:'§6.1',t:'Re-screen every counterparty at least every 24 hours and on every list update.',hits:[],met:true,note:'Met for all 1,284 counterparties'}
   ];
   $('#pol-count').textContent='14 (6 shown)';
