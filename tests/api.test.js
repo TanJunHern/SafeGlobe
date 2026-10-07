@@ -264,7 +264,81 @@ test('API Integration Tests', async (t) => {
     assert.ok(data.logs.some(l => l.includes('AI entity extractor')));
   });
 
-  // Clean up transient test entities, sources, and uploads
+  await t.test('POST /api/intake for Individual (person) should persist KYC fields', async () => {
+    const res = await fetch(`${BASE_URL}/api/intake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Alexander Viktorov',
+        type: 'person',
+        nationality: 'SGP',
+        dob: '1978-04-12',
+        aliases: 'Aleksandr Viktorov, Alex Victor',
+        role: 'Board Director',
+        idDoc: 'Passport P9876543A',
+        residentialAddress: '12 Marina Boulevard, Marina Bay, Singapore',
+        docStatus: 'pending'
+      })
+    });
+    assert.equal(res.status, 201);
+    const data = await res.json();
+    assert.ok(data.entity.id);
+    assert.equal(data.entity.name, 'Alexander Viktorov');
+    assert.equal(data.entity.type, 'person');
+    assert.equal(data.entity.dob, '1978-04-12');
+    assert.equal(data.entity.aliases, 'Aleksandr Viktorov, Alex Victor');
+    assert.equal(data.entity.nationality, 'SGP');
+    assert.equal(data.entity.idDoc, 'Passport P9876543A');
+    assert.equal(data.entity.residentialAddress, '12 Marina Boulevard, Marina Bay, Singapore');
+
+    // Verify GET /api/entities/:id returns the persisted fields
+    const getRes = await fetch(`${BASE_URL}/api/entities/${data.entity.id}`);
+    assert.equal(getRes.status, 200);
+    const entData = await getRes.json();
+    assert.equal(entData.dob, '1978-04-12');
+    assert.equal(entData.aliases, 'Aleksandr Viktorov, Alex Victor');
+    assert.equal(entData.idDoc, 'Passport P9876543A');
+    assert.equal(entData.residentialAddress, '12 Marina Boulevard, Marina Bay, Singapore');
+    assert.ok(data.entity.factors.some(f => f[1].includes('1978-04-12')));
+    assert.ok(data.entity.factors.some(f => f[1].includes('Passport P9876543A')));
+  });
+
+  await t.test('POST /api/intake for Organisation should persist corporate KYC fields', async () => {
+    const res = await fetch(`${BASE_URL}/api/intake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Vanguard Maritime Logistics Pte Ltd',
+        type: 'org',
+        country: 'SGP',
+        reg: 'UEN 202488991K',
+        role: 'Bunker Supplier & Fleet Logistics',
+        tradingNames: 'Vanguard Sea, VML Cargo',
+        operatingAddresses: '71 Robinson Road #14-01, Singapore 068895; Rotterdam Port Terminal 3',
+        controllers: 'Marcus Vance (MD, 45%), Tan Mei Ling (Executive Director, 25%), Maritime Holdings Corp (30%)',
+        docStatus: 'verified'
+      })
+    });
+    assert.equal(res.status, 201);
+    const data = await res.json();
+    assert.ok(data.entity.id);
+    assert.equal(data.entity.name, 'Vanguard Maritime Logistics Pte Ltd');
+    assert.equal(data.entity.tradingNames, 'Vanguard Sea, VML Cargo');
+    assert.equal(data.entity.operatingAddresses, '71 Robinson Road #14-01, Singapore 068895; Rotterdam Port Terminal 3');
+    assert.equal(data.entity.controllers, 'Marcus Vance (MD, 45%), Tan Mei Ling (Executive Director, 25%), Maritime Holdings Corp (30%)');
+
+    // Verify GET /api/entities/:id returns the persisted fields
+    const getRes = await fetch(`${BASE_URL}/api/entities/${data.entity.id}`);
+    assert.equal(getRes.status, 200);
+    const entData = await getRes.json();
+    assert.equal(entData.tradingNames, 'Vanguard Sea, VML Cargo');
+    assert.equal(entData.operatingAddresses, '71 Robinson Road #14-01, Singapore 068895; Rotterdam Port Terminal 3');
+    assert.equal(entData.controllers, 'Marcus Vance (MD, 45%), Tan Mei Ling (Executive Director, 25%), Maritime Holdings Corp (30%)');
+    assert.ok(data.entity.factors.some(f => f[1].includes('Vanguard Sea, VML Cargo')));
+    assert.ok(data.entity.factors.some(f => f[1].includes('Marcus Vance')));
+  });
+
+
   const { getDb } = require('../src/db');
   const db = getDb();
   const baseIds = ['halcyon', 'kestrel', 'severny', 'aurora', 'zemtsov'];

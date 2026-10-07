@@ -936,11 +936,44 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
   <div class="sheet" role="dialog" aria-modal="true" aria-label="Counterparty intake">
     <div class="sheet-head"><div style="flex:1"><div class="agent">Sentry · Screening intake</div><h2>New counterparty intake</h2><p>Introduce a new counterparty and screen against fraud, PEP and 41 international sanctions lists.</p></div><button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button></div>
     <div class="sheet-body" id="intake-body">
-      <div class="field"><label for="intake-name">Counterparty name</label><input id="intake-name" type="text" placeholder="e.g. Apex Global Trading Pte Ltd"></div>
-      <div class="field"><label for="intake-type">Entity type</label><select id="intake-type"><option value="org" selected>Organisation / Company</option><option value="vessel">Vessel</option><option value="person">Individual / Person</option></select></div>
-      <div class="field" id="intake-country-field"><label for="intake-country">Country / Jurisdiction</label><select id="intake-country"></select></div>
-      <div class="field" id="intake-reg-field"><label for="intake-reg">Registration number / IMO</label><input id="intake-reg" type="text" placeholder="e.g. UEN 202419820E or IMO 9412345"></div>
-      <div class="field"><label for="intake-role">Role / Service provided</label><input id="intake-role" type="text" placeholder="e.g. Bunker supplier, Grain trader, Logistics provider"></div>
+      <div class="field"><label for="intake-type">Entity type</label><select id="intake-type"><option value="org" selected>Organisation / Company</option><option value="person">Individual / Person</option><option value="vessel">Vessel</option></select></div>
+
+      <!-- Organisation Specific Fields -->
+      <div id="intake-org-fields">
+        <div class="field"><label for="intake-name">Exact legal entity name</label><input id="intake-name" type="text" placeholder="e.g. Apex Global Trading Pte Ltd"></div>
+        <div class="field"><label for="intake-trading-names">Operational & trading names</label><input id="intake-trading-names" type="text" placeholder="e.g. Apex Commodities, AGT Asia (DBA / trading names)"><small>Any known operational or commercial aliases used in trade.</small></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="field" id="intake-country-field"><label for="intake-country">Jurisdiction of incorporation</label><select id="intake-country"></select></div>
+          <div class="field" id="intake-reg-field"><label for="intake-reg">Official corporate registration number</label><input id="intake-reg" type="text" placeholder="e.g. UEN 202419820E, Co Reg 1234567"></div>
+        </div>
+        <div class="field"><label for="intake-role">Role / Business activity</label><input id="intake-role" type="text" placeholder="e.g. Bunker supplier, Grain trader, Logistics provider"></div>
+        <div class="field"><label for="intake-org-address">Registered corporate headquarters & operating addresses</label><textarea id="intake-org-address" rows="2" style="font-size:12.5px" placeholder="Registered corporate HQ address and all active operating locations..."></textarea></div>
+        <div class="field"><label for="intake-org-controllers">Directors, ultimate beneficial owners (UBOs) & controlling persons</label><textarea id="intake-org-controllers" rows="2" style="font-size:12.5px" placeholder="e.g. Maria Chen (Managing Director, 35%), Tan Wei (Director, 25%), Sovereign Capital (40%)"></textarea><small>Clear identification of all directors, beneficial owners and controlling persons.</small></div>
+      </div>
+
+      <!-- Individual (Person) Specific Fields -->
+      <div id="intake-person-fields" style="display:none">
+        <div class="field"><label for="intake-person-name">Full legal name</label><input id="intake-person-name" type="text" placeholder="e.g. Alexander Viktorov"></div>
+        <div class="field"><label for="intake-person-aliases">Known name variants & transliterations</label><input id="intake-person-aliases" type="text" placeholder="e.g. Aleksandr Viktorov, Alex Victor, Cyrillic: Александр Викторов"><small>Variants, aliases and transliterations to isolate identity in sanctions lists.</small></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="field"><label for="intake-person-dob">Date of birth</label><input id="intake-person-dob" type="date"><small>Isolates identities & reduces false positives.</small></div>
+          <div class="field"><label for="intake-person-nationality">Nationality</label><select id="intake-person-nationality"></select></div>
+        </div>
+        <div class="field"><label for="intake-person-role">Specific roles held</label><input id="intake-person-role" type="text" placeholder="e.g. Chief Executive, Former Deputy Minister, Board Director"><small>Current or former official positions, public functions, or corporate titles.</small></div>
+        <div class="field"><label for="intake-person-id-doc">Formal government identification documents</label><input id="intake-person-id-doc" type="text" placeholder="e.g. Passport P1234567 (issued SGP), National ID S1234567A"><small>Passports, national ID cards, or government identity records.</small></div>
+        <div class="field"><label for="intake-person-address">Current residential addresses</label><textarea id="intake-person-address" rows="2" style="font-size:12.5px" placeholder="Current residential address and jurisdictional residence..."></textarea></div>
+      </div>
+
+      <!-- Vessel Specific Fields -->
+      <div id="intake-vessel-fields" style="display:none">
+        <div class="field"><label for="intake-vessel-name">Vessel name</label><input id="intake-vessel-name" type="text" placeholder="e.g. Pacific Voyager"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="field"><label for="intake-vessel-imo">IMO number</label><input id="intake-vessel-imo" type="text" placeholder="e.g. IMO 9412345"></div>
+          <div class="field"><label for="intake-vessel-flag">Flag State</label><select id="intake-vessel-flag"></select></div>
+        </div>
+        <div class="field"><label for="intake-vessel-type">Vessel type / Role</label><input id="intake-vessel-type" type="text" placeholder="e.g. Crude Oil Tanker, Bulk Carrier"></div>
+      </div>
+
       <div class="field" id="intake-doc-field"><label for="intake-doc-status">Initial verification status</label>
         <select id="intake-doc-status">
           <option value="pending" selected>Pending basic details & documentation (Routes to: Fill the gaps)</option>
@@ -1717,7 +1750,7 @@ function orgDrawer(e){
   const chips=`<span class="pill q-${q}">${Q[q].short}</span><span class="chip">${ic('org','sm')}Organisation</span>${e.linked?'<span class="chip">Linked entity</span>':''}<span class="chip mono">${esc(e.reg)}</span>${e.claimed?'<span class="chip" style="color:var(--accent)">Claimed profile</span>':''}`;
   const tabs=[{k:'overview',l:'Overview'},{k:'screening',l:'Screening',n:open||''},{k:'ownership',l:'Ownership'},{k:'statements',l:'Statements',n:e.claimed?'1':''},{k:'decision',l:'Decision'}];
   let body='';
-  if(D.tab==='overview')body=`${meters(e)}${routeCard(e)}${e.ddqPending?`<div class="hint" style="background:color-mix(in srgb,var(--mid) 14%,transparent);border:1px solid color-mix(in srgb,var(--mid) 35%,transparent);align-items:center"><svg class="ic" style="color:var(--mid)"><use href="#i-doc"/></svg><p style="margin:0"><b>Due diligence questionnaire pending.</b> Awaiting counterparty submission.</p><button class="btn sm primary" data-act="answer-ddq" data-id="${e.id}" type="button" style="margin-left:auto">${ic('check','sm')}Answer DDQ</button></div>`:''}${factorsHTML(e)}<div class="sec"><div class="sec-h"><h3>Profile</h3></div><dl class="kv"><dt>Role</dt><dd>${esc(e.role)}</dd><dt>Registered in</dt><dd>${esc(e.city)}, ${esc(cname(e.a3))}</dd>${e.since?`<dt>Customer since</dt><dd>${e.since}</dd>`:''}<dt>Trigger</dt><dd>${esc(e.trigger)}</dd><dt>Owner</dt><dd>${esc(e.owner)}</dd><dt>Last re-screen</dt><dd>Today, 06:00 SGT</dd></dl></div>${ctxHTML(e.a3)}`;
+  if(D.tab==='overview')body=`${meters(e)}${routeCard(e)}${e.ddqPending?`<div class="hint" style="background:color-mix(in srgb,var(--mid) 14%,transparent);border:1px solid color-mix(in srgb,var(--mid) 35%,transparent);align-items:center"><svg class="ic" style="color:var(--mid)"><use href="#i-doc"/></svg><p style="margin:0"><b>Due diligence questionnaire pending.</b> Awaiting counterparty submission.</p><button class="btn sm primary" data-act="answer-ddq" data-id="${e.id}" type="button" style="margin-left:auto">${ic('check','sm')}Answer DDQ</button></div>`:''}${factorsHTML(e)}<div class="sec"><div class="sec-h"><h3>Profile</h3></div><dl class="kv"><dt>Role</dt><dd>${esc(e.role)}</dd><dt>Registered in</dt><dd>${esc(e.city)}, ${esc(cname(e.a3))}</dd>${e.tradingNames?`<dt>Trading names</dt><dd>${esc(e.tradingNames)}</dd>`:''}${e.operatingAddresses?`<dt>Operating addresses</dt><dd>${esc(e.operatingAddresses)}</dd>`:''}${e.controllers?`<dt>Controllers & UBOs</dt><dd>${esc(e.controllers)}</dd>`:''}${e.since?`<dt>Customer since</dt><dd>${e.since}</dd>`:''}<dt>Trigger</dt><dd>${esc(e.trigger)}</dd><dt>Owner</dt><dd>${esc(e.owner)}</dd><dt>Last re-screen</dt><dd>Today, 06:00 SGT</dd></dl></div>${ctxHTML(e.a3)}`;
   else if(D.tab==='screening')body=`<div class="sec"><div class="sec-h"><h3>Findings</h3><span class="faint" style="font-size:12px">${fs.length} from ${new Set(fs.map(f=>f.agent)).size} agent${new Set(fs.map(f=>f.agent)).size>1?'s':''}</span></div>${fs.map(findingHTML).join('')}</div><div class="sec"><div class="sec-h"><h3>Sources used</h3></div><div class="dr-chips">${sourcesFor(e).map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div></div>`;
   else if(D.tab==='ownership')body=`<div class="sec"><div class="sec-h"><h3>Ownership and control</h3><span class="agent">Web</span></div>${graphHTML(e.id)}<p class="faint" style="margin:0;font-size:12px">Select a node to open it. Links from news carry lower confidence than registry links.</p></div>`;
   else if(D.tab==='statements')body=`<div class="sec"><div class="sec-h"><h3>Clarification statements</h3><span class="agent">Truth check</span></div>${statementHTML(e)}</div>`;
@@ -1734,7 +1767,7 @@ function vesselDrawer(v){
   let body='';
   if(D.tab==='live')body=`${meters(v)}<div class="sec"><div class="sec-h"><h3>Live position</h3><span class="faint mono" style="font-size:11px" id="live-src">AIS</span></div><div class="live-grid"><div><small class="faint">Latitude</small><b id="live-lat">—</b></div><div><small class="faint">Longitude</small><b id="live-lon">—</b></div><div><small class="faint">Course</small><b id="live-cog">—</b></div><div><small class="faint">Speed</small><b id="live-sog">—</b></div><div><small class="faint">Flag</small><b>${esc(v.flag)}</b></div><div><small class="faint">MMSI</small><b>${v.mmsi}</b></div></div><dl class="kv"><dt>Heading to</dt><dd>${esc(v.dest)}</dd><dt>Built · deadweight</dt><dd>${v.built} · ${v.dwt} t</dd></dl></div>${routeCard(v)}${factorsHTML(v)}
     <div class="sec"><div class="sec-h"><h3>Name and flag history</h3></div><dl class="kv">${v.names.map(n=>`<dt class="mono">${n[0]}</dt><dd>${esc(n[1])}</dd>`).join('')}</dl><dl class="kv" style="margin-top:4px">${v.flags.map(n=>`<dt class="mono">${n[0]}</dt><dd>${esc(n[1])} flag</dd>`).join('')}</dl></div>
-    ${v.links.length?`<div class="sec"><div class="sec-h"><h3>Owners, managers and operators</h3></div>${v.links.map(([id,role])=>{const o=ENT.get(id);const oq=quad(o);return `<button class="link-row" data-open="${id}" type="button">${ic('org')}<div class="lr-main"><div>${esc(o.name)}</div><small>${esc(role)} · ${esc(cname(o.a3))}</small></div><span class="pill q-${oq}">${Q[oq].short}</span></button>`;}).join('')}</div>`:''}`;
+    ${v.links.length?`<div class="sec"><div class="sec-h"><h3>Owners, managers and operators</h3></div>${v.links.map(([id,role])=>{const o=ENT.get(id);const oq=quad(o);return `<button class="link-row" data-open="${o.id}" type="button">${ic('org')}<div class="lr-main"><div>${esc(o.name)}</div><small>${esc(role)} · ${esc(cname(o.a3))}</small></div><span class="pill q-${oq}">${Q[oq].short}</span></button>`;}).join('')}</div>`:''}`;
   else if(D.tab==='signals')body=`<div class="sec"><div class="sec-h"><h3>Signals</h3><span class="agent">Tide</span></div><ul class="timeline">${v.signals.map(s=>`<li class="${s.c}"><time>${esc(s.t)}</time>${esc(s.x)}</li>`).join('')}</ul></div><div class="hint">${ic('alert')}<p>AIS can be switched off or spoofed. Tide treats dark periods as a risk signal and lowers confidence when a position cannot be verified.</p></div>`;
   else if(D.tab==='ownership')body=`<div class="sec"><div class="sec-h"><h3>Ownership and control</h3><span class="agent">Web</span></div>${graphHTML(v.id)}</div>`;
   else body=`<div class="sec">${memoHTML(v)}</div>`;
@@ -1744,7 +1777,15 @@ function vesselDrawer(v){
 function personDrawer(p){
   const q=quad(p);const links=(PERSON_LINKS[p.id]||[]).map(id=>ENT.get(id));
   const chips=`<span class="pill q-${q}">${Q[q].short}</span><span class="chip">${ic('person','sm')}Person</span>${p.pep?'<span class="chip" style="color:var(--mid)">PEP</span>':''}${p.lists.length?'<span class="chip" style="color:var(--high)">Sanctions match</span>':''}`;
-  const body=`<div class="privacy">${ic('lock')}<span>People are never tracked by location. ${esc(p.name.split(' ')[0]==='T.'?p.name:p.name.split(' ')[0])} appears on the map only through linked organisations, in line with PDPA and GDPR.</span></div>${meters(p)}${routeCard(p)}
+  const personProfile = (p.dob||p.nationality||p.aliases||p.idDoc||p.residentialAddress) ? `
+  <div class="sec"><div class="sec-h"><h3>Identity & KYC profile</h3></div><dl class="kv">
+    ${p.nationality?`<dt>Nationality</dt><dd>${esc(cname(p.nationality))}</dd>`:''}
+    ${p.dob?`<dt>Date of birth</dt><dd>${esc(p.dob)}</dd>`:''}
+    ${p.aliases?`<dt>Name variants</dt><dd>${esc(p.aliases)}</dd>`:''}
+    ${p.idDoc?`<dt>ID / Passport</dt><dd>${esc(p.idDoc)}</dd>`:''}
+    ${p.residentialAddress?`<dt>Residential address</dt><dd>${esc(p.residentialAddress)}</dd>`:''}
+  </dl></div>` : '';
+  const body=`<div class="privacy">${ic('lock')}<span>People are never tracked by location. ${esc(p.name.split(' ')[0]==='T.'?p.name:p.name.split(' ')[0])} appears on the map only through linked organisations, in line with PDPA and GDPR.</span></div>${meters(p)}${routeCard(p)}${personProfile}
   <div class="sec"><div class="sec-h"><h3>Screening</h3><span class="agent">Sentry</span></div><p style="margin:0;font-size:13px;color:var(--fg-2)">${esc(p.note)}</p>${p.lists.map(l=>`<div class="finding"><div class="finding-top"><span class="agent">Sentry</span><span class="pill plain q-investigate">Open</span></div><h4>${esc(l.list)}</h4><p>Matched on ${esc(l.match.toLowerCase())}.</p><div class="finding-meta">${confHTML(l.conf)}</div></div>`).join('')}</div>
   <div class="sec"><div class="sec-h"><h3>Linked organisations</h3></div>${links.map(o=>{const oq=quad(o);return `<button class="link-row" data-open="${o.id}" type="button">${ic('org')}<div class="lr-main"><div>${esc(o.name)}</div><small>${esc(o.city)}, ${esc(cname(o.a3))}</small></div><span class="pill q-${oq}">${Q[oq].short}</span></button>`;}).join('')}</div>
   <div class="sec"><div class="sec-h"><h3>Ownership and control</h3><span class="agent">Web</span></div>${graphHTML(p.id)}</div>`;
@@ -2478,10 +2519,23 @@ $('#ans-ddq-submit').addEventListener('click', ()=>{
 
 // Counterparty Intake (PRD B.1)
 function populateIntakeCountries(){
-  const sel = $('#intake-country');
-  if(!sel || sel.children.length) return;
   const list = [...CPI.values()].sort((a,b)=>a.name.localeCompare(b.name));
-  sel.innerHTML = list.map(c=>`<option value="${c.a3}" ${c.a3==='SGP'?'selected':''}>${esc(c.name)} (CPI: ${c.score})</option>`).join('');
+  const opts = list.map(c=>`<option value="${c.a3}" ${c.a3==='SGP'?'selected':''}>${esc(c.name)} (CPI: ${c.score})</option>`).join('');
+
+  const sel = $('#intake-country');
+  if(sel && !sel.children.length) sel.innerHTML = opts;
+
+  const pSel = $('#intake-person-nationality');
+  if(pSel && !pSel.children.length) pSel.innerHTML = opts;
+
+  const vSel = $('#intake-vessel-flag');
+  if(vSel && !vSel.children.length) vSel.innerHTML = opts;
+}
+
+function updateIntakeTypeView(t){
+  if($('#intake-org-fields')) $('#intake-org-fields').style.display = t==='org' ? '' : 'none';
+  if($('#intake-person-fields')) $('#intake-person-fields').style.display = t==='person' ? '' : 'none';
+  if($('#intake-vessel-fields')) $('#intake-vessel-fields').style.display = t==='vessel' ? '' : 'none';
 }
 
 let intakeAttachedFeed = null;
@@ -2524,7 +2578,25 @@ function renderIntakeAttachments(){
 
 function openIntakeModal(defaultName){
   populateIntakeCountries();
+  const type = $('#intake-type') ? $('#intake-type').value : 'org';
+  updateIntakeTypeView(type);
+
   $('#intake-name').value = defaultName || '';
+  if($('#intake-trading-names')) $('#intake-trading-names').value = '';
+  if($('#intake-org-address')) $('#intake-org-address').value = '';
+  if($('#intake-org-controllers')) $('#intake-org-controllers').value = '';
+
+  if($('#intake-person-name')) $('#intake-person-name').value = defaultName || '';
+  if($('#intake-person-aliases')) $('#intake-person-aliases').value = '';
+  if($('#intake-person-dob')) $('#intake-person-dob').value = '';
+  if($('#intake-person-role')) $('#intake-person-role').value = 'Board Director / Executive';
+  if($('#intake-person-id-doc')) $('#intake-person-id-doc').value = '';
+  if($('#intake-person-address')) $('#intake-person-address').value = '';
+
+  if($('#intake-vessel-name')) $('#intake-vessel-name').value = defaultName || '';
+  if($('#intake-vessel-imo')) $('#intake-vessel-imo').value = 'IMO 94' + Math.floor(1000 + Math.random()*8999);
+  if($('#intake-vessel-type')) $('#intake-vessel-type').value = 'Crude Oil Tanker';
+
   $('#intake-reg').value = 'UEN ' + Math.floor(100000000 + Math.random()*900000000) + 'X';
   $('#intake-role').value = 'Commodities supplier';
   if($('#intake-doc-status')) $('#intake-doc-status').value = 'pending';
@@ -2534,15 +2606,17 @@ function openIntakeModal(defaultName){
   if($('#intake-policy-file')) $('#intake-policy-file').value = '';
   renderIntakeAttachments();
   $('#intake-modal').hidden = false;
-  setTimeout(()=>$('#intake-name').focus(), 50);
+  setTimeout(()=>{
+    if(type==='person' && $('#intake-person-name')) $('#intake-person-name').focus();
+    else if(type==='vessel' && $('#intake-vessel-name')) $('#intake-vessel-name').focus();
+    else if($('#intake-name')) $('#intake-name').focus();
+  }, 50);
 }
 
 $('#intake-open').addEventListener('click', ()=>openIntakeModal());
 
 $('#intake-type').addEventListener('change', e=>{
-  const t = e.target.value;
-  $('#intake-country-field').hidden = (t==='vessel');
-  $('#intake-reg-field label').textContent = t==='vessel' ? 'IMO number' : 'Registration number';
+  updateIntakeTypeView(e.target.value);
 });
 
 $('#intake-feed-file').addEventListener('change', e=>{
@@ -2565,8 +2639,9 @@ $('#intake-feed-file').addEventListener('change', e=>{
         const ctyIdx = header.findIndex(h => /country|jurisdiction|iso|a3/.test(h));
         const roleIdx = header.findIndex(h => /role|service|type|business/.test(h));
         
-        if(nameIdx !== -1 && row[nameIdx] && !$('#intake-name').value.trim()){
-          $('#intake-name').value = row[nameIdx];
+        if(nameIdx !== -1 && row[nameIdx]){
+          if(!$('#intake-name').value.trim()) $('#intake-name').value = row[nameIdx];
+          if($('#intake-person-name') && !$('#intake-person-name').value.trim()) $('#intake-person-name').value = row[nameIdx];
         }
         if(regIdx !== -1 && row[regIdx]){
           $('#intake-reg').value = row[regIdx];
@@ -2576,7 +2651,10 @@ $('#intake-feed-file').addEventListener('change', e=>{
         }
         if(ctyIdx !== -1 && row[ctyIdx]){
           const rawCty = row[ctyIdx].toUpperCase();
-          if(CPI.has(rawCty)) $('#intake-country').value = rawCty;
+          if(CPI.has(rawCty)) {
+            $('#intake-country').value = rawCty;
+            if($('#intake-person-nationality')) $('#intake-person-nationality').value = rawCty;
+          }
         }
       }
       
@@ -2620,12 +2698,50 @@ $('#intake-policy-file').addEventListener('change', e=>{
 });
 
 $('#intake-submit').addEventListener('click', async ()=>{
-  const name = $('#intake-name').value.trim();
-  if(!name){ toast('Please provide a counterparty name'); return; }
   const type = $('#intake-type').value;
-  const a3 = $('#intake-country').value || 'SGP';
-  const reg = $('#intake-reg').value.trim() || 'REG-PENDING';
-  const role = $('#intake-role').value.trim() || 'Supplier';
+
+  let name = '';
+  let a3 = 'SGP';
+  let reg = 'REG-PENDING';
+  let role = 'Counterparty';
+  let tradingNames = '';
+  let operatingAddresses = '';
+  let controllers = '';
+  let aliases = '';
+  let dob = '';
+  let nationality = '';
+  let idDoc = '';
+  let residentialAddress = '';
+
+  if (type === 'person') {
+    name = $('#intake-person-name').value.trim();
+    if (!name) { toast('Please provide the individual’s full legal name'); return; }
+    aliases = $('#intake-person-aliases').value.trim();
+    dob = $('#intake-person-dob').value;
+    nationality = $('#intake-person-nationality').value || 'SGP';
+    a3 = nationality;
+    role = $('#intake-person-role').value.trim() || 'Executive / Director';
+    idDoc = $('#intake-person-id-doc').value.trim();
+    reg = idDoc || 'ID-ON-FILE';
+    residentialAddress = $('#intake-person-address').value.trim();
+  } else if (type === 'vessel') {
+    name = $('#intake-vessel-name').value.trim();
+    if (!name) { toast('Please provide the vessel name'); return; }
+    reg = $('#intake-vessel-imo').value.trim() || ('IMO 94' + Math.floor(1000 + Math.random()*8999));
+    a3 = $('#intake-vessel-flag').value || 'SGP';
+    role = $('#intake-vessel-type').value.trim() || 'Tanker';
+  } else {
+    // Organisation
+    name = $('#intake-name').value.trim();
+    if (!name) { toast('Please provide the exact legal entity name'); return; }
+    tradingNames = $('#intake-trading-names').value.trim();
+    a3 = $('#intake-country').value || 'SGP';
+    reg = $('#intake-reg').value.trim() || 'REG-PENDING';
+    role = $('#intake-role').value.trim() || 'Commodities supplier';
+    operatingAddresses = $('#intake-org-address').value.trim();
+    controllers = $('#intake-org-controllers').value.trim();
+  }
+
   const docStatus = $('#intake-doc-status') ? $('#intake-doc-status').value : 'pending';
 
   $('#intake-modal').hidden = true;
@@ -2638,22 +2754,22 @@ $('#intake-submit').addEventListener('click', async ()=>{
   let trigger = 'Pending basic details · intake';
   let factors = [];
   let findings = [];
-  let raise = 'Send a Smart DDQ to request trade licence and shareholder registry';
+  let raise = 'Send a Smart DDQ to request official verification documents';
 
   if (docStatus === 'pending') {
     risk = cpi < 35 ? 58 : 18;
     conf = 55;
     trigger = 'Pending basic details · intake';
     factors = [
-      ["-", "Trade licence and corporate register pending upload"],
-      ["-", "Ultimate beneficial ownership (UBO) chart unverified"],
+      ["-", type === 'person' ? "Government identification and proof of address pending verification" : "Trade licence and corporate register pending upload"],
+      ["-", type === 'person' ? "Name transliterations and official functions unverified" : "Ultimate beneficial ownership (UBO) chart unverified"],
       ["+", "Zero matches on 41 international sanctions lists or PEP databases"]
     ];
     findings = [
       {
         agent: "Sentry",
         title: "Preliminary sanctions & PEP screening passed",
-        detail: "No matches found on 41 international watchlists. Basic identity details submitted.",
+        detail: `No matches found on 41 international watchlists for ${name}. Core identifiers recorded.`,
         risk: "Low",
         conf: 70,
         status: "Open",
@@ -2662,7 +2778,7 @@ $('#intake-submit').addEventListener('click', async ()=>{
       {
         agent: "Doc forensics",
         title: "Pending basic details & documentation",
-        detail: "Corporate registry filings, shareholder register, and trade licence are pending submission.",
+        detail: type === 'person' ? "Passport scan and residential verification pending submission." : "Corporate filings, shareholder register, and trade licence pending.",
         risk: "Low",
         conf: 50,
         status: "Open",
@@ -2674,14 +2790,14 @@ $('#intake-submit').addEventListener('click', async ()=>{
     conf = 62;
     trigger = 'Adverse media / similarity flag';
     factors = [
-      ["-", "News report flags potential high-risk trade nexus"],
-      ["+", "Local corporate entity registration exists"]
+      ["-", "News report flags potential high-risk trade nexus or PEP affiliation"],
+      ["+", type === 'person' ? "Official identity documents submitted" : "Local corporate entity registration exists"]
     ];
     findings = [
       {
         agent: "Web",
         title: "Adverse media and ownership similarity flag",
-        detail: "Recent reports connect counterparty name or partners to higher-risk trade arrangements.",
+        detail: `Recent reports connect ${name} or commercial partners to higher-risk activities.`,
         risk: "High",
         conf: 62,
         status: "Open",
@@ -2695,7 +2811,7 @@ $('#intake-submit').addEventListener('click', async ()=>{
     conf = 92;
     trigger = 'Verified intake · filings confirmed';
     factors = [
-      ["+", "Registration number verified against national gazette"],
+      ["+", type === 'person' ? "Identity documents verified against official gazette" : "Registration number verified against national gazette"],
       ["+", "No matches on 41 sanctions lists or PEP databases"]
     ];
     findings = [
@@ -2710,6 +2826,49 @@ $('#intake-submit').addEventListener('click', async ()=>{
         src: "Built-in sanctions lists and Vendor X sanctions API"
       }
     ];
+  }
+
+  // Factor adjustments based on input fields
+  if (type === 'person') {
+    if (dob) factors.unshift(["+", `Date of birth (${dob}) isolates identity against false positives`]);
+    if (idDoc) factors.unshift(["+", `Government ID (${idDoc}) recorded for formal identity verification`]);
+    if (aliases) factors.unshift(["+", `Screened name variants & transliterations: ${aliases}`]);
+    if (residentialAddress) {
+      findings.push({
+        agent: "Doc forensics",
+        title: "Residential address recorded",
+        detail: `Verified primary residential context: ${residentialAddress}`,
+        risk: "Low",
+        conf: 85,
+        status: "Open",
+        src: "Individual intake declaration"
+      });
+    }
+  } else if (type === 'org') {
+    if (tradingNames) factors.unshift(["+", `Operational & trading names screened: ${tradingNames}`]);
+    if (controllers) {
+      factors.unshift(["+", `Directors & UBO controlling persons identified: ${controllers}`]);
+      findings.push({
+        agent: "Web",
+        title: "Ownership & control chart registered",
+        detail: `Declared controllers and beneficial owners: ${controllers}`,
+        risk: "Low",
+        conf: 88,
+        status: "Open",
+        src: "Corporate register filing"
+      });
+    }
+    if (operatingAddresses) {
+      findings.push({
+        agent: "Doc forensics",
+        title: "Registered corporate HQ & operating addresses",
+        detail: operatingAddresses,
+        risk: "Low",
+        conf: 86,
+        status: "Open",
+        src: "Corporate register filing"
+      });
+    }
   }
 
   const newId = (type === 'vessel' ? 'ves_' : type === 'person' ? 'per_' : 'org_') + Date.now();
@@ -2816,6 +2975,11 @@ $('#intake-submit').addEventListener('click', async ()=>{
       name: name,
       role: role || 'Director',
       a3: a3,
+      nationality: nationality || a3,
+      dob: dob,
+      aliases: aliases,
+      idDoc: idDoc,
+      residentialAddress: residentialAddress,
       risk: risk,
       conf: conf,
       owner: 'Grace Teo',
@@ -2847,6 +3011,9 @@ $('#intake-submit').addEventListener('click', async ()=>{
       trigger: trigger,
       since: '2026',
       claimed: false,
+      tradingNames: tradingNames,
+      operatingAddresses: operatingAddresses,
+      controllers: controllers,
       factors: factors,
       findings: findings,
       raise: raise
@@ -2870,7 +3037,15 @@ $('#intake-submit').addEventListener('click', async ()=>{
         docStatus,
         watch: true,
         attachedFeed: intakeAttachedFeed,
-        attachedPolicy: intakeAttachedPolicy
+        attachedPolicy: intakeAttachedPolicy,
+        tradingNames,
+        operatingAddresses,
+        controllers,
+        aliases,
+        dob,
+        nationality,
+        idDoc,
+        residentialAddress
       })
     }).catch(()=>{});
   } catch(err){}
