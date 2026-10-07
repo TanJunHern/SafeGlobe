@@ -851,7 +851,7 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
           <div class="card doc-card">
             <div class="doc-thumb" aria-hidden="true"><b>Third-Party Risk Policy</b><span class="faint" style="font-size:11px">Meridian Commodities · v4.2</span><i style="width:90%"></i><i style="width:76%"></i><i class="hl" style="width:84%"></i><i style="width:60%"></i><i style="width:88%"></i><i class="hl" style="width:70%"></i><i style="width:80%"></i><i style="width:52%"></i><i style="width:86%"></i><i class="hl" style="width:64%"></i><i style="width:74%"></i></div>
             <dl class="kv"><dt>File</dt><dd>third-party-risk-policy-v4.2.pdf</dd><dt>Pages</dt><dd>23</dd><dt>Compiled</dt><dd>29 Sep 2026, 16:20</dd><dt>Rules</dt><dd id="pol-count">14</dd><dt>Owner</dt><dd>Grace Teo</dd></dl>
-            <div class="callout gap"><svg class="ic"><use href="#i-alert"/></svg><b>Gap</b><p>No rule covers minority stakes below 50% held by state-owned or state-linked companies. Bosphorus Ship Agency, 30% held by Severny Agro, falls outside every rule.</p></div>
+            <div class="callout gap"><svg class="ic"><use href="#i-alert"/></svg><b>Gap</b><p>No rule covers minority stakes below 50% held by state-owned or state-linked companies. Severny Agro Export LLC is 51% state-owned and triggers R2.</p></div>
             <div class="callout conflict" id="conflict-callout"><svg class="ic"><use href="#i-alert"/></svg><b>Conflict</b><p></p></div>
           </div>
           <div class="card">
@@ -1025,7 +1025,7 @@ const ORGS = [
 ];
 
 const PEOPLE = [
-  {id:"zemtsov",name:"Arkady Zemtsov",role:"Reported controller of Varnell Capital",risk:92,conf:62,owner:"Hafiz Rahman",trigger:"Sentry · sanctions list match",
+  {id:"zemtsov",name:"Arkady Zemtsov",role:"Reported controller of Kestrel structure",risk:92,conf:62,owner:"Hafiz Rahman",trigger:"Sentry · sanctions list match",
     lists:[{list:"UK sanctions list",match:"Name, date of birth, nationality",conf:96}],pep:false,
     note:"Sanctioned individual. Indirect control of Kestrel Trading comes from news inference, so links carry lower confidence."}
 ];
@@ -1055,12 +1055,11 @@ const EDGES = [
 const STS = {ll:[104.78,2.05],label:"STS transfer · 2 Oct"};
 
 const ALERTS = [
-  {t:"06 Oct, 09:42",agent:"Tide",id:"aurora",x:"Aurora Venture: 31-hour AIS gap linked to a ship-to-ship transfer with Kestrel Spirit",q:"escalate"},
-  {t:"06 Oct, 07:15",agent:"Radar",id:"varnell",x:"Sanctions list update: possible match on Varnell Capital Ltd (64% confidence)",q:"investigate"},
-  {t:"05 Oct, 18:30",agent:"Web",id:"kestrel",x:"New ownership link: Halden Holdings owns 50% of Kestrel Trading FZE (Cyprus filing)",q:"investigate"},
-  {t:"05 Oct, 11:02",agent:"Radar",id:"nusantara",x:"Indonesia: beneficial-ownership filing rule now applies to PT Nusantara Nikel Resources",q:"gaps"},
-  {t:"04 Oct, 16:48",agent:"Sentry",id:"strait",x:"Strait Bunkering potential match auto-cleared with a written reason (97%)",q:"monitor"},
-  {t:"03 Oct, 10:20",agent:"Truth check",id:"severny",x:"Severny Agro updated its public statement. One claim is contradicted by registry data",q:"escalate"},
+  {t:"06 Oct, 09:42",agent:"Tide",id:"aurora",x:"Aurora Venture: 31-hour AIS gap linked to a ship-to-ship transfer",q:"escalate"},
+  {t:"06 Oct, 07:15",agent:"Sentry",id:"zemtsov",x:"Sanctions list match on Arkady Zemtsov (96% confidence)",q:"escalate"},
+  {t:"05 Oct, 18:30",agent:"Web",id:"kestrel",x:"New ownership link: Arkady Zemtsov reportedly holds 50% indirect control",q:"investigate"},
+  {t:"04 Oct, 16:48",agent:"Tide",id:"halcyon",x:"Halcyon Marine: managed vessel Aurora Venture flagged for STS transfer",q:"investigate"},
+  {t:"03 Oct, 10:20",agent:"Truth check",id:"severny",x:"Severny Agro updated its public statement. 1 claim contradicted by registry data",q:"escalate"},
   {t:"02 Oct, 14:05",agent:"Forecast",id:"MMR",x:"Risk outlook for Myanmar rose to 0.71 on sanctions momentum",q:"investigate",country:true}
 ];
 
@@ -1247,7 +1246,7 @@ const pinSel=gPins.selectAll('g.pin').data(ORGS).join(enter=>{
 /* vessels */
 function prepRoute(c){const seg=[];let tot=0;for(let i=0;i<c.length-1;i++){const d=d3.geoDistance(c[i],c[i+1]);seg.push({s:tot,d,f:d3.geoInterpolate(c[i],c[i+1])});tot+=d;}return {seg,tot};}
 function posAt(R,fr){fr=clamp(fr,0,1);const t=fr*R.tot;let k=0;while(k<R.seg.length-1&&R.seg[k].s+R.seg[k].d<t)k++;const s=R.seg[k];return s.f(s.d?clamp((t-s.s)/s.d,0,1):0);}
-VESSELS.forEach(v=>{v.R=prepRoute(v.route);v.frac=v.start;v.dir=1;v.ang=0;v.cur=posAt(v.R,v.frac);v.kn={aurora:12.6,kspirit:2.1,marten:10.8,mstar:17.9,lharmony:13.2,serranav:12.9}[v.id]||12;});
+VESSELS.forEach(v=>{v.R=prepRoute(v.route);v.frac=v.start;v.dir=1;v.ang=0;v.cur=posAt(v.R,v.frac);v.kn={aurora:12.6}[v.id]||12;});
 const routeSel=gRoutes.selectAll('path.route').data(VESSELS).join('path').attr('class','route');
 const darkV=VESSELS.filter(v=>v.dark);
 const darkSel=gRoutes.selectAll('path.dark-seg').data(darkV).join('path').attr('class','dark-seg');
@@ -1273,8 +1272,8 @@ stsG.append('circle').attr('r',2.2).style('fill','currentColor');
 stsG.append('text').attr('x',12).attr('y',16).text(STS.label);
 
 /* ownership arcs (map) */
-const posOf=id=>{const e=ENT.get(id);return e.kind==='org'?e.ll:e.kind==='vessel'?e.cur:null;};
-const MAP_ARCS=EDGES.filter(e=>ENT.get(e[0]).kind!=='person'&&ENT.get(e[1]).kind!=='person').map((e,i)=>({a:e[0],b:e[1],lab:e[2],prov:e[3],i}));
+const posOf=id=>{const e=ENT.get(id);return e?(e.kind==='org'?e.ll:e.kind==='vessel'?e.cur:null):null;};
+const MAP_ARCS=EDGES.filter(e=>ENT.get(e[0])&&ENT.get(e[1])&&ENT.get(e[0]).kind!=='person'&&ENT.get(e[1]).kind!=='person').map((e,i)=>({a:e[0],b:e[1],lab:e[2],prov:e[3],i}));
 const arcSel=gArcs.selectAll('path').data(MAP_ARCS).join('path').attr('class',d=>'arc '+d.prov);
 const partSel=gParticles.selectAll('circle').data(MAP_ARCS).join('circle').attr('class','particle').attr('r',2.2);
 
@@ -1842,24 +1841,50 @@ $('#ask-list').addEventListener('click',e=>{const b=e.target.closest('button');i
 function routeQ(t){t=t.toLowerCase();if(/russia|state[- ]?owned|\bsoe\b/.test(t))return 'ru';if(/dark|\bais\b|gap|spoof/.test(t))return 'dark';if(/cpi|corrupt|transparency|scor/.test(t))return 'cpi';if(/own|ubo|beneficial|control|kestrel/.test(t))return 'ubo';return null;}
 function solve(k,text){
   if(k==='ru'){
-    const anchors=ORGS.filter(o=>o.stateOwned&&o.a3==='RUS');const own=EDGES.filter(e=>/%$/.test(e[2]));
-    const found=[];const seen=new Set(anchors.map(a=>a.id));let frontier=anchors.map(a=>a.id);
-    for(let hop=1;hop<=2;hop++){const nx=[];own.forEach(([a,b,lab])=>{if(frontier.includes(a)&&!seen.has(b)){seen.add(b);nx.push(b);found.push({id:b,sub:`${hop} hop${hop>1?'s':''} · ${lab} held by ${ENT.get(a).short}`});}});frontier=nx;}
-    const res=found.filter(f=>!ENT.get(f.id).linked);
-    return {steps:['Read the question: suppliers, ownership up to 2 hops, anchor is a Russian state-owned company','Found 1 anchor: Federal Grain Corporation JSC (registry: state-owned)',`Walked ${own.length} ownership links in the graph`,`${res.length} counterparties match`],res,hl:[...anchors.map(a=>a.id),...res.map(r=>r.id)],sum:`${res.map(r=>ENT.get(r.id).short).join(' and ')} sit within two ownership hops of Federal Grain Corporation JSC.`,src:'Russian and Turkish registry filings'};
+    const anchors=ORGS.filter(o=>o.stateOwned&&o.a3==='RUS');
+    const res=anchors.map(a=>({id:a.id,sub:'51% state-owned Russian exporter · sectoral sanctions apply'}));
+    return {
+      steps:['Read the question: suppliers, ownership links, anchor is a Russian state-owned enterprise','Found state-linked counterparty: Severny Agro Export LLC','Walked ownership graph and trade nexus',`${res.length} counterparty matches`],
+      res,
+      hl:[...anchors.map(a=>a.id),'zemtsov'],
+      sum:'Severny Agro Export LLC is 51% owned by a Russian state enterprise subject to sectoral restrictions.',
+      src:'Russian commercial registry extracts & gazette filings'
+    };
   }
   if(k==='dark'){
-    const res=[{id:'aurora',sub:'31 h gap, 24–25 Sep · Arabian Sea'},{id:'kspirit',sub:'9 h gap, 21 Sep · South China Sea'}];
-    return {steps:['Read the question: vessels, AIS dark periods, last 30 days','Scanned AIS history for 55 monitored vessels','Excluded gaps under 6 hours and known coverage holes','2 vessels match'],res,hl:['aurora','kspirit','halcyon','kestrel'],sum:'Two vessels went dark. Both later met in a ship-to-ship transfer east of Johor on 2 Oct.',src:'AIS position feed, satellite AIS'};
+    const res=[{id:'aurora',sub:'31 h gap, 24–25 Sep · Arabian Sea · STS transfer east of Johor'}];
+    return {
+      steps:['Read the question: vessels, AIS dark periods, last 30 days','Scanned AIS history for monitored vessels','Excluded gaps under 6 hours and known coverage holes','1 vessel matches'],
+      res,
+      hl:['aurora','halcyon','kestrel'],
+      sum:'Aurora Venture went dark for 31 hours in the Arabian Sea and subsequently met in a ship-to-ship transfer east of Johor.',
+      src:'AIS position feed, satellite AIS'
+    };
   }
   if(k==='cpi'){
-    const m=(text||'').match(/(\d{1,3})/);const n=m?clamp(+m[1],1,100):30;
+    const m=(text||'').match(/(\d{1,3})/);const n=m?clamp(+m[1],1,100):40;
     const res=ORGS.filter(o=>!o.linked&&cpiOf(o.a3)!=null&&cpiOf(o.a3)<n).sort((a,b)=>cpiOf(a.a3)-cpiOf(b.a3)).map(o=>({id:o.id,sub:`${cname(o.a3)} · CPI 2025: ${cpiOf(o.a3)}`}));
-    return {steps:[`Read the question: counterparties, country CPI 2025 below ${n}`,`Joined ${ORGS.filter(o=>!o.linked).length} counterparties to ${CPI_2025.length} loaded country scores`,`${res.length} counterpart${res.length===1?'y':'ies'} match`],res,hl:res.map(r=>r.id),sum:res.length?`${res.length} counterpart${res.length===1?'y is':'ies are'} in countries scoring below ${n}.`:`No counterparties are in countries scoring below ${n}.`,src:'Transparency International CPI 2025',countries:[...new Set(res.map(r=>ENT.get(r.id).a3))]};
+    return {
+      steps:[`Read the question: counterparties, country CPI 2025 below ${n}`,`Joined ${ORGS.filter(o=>!o.linked).length} counterparties to ${CPI_2025.length} loaded country scores`,`${res.length} counterpart${res.length===1?'y':'ies'} match`],
+      res,
+      hl:res.map(r=>r.id),
+      sum:res.length?`${res.length} counterpart${res.length===1?'y is':'ies are'} in countries scoring below ${n}.`:`No counterparties are in countries scoring below ${n}.`,
+      src:'Transparency International CPI 2025',
+      countries:[...new Set(res.map(r=>ENT.get(r.id)?.a3).filter(Boolean))]
+    };
   }
   if(k==='ubo'){
-    const res=[{id:'halden',sub:'Owns 50% · Cyprus registry'},{id:'varnell',sub:'Owns 100% of Halden · filing'},{id:'zemtsov',sub:'Reported controller of Varnell · news, 62%'}];
-    return {steps:['Read the question: ultimate beneficial owner of Kestrel Trading FZE','Walked ownership upward: 3 hops','Multiplied stakes: 50% × 100% = 50% effective','Top link comes from news, so confidence is capped at 62%'],res,hl:['kestrel','halden','varnell','caribe'],sum:'If the news link is confirmed, Arkady Zemtsov, a sanctioned individual, indirectly holds 50% of Kestrel. Policy rule R1 would then block direct dealings.',src:'Cyprus registry filing, news report'};
+    const res=[
+      {id:'zemtsov',sub:'Reported controller of Kestrel structure · news inference, 62%'},
+      {id:'kestrel',sub:'50% controlled by sanctioned individual'}
+    ];
+    return {
+      steps:['Read the question: ultimate beneficial owner of Kestrel Trading FZE','Walked ownership graph upwards','Calculated effective control: 50%','Control link comes from news inference, so confidence is capped at 62%'],
+      res,
+      hl:['kestrel','zemtsov','aurora'],
+      sum:'Arkady Zemtsov, a sanctioned individual, reportedly holds 50% indirect control of Kestrel. Policy rule R1 blocks direct dealings.',
+      src:'Registry filings, news report'
+    };
   }
   return null;
 }
@@ -1874,9 +1899,9 @@ function runAsk(item){
   lis.forEach((li,i)=>setTimeout(()=>{if(run!==askRun)return;li.classList.add('show','run');setTimeout(()=>li.classList.remove('run'),300);},REDUCED?0:i*340));
   setTimeout(()=>{
     if(run!==askRun)return;
-    $('.answer-body',box).innerHTML=`<p class="answer-sum">${esc(r.sum)}</p><div class="answer-res">${r.res.map(x=>{const e=ENT.get(x.id);const q=quad(e);return `<button class="link-row" data-open="${x.id}" type="button">${ic(kindIcon[e.kind])}<div class="lr-main"><div>${esc(e.name)}</div><small>${esc(x.sub)}</small></div><span class="pill q-${q}">${Q[q].short}</span></button>`;}).join('')}</div><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="faint" style="font-size:11.5px">Sources: ${esc(r.src)}</span><button class="btn ghost sm" data-x type="button">Clear</button></div>`;
+    $('.answer-body',box).innerHTML=`<p class="answer-sum">${esc(r.sum)}</p><div class="answer-res">${r.res.filter(x=>ENT.has(x.id)).map(x=>{const e=ENT.get(x.id);const q=quad(e);return `<button class="link-row" data-open="${x.id}" type="button">${ic(kindIcon[e.kind])}<div class="lr-main"><div>${esc(e.name)}</div><small>${esc(x.sub)}</small></div><span class="pill q-${q}">${Q[q].short}</span></button>`;}).join('')}</div><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="faint" style="font-size:11.5px">Sources: ${esc(r.src)}</span><button class="btn ghost sm" data-x type="button">Clear</button></div>`;
     S.hl=new Set(r.hl);S.selNet=new Set(r.hl);refreshStatus();
-    const pts=[];r.hl.forEach(id=>{const e=ENT.get(id);if(e.kind==='org')pts.push(e.ll);else if(e.kind==='vessel')pts.push(e.cur);});
+    const pts=[];r.hl.forEach(id=>{const e=ENT.get(id);if(!e)return;if(e.kind==='org')pts.push(e.ll);else if(e.kind==='vessel')pts.push(e.cur);});
     if(pts.length)flyToPoints(pts,{maxK:5});
   },REDUCED?0:r.steps.length*340+200);
 }
@@ -1889,15 +1914,15 @@ $('#answer').addEventListener('click',e=>{
 /* ===================== Smart DDQ ===================== */
 const DDQ={
   kestrel:[
-    ['Provide your current shareholder register and a certified chart of every owner above 10%, up to the ultimate beneficial owner.','Web found a 50% stake via Halden Holdings and Varnell Capital; the top link comes from news (62%).'],
-    ['Confirm whether Arkady Zemtsov holds, directly or indirectly, any interest in or control over Varnell Capital Ltd.','Possible sanctions match on the reported controller.'],
-    ['List every vessel used for cargo sold to Meridian in the last 12 months, with IMO numbers and charter parties.','Kestrel Spirit took part in a ship-to-ship transfer with a vessel that went dark.'],
+    ['Provide your current shareholder register and a certified chart of every owner above 10%, up to the ultimate beneficial owner.','Web found an indirect 50% stake; top link comes from news inference (62%).'],
+    ['Confirm whether Arkady Zemtsov holds, directly or indirectly, any interest in or control over Kestrel Trading FZE.','Possible sanctions match on the reported controller.'],
+    ['List every vessel used for cargo sold to Meridian in the last 12 months, with IMO numbers and charter parties.','Associated vessel Aurora Venture took part in an STS transfer.'],
     ['Upload your current free zone trade licence as issued by the authority.','Doc forensics found a metadata mismatch on the licence uploaded on 14 Sep.']
   ],
   severny:[
     ['Provide the engagement letter for your external compliance adviser, including the adviser’s name and start date.','Truth check marked this statement claim as unverified.'],
-    ['Describe how Federal Grain Corporation JSC exercises its 51% ownership rights, including board seats.','Majority owner is a state-owned enterprise.'],
-    ['Confirm the charterers and cargo receivers for Sea Marten’s last four calls at Novorossiysk.','Four port calls in 90 days.']
+    ['Describe how your Russian state-owned enterprise majority owner exercises its 51% ownership rights, including board seats.','Majority owner is a state-owned enterprise.'],
+    ['Confirm the charterers and cargo receivers for grain shipments exported from Novorossiysk.','Four port calls in 90 days.']
   ]
 };
 function ddqFor(e){
@@ -1998,16 +2023,16 @@ $('#src-modal').addEventListener('click',e=>{
 function renderPolicies(){
   const cpiLow=ORGS.filter(o=>!o.linked&&cpiOf(o.a3)!=null&&cpiOf(o.a3)<40);
   const rules=[
-    {id:'R1',sec:'§3.2',t:'Block direct dealings with any entity 50% or more owned, in aggregate, by sanctioned persons.',hits:['kestrel','caribe'],note:'Ownership summed across all paths in the graph'},
+    {id:'R1',sec:'§3.2',t:'Block direct dealings with any entity 50% or more owned, in aggregate, by sanctioned persons.',hits:['kestrel'],note:'Ownership summed across all paths in the graph'},
     {id:'R2',sec:'§4.1',t:'Apply enhanced due diligence to counterparties in countries scoring below 40 on CPI 2025.',hits:cpiLow.map(o=>o.id),note:'Uses the loaded CPI 2025 scores'},
     {id:'R3',sec:'§5.4',t:'Vessels with an AIS gap over 12 hours in the last 90 days need a Tide review before any fixture.',hits:['aurora'],note:'Gaps under 6 hours and known coverage holes are ignored'},
-    {id:'R4',sec:'§3.6',t:'Counterparties linked to a politically exposed person need sign-off from a senior reviewer.',hits:['lagos'],note:''},
-    {id:'R5',sec:'§7.2',t:'A ship-to-ship transfer involving a vessel tied to a counterparty triggers a review within 2 business days.',hits:['aurora','kspirit'],note:''},
-    {id:'R6',sec:'§6.1',t:'Re-screen every counterparty at least every 24 hours and on every list update.',hits:[],met:true,note:'Met for all 1,284 counterparties'}
+    {id:'R4',sec:'§3.6',t:'Counterparties linked to a politically exposed person need sign-off from a senior reviewer.',hits:[],met:true,note:'No current PEP matches'},
+    {id:'R5',sec:'§7.2',t:'A ship-to-ship transfer involving a vessel tied to a counterparty triggers a review within 2 business days.',hits:['aurora'],note:'STS transfer identified east of Johor'},
+    {id:'R6',sec:'§6.1',t:'Re-screen every counterparty at least every 24 hours and on every list update.',hits:[],met:true,note:'Met for all monitored counterparties'}
   ];
-  $('#pol-count').textContent='14 (6 shown)';
-  $('#rules').innerHTML=rules.map(r=>`<div class="rule"><span class="rid">${r.id}</span><div><h3>${esc(r.t)}</h3><p>${r.sec} of the policy${r.note?' · '+esc(r.note):''}</p>${r.hits.length?`<div class="dr-chips" style="margin-top:8px">${r.hits.map(id=>{const e=ENT.get(id);return `<button class="chip" data-open="${id}" type="button" style="cursor:pointer">${ic(kindIcon[e.kind],'sm')}${esc(e.short||e.name)}</button>`;}).join('')}</div>`:''}</div><div class="rmeta">${r.met?'<span class="pill q-monitor">Met</span>':`<span class="pill q-investigate">${r.hits.length} flagged</span>`}<span class="faint mono" style="font-size:10.5px">Active</span></div></div>`).join('');
-  $('#conflict-callout p').textContent=`§4.1 requires enhanced due diligence below CPI 40, but Appendix B lists Türkiye (CPI 2025: ${cpiOf('TUR')}) as standard risk. Bosphorus Ship Agency is affected.`;
+  $('#pol-count').textContent='6 active';
+  $('#rules').innerHTML=rules.map(r=>`<div class="rule"><span class="rid">${r.id}</span><div><h3>${esc(r.t)}</h3><p>${r.sec} of the policy${r.note?' · '+esc(r.note):''}</p>${r.hits.length?`<div class="dr-chips" style="margin-top:8px">${r.hits.filter(id=>ENT.has(id)).map(id=>{const e=ENT.get(id);return `<button class="chip" data-open="${id}" type="button" style="cursor:pointer">${ic(kindIcon[e.kind],'sm')}${esc(e.short||e.name)}</button>`;}).join('')}</div>`:''}</div><div class="rmeta">${r.met?'<span class="pill q-monitor">Met</span>':`<span class="pill q-investigate">${r.hits.length} flagged</span>`}<span class="faint mono" style="font-size:10.5px">Active</span></div></div>`).join('');
+  $('#conflict-callout p').textContent=`§4.1 requires enhanced due diligence below CPI 40. Severny Agro Export LLC (Russia, CPI 2025: ${cpiOf('RUS')}) is subject to mandatory EDD escalation.`;
 }
 $('#rules').addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(b)select(b.dataset.open);});
 $('#upload-pol').addEventListener('click',()=>toast('Choose a PDF or Word policy to compile into rules'));
