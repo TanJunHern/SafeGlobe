@@ -606,10 +606,43 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* Google Places Autocomplete dropdown */
+.g-powered{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--fg-3);letter-spacing:.01em}
+.g-powered .g-g{color:#4285F4;font-weight:700}
+.g-powered .g-o1{color:#EA4335;font-weight:700}
+.g-powered .g-o2{color:#FBBC05;font-weight:700}
+.g-powered .g-g2{color:#4285F4;font-weight:700}
+.g-powered .g-l{color:#34A853;font-weight:700}
+.g-powered .g-e{color:#EA4335;font-weight:700}
+
+.addr-input-wrap{position:relative;display:flex;align-items:center}
+.addr-input-wrap .addr-pin-ico{position:absolute;left:10px;color:var(--accent);pointer-events:none;z-index:2}
+.addr-input-wrap input{padding-left:32px;padding-right:28px}
+.addr-input-wrap .addr-clear-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--fg-3);font-size:16px;cursor:pointer;padding:0 4px;border-radius:4px}
+.addr-input-wrap .addr-clear-btn:hover{color:var(--fg);background:var(--surface-3)}
+
+.addr-dropdown{position:absolute;top:calc(100% + 2px);left:0;right:0;max-height:240px;overflow-y:auto;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;box-shadow:var(--shadow-lg);z-index:10005;padding:4px 0}
+.addr-item{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;cursor:pointer;transition:background .12s}
+.addr-item:hover, .addr-item.active{background:var(--surface-2)}
+.addr-item .addr-item-pin{flex-shrink:0;margin-top:2px;color:#EA4335}
+.addr-item-main{font-weight:600;font-size:12.5px;color:var(--fg);line-height:1.3}
+.addr-item-sub{font-size:11px;color:var(--fg-3);margin-top:2px;line-height:1.25}
+.addr-dropdown-foot{display:flex;align-items:center;justify-content:flex-end;padding:6px 12px 4px;border-top:1px solid var(--line);font-size:10.5px;color:var(--fg-3)}
+
+.addr-feedback{font-size:11.5px;margin-top:4px;min-height:18px;display:flex;align-items:center;gap:5px}
+.addr-feedback.verified{color:var(--low);font-weight:500}
+.addr-feedback.warning{color:var(--mid);font-weight:500}
+.addr-feedback.error{color:var(--high);font-weight:500}
+
+/* Person pin distinct styling on globe */
+.pin.person-pin .p-core{r:2.8}
+.pin.person-pin .p-ring{stroke-width:2.2}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M4.6 7.5h14.8M4.6 16.5h14.8"/></symbol>
     <symbol id="i-review" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 11l2 2 4-4M8.5 17h7"/></symbol>
     <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 0 1-10 0V7zM12 16v5"/></symbol>
@@ -947,7 +980,19 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
           <div class="field" id="intake-reg-field"><label for="intake-reg">Official corporate registration number</label><input id="intake-reg" type="text" placeholder="e.g. UEN 202419820E, Co Reg 1234567"></div>
         </div>
         <div class="field"><label for="intake-role">Role / Business activity</label><input id="intake-role" type="text" placeholder="e.g. Bunker supplier, Grain trader, Logistics provider"></div>
-        <div class="field"><label for="intake-org-address">Registered corporate headquarters & operating addresses</label><textarea id="intake-org-address" rows="2" style="font-size:12.5px" placeholder="Registered corporate HQ address and all active operating locations..."></textarea></div>
+        <div class="field" style="position:relative">
+          <label for="intake-org-address" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Registered corporate headquarters & operating address</span>
+            <span class="g-powered"><span class="g-g">G</span><span class="g-o1">o</span><span class="g-o2">o</span><span class="g-g2">g</span><span class="g-l">l</span><span class="g-e">e</span> Places</span>
+          </label>
+          <div class="addr-input-wrap">
+            <svg class="ic sm addr-pin-ico"><use href="#i-pin"/></svg>
+            <input id="intake-org-address" type="text" autocomplete="off" placeholder="Start typing address (e.g. Marina Bay, 71 Robinson Rd, DIFC Dubai...)">
+            <button type="button" class="addr-clear-btn" id="intake-org-addr-clear" title="Clear address" hidden>&times;</button>
+          </div>
+          <div class="addr-dropdown" id="intake-org-addr-dropdown" hidden></div>
+          <div class="addr-feedback" id="intake-org-addr-feedback"></div>
+        </div>
         <div class="field"><label for="intake-org-controllers">Directors, ultimate beneficial owners (UBOs) & controlling persons</label><textarea id="intake-org-controllers" rows="2" style="font-size:12.5px" placeholder="e.g. Maria Chen (Managing Director, 35%), Tan Wei (Director, 25%), Sovereign Capital (40%)"></textarea><small>Clear identification of all directors, beneficial owners and controlling persons.</small></div>
       </div>
 
@@ -961,7 +1006,19 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
         </div>
         <div class="field"><label for="intake-person-role">Specific roles held</label><input id="intake-person-role" type="text" placeholder="e.g. Chief Executive, Former Deputy Minister, Board Director"><small>Current or former official positions, public functions, or corporate titles.</small></div>
         <div class="field"><label for="intake-person-id-doc">Formal government identification documents</label><input id="intake-person-id-doc" type="text" placeholder="e.g. Passport P1234567 (issued SGP), National ID S1234567A"><small>Passports, national ID cards, or government identity records.</small></div>
-        <div class="field"><label for="intake-person-address">Current residential addresses</label><textarea id="intake-person-address" rows="2" style="font-size:12.5px" placeholder="Current residential address and jurisdictional residence..."></textarea></div>
+        <div class="field" style="position:relative">
+          <label for="intake-person-address" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Current residential address</span>
+            <span class="g-powered"><span class="g-g">G</span><span class="g-o1">o</span><span class="g-o2">o</span><span class="g-g2">g</span><span class="g-l">l</span><span class="g-e">e</span> Places</span>
+          </label>
+          <div class="addr-input-wrap">
+            <svg class="ic sm addr-pin-ico"><use href="#i-pin"/></svg>
+            <input id="intake-person-address" type="text" autocomplete="off" placeholder="Start typing residential address (e.g. 12 Marina Boulevard, Singapore...)">
+            <button type="button" class="addr-clear-btn" id="intake-person-addr-clear" title="Clear address" hidden>&times;</button>
+          </div>
+          <div class="addr-dropdown" id="intake-person-addr-dropdown" hidden></div>
+          <div class="addr-feedback" id="intake-person-addr-feedback"></div>
+        </div>
       </div>
 
       <!-- Vessel Specific Fields -->
@@ -1304,21 +1361,57 @@ const lSel=gLabels.selectAll('text').data(FEATURES).join('text').attr('class','c
 [pSphere,backdrop].forEach(s=>s.on('click',()=>{if(S.sel)clearSelection();}));
 
 /* pins */
-const pinSel=gPins.selectAll('g.pin').data(ORGS).join(enter=>{
-  const g=enter.append('g').attr('class',o=>'pin'+(o.linked?' linked':'')).attr('data-id',o=>o.id);
-  const inner=g.append('g').attr('class','p-inner').attr('style',(o,i)=>'--i:'+i);
-  inner.append('circle').attr('class','p-hit').attr('r',12);
-  inner.append('circle').attr('class','p-pulse').attr('r',7);
-  inner.append('circle').attr('class','p-ring').attr('r',6.2);
-  inner.append('circle').attr('class','p-core').attr('r',o=>o.linked?1.9:2.5);
-  const b=inner.append('g').attr('class','p-badge').attr('transform','translate(8,-8)').attr('display','none');
-  b.append('circle').attr('r',7.5);b.append('text');
-  g.append('text').attr('class','p-label').attr('x',11).attr('y',4).text(o=>o.short);
-  return g;})
-  .on('pointerenter',(e,o)=>{if(e.pointerType!=='touch')showTip(entityTip(o),e);})
-  .on('pointermove',e=>{if(e.pointerType!=='touch')moveTip(e);})
-  .on('pointerleave',hideTip)
-  .on('click',(e,o)=>{e.stopPropagation();hideTip();const lead=o._cluster;if(lead&&lead.length>1&&!(S.sel&&S.sel.id===o.id)){flyToPoints(lead.map(x=>x.ll),{maxK:14});return;}select(o.id);});
+let pinSel;
+function getPlottedEntities(){
+  const list = [];
+  ORGS.forEach(o => {
+    if (o.ll && Array.isArray(o.ll) && isFinite(o.ll[0]) && isFinite(o.ll[1])) list.push(o);
+  });
+  PEOPLE.forEach(p => {
+    if (p.ll && Array.isArray(p.ll) && isFinite(p.ll[0]) && isFinite(p.ll[1])) list.push(p);
+  });
+  return list;
+}
+
+function rebindPins(){
+  const data = getPlottedEntities();
+  pinSel = gPins.selectAll('g.pin').data(data, d => d.id).join(
+    enter => {
+      const g = enter.append('g').attr('class', o => 'pin' + (o.linked ? ' linked' : '') + (o.kind === 'person' ? ' person-pin' : '')).attr('data-id', o => o.id);
+      const inner = g.append('g').attr('class', 'p-inner').attr('style', (o, i) => '--i:' + i);
+      inner.append('circle').attr('class', 'p-hit').attr('r', 12);
+      inner.append('circle').attr('class', 'p-pulse').attr('r', 7);
+      inner.append('circle').attr('class', 'p-ring').attr('r', 6.2);
+      inner.append('circle').attr('class', 'p-core').attr('r', o => o.linked ? 1.9 : 2.5);
+      const b = inner.append('g').attr('class', 'p-badge').attr('transform', 'translate(8,-8)').attr('display', 'none');
+      b.append('circle').attr('r', 7.5);
+      b.append('text');
+      g.append('text').attr('class', 'p-label').attr('x', 11).attr('y', 4).text(o => o.short || o.name);
+      return g;
+    },
+    update => {
+      update.select('.p-label').text(o => o.short || o.name);
+      return update;
+    },
+    exit => exit.remove()
+  )
+  .on('pointerenter', (e, o) => { if (e.pointerType !== 'touch') showTip(entityTip(o), e); })
+  .on('pointermove', e => { if (e.pointerType !== 'touch') moveTip(e); })
+  .on('pointerleave', hideTip)
+  .on('click', (e, o) => {
+    e.stopPropagation();
+    hideTip();
+    const lead = o._cluster;
+    if (lead && lead.length > 1 && !(S.sel && S.sel.id === o.id)) {
+      flyToPoints(lead.map(x => x.ll), { maxK: 14 });
+      return;
+    }
+    select(o.id);
+  });
+  refreshStatus();
+  dirty = true;
+}
+rebindPins();
 
 /* vessels */
 function prepRoute(c){const seg=[];let tot=0;for(let i=0;i<c.length-1;i++){const d=d3.geoDistance(c[i],c[i+1]);seg.push({s:tot,d,f:d3.geoInterpolate(c[i],c[i+1])});tot+=d;}return {seg,tot};}
@@ -1349,7 +1442,7 @@ stsG.append('circle').attr('r',2.2).style('fill','currentColor');
 stsG.append('text').attr('x',12).attr('y',16).text(STS.label);
 
 /* ownership arcs (map) */
-const posOf=id=>{const e=ENT.get(id);return e?(e.kind==='org'?e.ll:e.kind==='vessel'?e.cur:null):null;};
+const posOf=id=>{const e=ENT.get(id);return e?(e.kind==='org'?e.ll:e.kind==='vessel'?e.cur:e.ll?e.ll:null):null;};
 const MAP_ARCS=EDGES.filter(e=>ENT.get(e[0])&&ENT.get(e[1])&&ENT.get(e[0]).kind!=='person'&&ENT.get(e[1]).kind!=='person').map((e,i)=>({a:e[0],b:e[1],lab:e[2],prov:e[3],i}));
 const arcSel=gArcs.selectAll('path').data(MAP_ARCS).join('path').attr('class',d=>'arc '+d.prov);
 const partSel=gParticles.selectAll('circle').data(MAP_ARCS).join('circle').attr('class','particle').attr('r',2.2);
@@ -1564,14 +1657,26 @@ function flyToCountry(f){
   if(S.mode==='flat'){const b=helperPath.bounds(f.main);flyFlatBounds(b,9);}
   else flyGlobe(f.cent,clamp(62/Math.max(f.span,4),1,6.5));
 }
-function focusLL(){if(!S.sel)return null;if(S.sel.kind==='country')return FEATURES[S.sel.id].cent;const e=ENT.get(S.sel.id);if(e.kind==='org')return e.ll;if(e.kind==='vessel')return e.cur;const l=(PERSON_LINKS[e.id]||[]).map(id=>ENT.get(id).ll);return l[0]||null;}
+function focusLL(){
+  if(!S.sel)return null;
+  if(S.sel.kind==='country')return FEATURES[S.sel.id].cent;
+  const e=ENT.get(S.sel.id);
+  if(!e)return null;
+  if(e.kind==='org'&&e.ll)return e.ll;
+  if(e.kind==='vessel')return e.cur;
+  if(e.ll && isFinite(e.ll[0]) && isFinite(e.ll[1]))return e.ll;
+  const l=(PERSON_LINKS[e.id]||[]).map(id=>ENT.get(id)&&ENT.get(id).ll).filter(Boolean);
+  return l[0]||null;
+}
 function flyToSelection(){
   if(!S.sel)return;
   if(S.sel.kind==='country'){flyToCountry(FEATURES[S.sel.id]);return;}
   const e=ENT.get(S.sel.id);
-  if(e.kind==='org')flyToPoints([e.ll],{maxK:7});
+  if(!e)return;
+  if(e.kind==='org'&&e.ll)flyToPoints([e.ll],{maxK:7});
   else if(e.kind==='vessel'){const ahead=posAt(e.R,clamp(e.frac+e.dir*0.01,0,1));flyToPoints([ahead],{maxK:5.5});}
-  else{const pts=[...component(e.id)].map(id=>ENT.get(id)).filter(x=>x.kind==='org').map(x=>x.ll);flyToPoints(pts.length?pts:[[0,20]]);}
+  else if(e.ll && isFinite(e.ll[0]) && isFinite(e.ll[1])){flyToPoints([e.ll],{maxK:7});}
+  else{const pts=[...component(e.id)].map(id=>ENT.get(id)).filter(x=>x&&x.kind==='org'&&x.ll).map(x=>x.ll);flyToPoints(pts.length?pts:[[0,20]]);}
 }
 
 /* ===================== tooltips ===================== */
@@ -1587,9 +1692,14 @@ function countryTip(f){
 }
 function entityTip(e){
   const q=quad(e);
-  const sub=e.kind==='org'?`${esc(e.role)} · ${esc(e.city)}, ${esc(cname(e.a3))}`:`${esc(e.type)} · ${esc(e.flag)} flag`;
+  const sub=e.kind==='org'
+    ? `${esc(e.role)} · ${esc(e.operatingAddresses||e.city)}, ${esc(cname(e.a3))}`
+    : e.kind==='person'
+      ? `${esc(e.role)} · ${esc(e.residentialAddress||e.city||cname(e.a3))}`
+      : `${esc(e.type)} · ${esc(e.flag)} flag`;
   const extra=e.kind==='vessel'?`<div class="tt-row"><span>IMO</span><b class="mono">${e.imo}</b></div>${e._dark?'<div class="tt-row"><span>AIS</span><b style="color:var(--high)">No signal · estimated</b></div>':''}`:(e.linked?'<div class="tt-row"><span>Relationship</span><b>Linked entity</b></div>':'');
-  return `<div class="tt-name">${esc(e.name)}</div><div class="faint" style="font-size:12px;margin:-3px 0 6px">${sub}</div><div class="tt-row"><span>Route</span><span class="pill q-${q}">${Q[q].short}</span></div><div class="tt-row"><span>Risk · confidence</span><b class="mono">${e.risk} · ${e.conf}%</b></div>${extra}`;
+  const coordInfo=e.ll ? `<div class="tt-row"><span>Location</span><b class="mono" style="color:var(--accent)">${e.ll[1].toFixed(3)}°, ${e.ll[0].toFixed(3)}°</b></div>` : '';
+  return `<div class="tt-name">${esc(e.name)}</div><div class="faint" style="font-size:12px;margin:-3px 0 6px">${sub}</div><div class="tt-row"><span>Route</span><span class="pill q-${q}">${Q[q].short}</span></div><div class="tt-row"><span>Risk · confidence</span><b class="mono">${e.risk} · ${e.conf}%</b></div>${coordInfo}${extra}`;
 }
 
 /* ===================== selection ===================== */
@@ -1750,7 +1860,7 @@ function orgDrawer(e){
   const chips=`<span class="pill q-${q}">${Q[q].short}</span><span class="chip">${ic('org','sm')}Organisation</span>${e.linked?'<span class="chip">Linked entity</span>':''}<span class="chip mono">${esc(e.reg)}</span>${e.claimed?'<span class="chip" style="color:var(--accent)">Claimed profile</span>':''}`;
   const tabs=[{k:'overview',l:'Overview'},{k:'screening',l:'Screening',n:open||''},{k:'ownership',l:'Ownership'},{k:'statements',l:'Statements',n:e.claimed?'1':''},{k:'decision',l:'Decision'}];
   let body='';
-  if(D.tab==='overview')body=`${meters(e)}${routeCard(e)}${e.ddqPending?`<div class="hint" style="background:color-mix(in srgb,var(--mid) 14%,transparent);border:1px solid color-mix(in srgb,var(--mid) 35%,transparent);align-items:center"><svg class="ic" style="color:var(--mid)"><use href="#i-doc"/></svg><p style="margin:0"><b>Due diligence questionnaire pending.</b> Awaiting counterparty submission.</p><button class="btn sm primary" data-act="answer-ddq" data-id="${e.id}" type="button" style="margin-left:auto">${ic('check','sm')}Answer DDQ</button></div>`:''}${factorsHTML(e)}<div class="sec"><div class="sec-h"><h3>Profile</h3></div><dl class="kv"><dt>Role</dt><dd>${esc(e.role)}</dd><dt>Registered in</dt><dd>${esc(e.city)}, ${esc(cname(e.a3))}</dd>${e.tradingNames?`<dt>Trading names</dt><dd>${esc(e.tradingNames)}</dd>`:''}${e.operatingAddresses?`<dt>Operating addresses</dt><dd>${esc(e.operatingAddresses)}</dd>`:''}${e.controllers?`<dt>Controllers & UBOs</dt><dd>${esc(e.controllers)}</dd>`:''}${e.since?`<dt>Customer since</dt><dd>${e.since}</dd>`:''}<dt>Trigger</dt><dd>${esc(e.trigger)}</dd><dt>Owner</dt><dd>${esc(e.owner)}</dd><dt>Last re-screen</dt><dd>Today, 06:00 SGT</dd></dl></div>${ctxHTML(e.a3)}`;
+  if(D.tab==='overview')body=`${meters(e)}${routeCard(e)}${e.ddqPending?`<div class="hint" style="background:color-mix(in srgb,var(--mid) 14%,transparent);border:1px solid color-mix(in srgb,var(--mid) 35%,transparent);align-items:center"><svg class="ic" style="color:var(--mid)"><use href="#i-doc"/></svg><p style="margin:0"><b>Due diligence questionnaire pending.</b> Awaiting counterparty submission.</p><button class="btn sm primary" data-act="answer-ddq" data-id="${e.id}" type="button" style="margin-left:auto">${ic('check','sm')}Answer DDQ</button></div>`:''}${factorsHTML(e)}<div class="sec"><div class="sec-h"><h3>Profile</h3></div><dl class="kv"><dt>Role</dt><dd>${esc(e.role)}</dd><dt>Registered in</dt><dd>${esc(e.city)}, ${esc(cname(e.a3))}</dd>${e.tradingNames?`<dt>Trading names</dt><dd>${esc(e.tradingNames)}</dd>`:''}${e.operatingAddresses?`<dt>Operating address</dt><dd>${esc(e.operatingAddresses)}${e.ll ? `<br><small class="mono faint" style="color:var(--accent)">📍 Plotted on globe: ${e.ll[1].toFixed(4)}°N, ${e.ll[0].toFixed(4)}°E</small>` : ''}</dd>`:''}${e.controllers?`<dt>Controllers & UBOs</dt><dd>${esc(e.controllers)}</dd>`:''}${e.since?`<dt>Customer since</dt><dd>${e.since}</dd>`:''}<dt>Trigger</dt><dd>${esc(e.trigger)}</dd><dt>Owner</dt><dd>${esc(e.owner)}</dd><dt>Last re-screen</dt><dd>Today, 06:00 SGT</dd></dl></div>${ctxHTML(e.a3)}`;
   else if(D.tab==='screening')body=`<div class="sec"><div class="sec-h"><h3>Findings</h3><span class="faint" style="font-size:12px">${fs.length} from ${new Set(fs.map(f=>f.agent)).size} agent${new Set(fs.map(f=>f.agent)).size>1?'s':''}</span></div>${fs.map(findingHTML).join('')}</div><div class="sec"><div class="sec-h"><h3>Sources used</h3></div><div class="dr-chips">${sourcesFor(e).map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div></div>`;
   else if(D.tab==='ownership')body=`<div class="sec"><div class="sec-h"><h3>Ownership and control</h3><span class="agent">Web</span></div>${graphHTML(e.id)}<p class="faint" style="margin:0;font-size:12px">Select a node to open it. Links from news carry lower confidence than registry links.</p></div>`;
   else if(D.tab==='statements')body=`<div class="sec"><div class="sec-h"><h3>Clarification statements</h3><span class="agent">Truth check</span></div>${statementHTML(e)}</div>`;
@@ -1783,9 +1893,9 @@ function personDrawer(p){
     ${p.dob?`<dt>Date of birth</dt><dd>${esc(p.dob)}</dd>`:''}
     ${p.aliases?`<dt>Name variants</dt><dd>${esc(p.aliases)}</dd>`:''}
     ${p.idDoc?`<dt>ID / Passport</dt><dd>${esc(p.idDoc)}</dd>`:''}
-    ${p.residentialAddress?`<dt>Residential address</dt><dd>${esc(p.residentialAddress)}</dd>`:''}
+    ${p.residentialAddress?`<dt>Residential address</dt><dd>${esc(p.residentialAddress)}${p.ll ? `<br><small class="mono faint" style="color:var(--accent)">📍 Plotted on globe: ${p.ll[1].toFixed(4)}°N, ${p.ll[0].toFixed(4)}°E</small>` : ''}</dd>`:''}
   </dl></div>` : '';
-  const body=`<div class="privacy">${ic('lock')}<span>People are never tracked by location. ${esc(p.name.split(' ')[0]==='T.'?p.name:p.name.split(' ')[0])} appears on the map only through linked organisations, in line with PDPA and GDPR.</span></div>${meters(p)}${routeCard(p)}${personProfile}
+  const body=`${p.ll ? `<div class="hint" style="background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);"><svg class="ic sm" style="color:var(--accent)"><use href="#i-pin"/></svg><span>Plotted on globe at verified address: <b>${p.ll[1].toFixed(4)}°N, ${p.ll[0].toFixed(4)}°E</b></span></div>` : `<div class="privacy">${ic('lock')}<span>People are never tracked by location. ${esc(p.name.split(' ')[0]==='T.'?p.name:p.name.split(' ')[0])} appears on the map only through linked organisations, in line with PDPA and GDPR.</span></div>`}${meters(p)}${routeCard(p)}${personProfile}
   <div class="sec"><div class="sec-h"><h3>Screening</h3><span class="agent">Sentry</span></div><p style="margin:0;font-size:13px;color:var(--fg-2)">${esc(p.note)}</p>${p.lists.map(l=>`<div class="finding"><div class="finding-top"><span class="agent">Sentry</span><span class="pill plain q-investigate">Open</span></div><h4>${esc(l.list)}</h4><p>Matched on ${esc(l.match.toLowerCase())}.</p><div class="finding-meta">${confHTML(l.conf)}</div></div>`).join('')}</div>
   <div class="sec"><div class="sec-h"><h3>Linked organisations</h3></div>${links.map(o=>{const oq=quad(o);return `<button class="link-row" data-open="${o.id}" type="button">${ic('org')}<div class="lr-main"><div>${esc(o.name)}</div><small>${esc(o.city)}, ${esc(cname(o.a3))}</small></div><span class="pill q-${oq}">${Q[oq].short}</span></button>`;}).join('')}</div>
   <div class="sec"><div class="sec-h"><h3>Ownership and control</h3><span class="agent">Web</span></div>${graphHTML(p.id)}</div>`;
@@ -2576,6 +2686,202 @@ function renderIntakeAttachments(){
   if(polDel) polDel.addEventListener('click', ()=>{ intakeAttachedPolicy = null; if($('#intake-policy-file')) $('#intake-policy-file').value = ''; renderIntakeAttachments(); });
 }
 
+function attachGoogleAddressAutocomplete(inputEl, dropdownEl, feedbackEl, clearBtnEl, countrySelectEl){
+  if (!inputEl || !dropdownEl) return;
+  let timer = null;
+  let activeIndex = -1;
+  let currentPredictions = [];
+
+  function setFeedback(type, text) {
+    if (!feedbackEl) return;
+    feedbackEl.className = 'addr-feedback ' + (type || '');
+    if (type === 'verified') {
+      feedbackEl.innerHTML = `<svg class="ic xs" style="color:var(--low)"><use href="#i-check"/></svg> <span>${esc(text)}</span>`;
+    } else if (type === 'warning') {
+      feedbackEl.innerHTML = `<svg class="ic xs" style="color:var(--mid)"><use href="#i-alert"/></svg> <span>${esc(text)}</span>`;
+    } else if (type === 'error') {
+      feedbackEl.innerHTML = `<svg class="ic xs" style="color:var(--high)"><use href="#i-alert"/></svg> <span>${esc(text)}</span>`;
+    } else {
+      feedbackEl.innerHTML = text ? esc(text) : '';
+    }
+  }
+
+  function renderPredictions(predictions) {
+    currentPredictions = predictions || [];
+    activeIndex = -1;
+    if (!predictions || predictions.length === 0) {
+      dropdownEl.innerHTML = `
+        <div style="padding:10px 12px;font-size:12px;color:var(--fg-3)">No matching Google Places address found. Try street or city name.</div>
+        <div class="addr-dropdown-foot"><span class="g-powered"><span class="g-g">G</span><span class="g-o1">o</span><span class="g-o2">o</span><span class="g-g2">g</span><span class="g-l">l</span><span class="g-e">e</span> Places</span></div>
+      `;
+      dropdownEl.hidden = false;
+      return;
+    }
+
+    const itemsHtml = predictions.map((p, idx) => `
+      <div class="addr-item" data-idx="${idx}">
+        <svg class="ic xs addr-item-pin"><use href="#i-pin"/></svg>
+        <div style="flex:1">
+          <div class="addr-item-main">${esc(p.main_text || p.description)}</div>
+          <div class="addr-item-sub">${esc(p.secondary_text || p.formatted_address || '')}</div>
+        </div>
+      </div>
+    `).join('');
+
+    dropdownEl.innerHTML = itemsHtml + `
+      <div class="addr-dropdown-foot">
+        <span class="g-powered"><span class="g-g">G</span><span class="g-o1">o</span><span class="g-o2">o</span><span class="g-g2">g</span><span class="g-l">l</span><span class="g-e">e</span> Places</span>
+      </div>
+    `;
+    dropdownEl.hidden = false;
+  }
+
+  function selectPrediction(p) {
+    if (!p) return;
+    const formatted = p.formatted_address || p.description;
+    inputEl.value = formatted;
+    inputEl.dataset.valid = 'true';
+    inputEl.dataset.address = formatted;
+    inputEl.dataset.lat = p.lat;
+    inputEl.dataset.lng = p.lng;
+    inputEl.dataset.city = p.city || '';
+    inputEl.dataset.country = p.country || '';
+    dropdownEl.hidden = true;
+    if (clearBtnEl) clearBtnEl.hidden = false;
+
+    setFeedback('verified', `Verified by Google Places · ${p.lat.toFixed(4)}°, ${p.lng.toFixed(4)}°`);
+
+    if (countrySelectEl && p.country) {
+      const opt = Array.from(countrySelectEl.options).find(o => o.value === p.country);
+      if (opt) countrySelectEl.value = p.country;
+    }
+  }
+
+  async function fetchSuggestions(query) {
+    try {
+      const res = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(query)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      renderPredictions(data.predictions || []);
+    } catch (e) {
+      dropdownEl.hidden = true;
+    }
+  }
+
+  inputEl.addEventListener('input', () => {
+    const val = inputEl.value.trim();
+    inputEl.dataset.valid = 'false';
+    delete inputEl.dataset.lat;
+    delete inputEl.dataset.lng;
+    delete inputEl.dataset.address;
+    if (clearBtnEl) clearBtnEl.hidden = !val;
+
+    if (val.length < 2) {
+      dropdownEl.hidden = true;
+      setFeedback('', '');
+      return;
+    }
+
+    setFeedback('warning', 'Please select a valid address from the Google dropdown list');
+    clearTimeout(timer);
+    timer = setTimeout(() => fetchSuggestions(val), 180);
+  });
+
+  inputEl.addEventListener('keydown', e => {
+    if (dropdownEl.hidden || !currentPredictions.length) return;
+    const items = dropdownEl.querySelectorAll('.addr-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % items.length;
+      items.forEach((it, i) => it.classList.toggle('active', i === activeIndex));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      items.forEach((it, i) => it.classList.toggle('active', i === activeIndex));
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0 && activeIndex < currentPredictions.length) {
+        e.preventDefault();
+        selectPrediction(currentPredictions[activeIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      dropdownEl.hidden = true;
+    }
+  });
+
+  dropdownEl.addEventListener('click', e => {
+    const item = e.target.closest('.addr-item');
+    if (!item) return;
+    const idx = parseInt(item.dataset.idx, 10);
+    if (!isNaN(idx) && currentPredictions[idx]) {
+      selectPrediction(currentPredictions[idx]);
+    }
+  });
+
+  if (clearBtnEl) {
+    clearBtnEl.addEventListener('click', () => {
+      inputEl.value = '';
+      inputEl.dataset.valid = 'false';
+      delete inputEl.dataset.lat;
+      delete inputEl.dataset.lng;
+      delete inputEl.dataset.address;
+      clearBtnEl.hidden = true;
+      dropdownEl.hidden = true;
+      setFeedback('', '');
+      inputEl.focus();
+    });
+  }
+
+  document.addEventListener('click', e => {
+    if (!inputEl.contains(e.target) && !dropdownEl.contains(e.target)) {
+      dropdownEl.hidden = true;
+    }
+  });
+}
+
+async function validateAndResolveAddress(inputEl) {
+  if (!inputEl) return null;
+  const val = inputEl.value.trim();
+  if (!val) return null;
+
+  // Already selected from dropdown
+  if (inputEl.dataset.valid === 'true' && inputEl.dataset.lat && inputEl.dataset.lng) {
+    return {
+      address: inputEl.dataset.address || val,
+      lat: parseFloat(inputEl.dataset.lat),
+      lng: parseFloat(inputEl.dataset.lng),
+      city: inputEl.dataset.city || '',
+      country: inputEl.dataset.country || ''
+    };
+  }
+
+  // Attempt instant geocode query for typed string
+  try {
+    const res = await fetch(`/api/places/geocode?address=${encodeURIComponent(val)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.result) {
+        const r = data.result;
+        inputEl.value = r.formatted_address || val;
+        inputEl.dataset.valid = 'true';
+        inputEl.dataset.address = r.formatted_address || val;
+        inputEl.dataset.lat = r.lat;
+        inputEl.dataset.lng = r.lng;
+        inputEl.dataset.city = r.city || '';
+        inputEl.dataset.country = r.country || '';
+        return {
+          address: r.formatted_address || val,
+          lat: r.lat,
+          lng: r.lng,
+          city: r.city || '',
+          country: r.country || ''
+        };
+      }
+    }
+  } catch (e) {}
+
+  return null;
+}
+
 function openIntakeModal(defaultName){
   populateIntakeCountries();
   const type = $('#intake-type') ? $('#intake-type').value : 'org';
@@ -2583,7 +2889,21 @@ function openIntakeModal(defaultName){
 
   $('#intake-name').value = defaultName || '';
   if($('#intake-trading-names')) $('#intake-trading-names').value = '';
-  if($('#intake-org-address')) $('#intake-org-address').value = '';
+  if($('#intake-org-address')) {
+    $('#intake-org-address').value = '';
+    $('#intake-org-address').dataset.valid = 'false';
+    delete $('#intake-org-address').dataset.lat;
+    delete $('#intake-org-address').dataset.lng;
+    delete $('#intake-org-address').dataset.address;
+    delete $('#intake-org-address').dataset.city;
+    delete $('#intake-org-address').dataset.country;
+  }
+  if($('#intake-org-addr-feedback')) {
+    $('#intake-org-addr-feedback').className = 'addr-feedback';
+    $('#intake-org-addr-feedback').innerHTML = '';
+  }
+  if($('#intake-org-addr-dropdown')) $('#intake-org-addr-dropdown').hidden = true;
+  if($('#intake-org-addr-clear')) $('#intake-org-addr-clear').hidden = true;
   if($('#intake-org-controllers')) $('#intake-org-controllers').value = '';
 
   if($('#intake-person-name')) $('#intake-person-name').value = defaultName || '';
@@ -2591,7 +2911,21 @@ function openIntakeModal(defaultName){
   if($('#intake-person-dob')) $('#intake-person-dob').value = '';
   if($('#intake-person-role')) $('#intake-person-role').value = 'Board Director / Executive';
   if($('#intake-person-id-doc')) $('#intake-person-id-doc').value = '';
-  if($('#intake-person-address')) $('#intake-person-address').value = '';
+  if($('#intake-person-address')) {
+    $('#intake-person-address').value = '';
+    $('#intake-person-address').dataset.valid = 'false';
+    delete $('#intake-person-address').dataset.lat;
+    delete $('#intake-person-address').dataset.lng;
+    delete $('#intake-person-address').dataset.address;
+    delete $('#intake-person-address').dataset.city;
+    delete $('#intake-person-address').dataset.country;
+  }
+  if($('#intake-person-addr-feedback')) {
+    $('#intake-person-addr-feedback').className = 'addr-feedback';
+    $('#intake-person-addr-feedback').innerHTML = '';
+  }
+  if($('#intake-person-addr-dropdown')) $('#intake-person-addr-dropdown').hidden = true;
+  if($('#intake-person-addr-clear')) $('#intake-person-addr-clear').hidden = true;
 
   if($('#intake-vessel-name')) $('#intake-vessel-name').value = defaultName || '';
   if($('#intake-vessel-imo')) $('#intake-vessel-imo').value = 'IMO 94' + Math.floor(1000 + Math.random()*8999);
@@ -2612,6 +2946,23 @@ function openIntakeModal(defaultName){
     else if($('#intake-name')) $('#intake-name').focus();
   }, 50);
 }
+
+// Initialize Google address autocomplete inputs
+attachGoogleAddressAutocomplete(
+  $('#intake-org-address'),
+  $('#intake-org-addr-dropdown'),
+  $('#intake-org-addr-feedback'),
+  $('#intake-org-addr-clear'),
+  $('#intake-country')
+);
+
+attachGoogleAddressAutocomplete(
+  $('#intake-person-address'),
+  $('#intake-person-addr-dropdown'),
+  $('#intake-person-addr-feedback'),
+  $('#intake-person-addr-clear'),
+  $('#intake-person-nationality')
+);
 
 $('#intake-open').addEventListener('click', ()=>openIntakeModal());
 
@@ -2712,6 +3063,9 @@ $('#intake-submit').addEventListener('click', async ()=>{
   let nationality = '';
   let idDoc = '';
   let residentialAddress = '';
+  let personLl = null;
+  let orgLl = null;
+  let resolvedCity = '';
 
   if (type === 'person') {
     name = $('#intake-person-name').value.trim();
@@ -2723,7 +3077,27 @@ $('#intake-submit').addEventListener('click', async ()=>{
     role = $('#intake-person-role').value.trim() || 'Executive / Director';
     idDoc = $('#intake-person-id-doc').value.trim();
     reg = idDoc || 'ID-ON-FILE';
-    residentialAddress = $('#intake-person-address').value.trim();
+
+    const personAddrInput = $('#intake-person-address');
+    const rawPersonAddr = personAddrInput ? personAddrInput.value.trim() : '';
+    if (!rawPersonAddr) {
+      toast('Please enter a residential address from the Google dropdown list');
+      if (personAddrInput) personAddrInput.focus();
+      return;
+    }
+    const resolvedPerson = await validateAndResolveAddress(personAddrInput);
+    if (!resolvedPerson) {
+      toast('Please select a valid address from the Google dropdown list');
+      if (personAddrInput) personAddrInput.focus();
+      return;
+    }
+    residentialAddress = resolvedPerson.address;
+    personLl = [resolvedPerson.lng, resolvedPerson.lat];
+    resolvedCity = resolvedPerson.city;
+    if (resolvedPerson.country && CPI.has(resolvedPerson.country)) {
+      nationality = resolvedPerson.country;
+      a3 = nationality;
+    }
   } else if (type === 'vessel') {
     name = $('#intake-vessel-name').value.trim();
     if (!name) { toast('Please provide the vessel name'); return; }
@@ -2738,8 +3112,27 @@ $('#intake-submit').addEventListener('click', async ()=>{
     a3 = $('#intake-country').value || 'SGP';
     reg = $('#intake-reg').value.trim() || 'REG-PENDING';
     role = $('#intake-role').value.trim() || 'Commodities supplier';
-    operatingAddresses = $('#intake-org-address').value.trim();
     controllers = $('#intake-org-controllers').value.trim();
+
+    const orgAddrInput = $('#intake-org-address');
+    const rawOrgAddr = orgAddrInput ? orgAddrInput.value.trim() : '';
+    if (!rawOrgAddr) {
+      toast('Please enter a corporate address from the Google dropdown list');
+      if (orgAddrInput) orgAddrInput.focus();
+      return;
+    }
+    const resolvedOrg = await validateAndResolveAddress(orgAddrInput);
+    if (!resolvedOrg) {
+      toast('Please select a valid address from the Google dropdown list');
+      if (orgAddrInput) orgAddrInput.focus();
+      return;
+    }
+    operatingAddresses = resolvedOrg.address;
+    orgLl = [resolvedOrg.lng, resolvedOrg.lat];
+    resolvedCity = resolvedOrg.city;
+    if (resolvedOrg.country && CPI.has(resolvedOrg.country)) {
+      a3 = resolvedOrg.country;
+    }
   }
 
   const docStatus = $('#intake-doc-status') ? $('#intake-doc-status').value : 'pending';
@@ -2980,6 +3373,8 @@ $('#intake-submit').addEventListener('click', async ()=>{
       aliases: aliases,
       idDoc: idDoc,
       residentialAddress: residentialAddress,
+      city: resolvedCity || cname(a3),
+      ll: personLl,
       risk: risk,
       conf: conf,
       owner: 'Grace Teo',
@@ -3002,8 +3397,8 @@ $('#intake-submit').addEventListener('click', async ()=>{
       short: name.split(/\s+/).slice(0, 2).join(' '),
       role: role,
       a3: a3,
-      city: cname(a3),
-      ll: COUNTRY.get(a3) ? COUNTRY.get(a3).cent : [103.8, 1.3],
+      city: resolvedCity || cname(a3),
+      ll: orgLl || (COUNTRY.get(a3) ? COUNTRY.get(a3).cent : [103.8, 1.3]),
       reg: reg,
       risk: risk,
       conf: conf,
@@ -3045,15 +3440,19 @@ $('#intake-submit').addEventListener('click', async ()=>{
         dob,
         nationality,
         idDoc,
-        residentialAddress
+        residentialAddress,
+        ll: type === 'person' ? personLl : orgLl,
+        city: resolvedCity
       })
     }).catch(()=>{});
   } catch(err){}
 
+  rebindPins();
   renderWatch();
   renderReviews();
   const q = quad(ENT.get(newId));
-  toast(`“${name}” onboarded: Route ${Q[q].short} (${trigger})`);
+  const coordText = (type === 'person' && personLl) ? ` · plotted at ${personLl[1].toFixed(3)}°, ${personLl[0].toFixed(3)}°` : (orgLl ? ` · plotted at ${orgLl[1].toFixed(3)}°, ${orgLl[0].toFixed(3)}°` : '');
+  toast(`“${name}” onboarded: Route ${Q[q].short}${coordText}`);
   select(newId);
 });
 
@@ -3163,6 +3562,10 @@ async function syncFromBackend(){
           item.lists = [];
           item.pep = item.risk >= 50;
           item.note = 'Record from Safe Globe database';
+          if (e.ll && Array.isArray(e.ll) && isFinite(e.ll[0]) && isFinite(e.ll[1])) {
+            item.ll = [Number(e.ll[0]), Number(e.ll[1])];
+          }
+          if (e.residentialAddress) item.residentialAddress = e.residentialAddress;
           PEOPLE.unshift(item);
         } else {
           ORGS.unshift(item);
@@ -3173,9 +3576,11 @@ async function syncFromBackend(){
       }
     }
     if (added) {
+      rebindPins();
       renderWatch();
       renderReviews();
       refreshStatus();
+      dirty = true;
     }
 
     // Sync sources from backend
