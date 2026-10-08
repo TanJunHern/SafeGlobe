@@ -1,6 +1,8 @@
 import os
+import re
 import json
 import requests
+from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -104,7 +106,7 @@ def parse_jurisdictions_from_url(url: str, list_type: str = "both") -> CountryRi
     {sample_text}
     """
 
-    candidate_models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
+    candidate_models = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3.8-flash"]
     last_err = None
 
     for model_name in candidate_models:
@@ -128,12 +130,56 @@ def parse_jurisdictions_from_url(url: str, list_type: str = "both") -> CountryRi
     raise RuntimeError(f"All candidate models failed. Last error: {last_err}")
 
 # ----------------------------------------------------
-# 4. Multi-Source Pipeline (Blacklist + Greylist)
+# 4. Automatic FATF URL Discovery
+# ----------------------------------------------------
+FATF_TOPIC_HUB_URL = "https://www.fatf-gafi.org/en/topics/high-risk-and-other-monitored-jurisdictions.html"
+
+def discover_latest_fatf_urls(hub_url: str = FATF_TOPIC_HUB_URL) -> dict:
+    """Scrapes the permanent FATF topic page to automatically find the latest Grey and Black list publication URLs."""
+    try:
+        from curl_cffi import requests as cffi_requests
+        response = cffi_requests.get(hub_url, impersonate="chrome124", timeout=20)
+    except ImportError:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        }
+        response = requests.get(hub_url, headers=headers, timeout=20)
+    response.raise_for_status()
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    greylist_url = None
+    blacklist_url = None
+
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if not greylist_url and re.search(r"increased-monitoring-[a-z]+-\d{4}\.html", href, re.IGNORECASE):
+            greylist_url = urljoin(hub_url, href)
+        if not blacklist_url and re.search(r"call-for-action-[a-z]+-\d{4}\.html", href, re.IGNORECASE):
+            blacklist_url = urljoin(hub_url, href)
+
+    return {
+        "greylist_url": greylist_url,
+        "blacklist_url": blacklist_url,
+    }
+
+# ----------------------------------------------------
+# 5. Multi-Source Pipeline (Blacklist + Greylist)
 # ----------------------------------------------------
 def build_combined_fatf_report(
-    greylist_url: str = "https://www.fatf-gafi.org/en/publications/High-risk-and-other-monitored-jurisdictions/increased-monitoring-june-2026.html",
-    blacklist_url: str = "https://www.fatf-gafi.org/en/publications/High-risk-and-other-monitored-jurisdictions/call-for-action-june-2026.html"
+    greylist_url: Optional[str] = None,
+    blacklist_url: Optional[str] = None
 ) -> CountryRiskReport:
+    if not greylist_url or not blacklist_url:
+        print(f"[*] Discovering latest FATF publication URLs from {FATF_TOPIC_HUB_URL}...")
+        discovered = discover_latest_fatf_urls()
+        greylist_url = greylist_url or discovered.get("greylist_url")
+        blacklist_url = blacklist_url or discovered.get("blacklist_url")
+        print(f"[+] Discovered Grey List: {greylist_url}")
+        print(f"[+] Discovered Black List: {blacklist_url}")
+
+    if not greylist_url or not blacklist_url:
+        raise ValueError(f"Could not auto-discover FATF URLs. Found: greylist={greylist_url}, blacklist={blacklist_url}")
+
     print(f"[*] Processing FATF Grey List URL: {greylist_url}")
     grey_report = parse_jurisdictions_from_url(greylist_url, list_type="greylist")
 
@@ -157,14 +203,60 @@ def build_combined_fatf_report(
     )
     return combined
 
+def save_to_database(rep: CountryRiskReport):
+    db_candidates = [
+        os.path.join(os.path.dirname(__file__), "..", "data", "safe_globe.db"),
+        os.path.join(os.path.dirname(__file__), "data", "safe_globe.db"),
+        os.path.abspath("data/safe_globe.db")
+    ]
+    target_db = None
+    for cand in db_candidates:
+        if os.path.exists(cand) or os.path.exists(os.path.dirname(cand)):
+            target_db = os.path.abspath(cand)
+            break
+    if not target_db:
+        return
+
+    import sqlite3
+    os.makedirs(os.path.dirname(target_db), exist_ok=True)
+    conn = sqlite3.connect(target_db)
+    cur = conn.cursor()
+    cur.execute("""
+      CREATE TABLE IF NOT EXISTS fatf_country_risks (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        effective_date TEXT,
+        black_list_json TEXT,
+        grey_list_json TEXT,
+        removed_countries_json TEXT,
+        source_urls_json TEXT,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    """)
+    cur.execute("""
+      INSERT OR REPLACE INTO fatf_country_risks 
+      (id, effective_date, black_list_json, grey_list_json, removed_countries_json, source_urls_json, updated_at)
+      VALUES (1, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    """, (
+        rep.effective_date,
+        json.dumps(rep.black_list),
+        json.dumps(rep.grey_list),
+        json.dumps(rep.removed_countries),
+        json.dumps(rep.source_urls)
+    ))
+    conn.commit()
+    conn.close()
+    print(f"[+] Saved structured risk data to SQLite DB: {target_db}")
+
 # ----------------------------------------------------
-# 5. Execution & File Output
+# 6. Execution & File Output
 # ----------------------------------------------------
 if __name__ == "__main__":
-    greylist_url = "https://www.fatf-gafi.org/en/publications/High-risk-and-other-monitored-jurisdictions/increased-monitoring-june-2026.html"
-    blacklist_url = "https://www.fatf-gafi.org/en/publications/High-risk-and-other-monitored-jurisdictions/call-for-action-june-2026.html"
+    report = build_combined_fatf_report()
 
-    report = build_combined_fatf_report(greylist_url, blacklist_url)
+    try:
+        save_to_database(report)
+    except Exception as err:
+        print(f"[-] Could not write to DB: {err}")
 
     # Save to python/fatf_country_risks.json and project root fatf_country_risks.json
     output_locations = [
