@@ -455,6 +455,50 @@ test('API Integration Tests', async (t) => {
     assert.deepEqual(perDetail.ll, [103.8540, 1.2805]);
   });
 
+  await t.test('GET /api/sources/records should return converted knowledge base records', async () => {
+    const res = await fetch(`${BASE_URL}/api/sources/records`);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.ok(data.total >= 1);
+    assert.ok(Array.isArray(data.records));
+    assert.ok(data.records[0].entity_name);
+  });
+
+  await t.test('POST /api/ai/kycp should return structured KYCP JSON report', async () => {
+    const res = await fetch(`${BASE_URL}/api/ai/kycp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: 'Severny Agro Export LLC',
+        type: 'organisation'
+      })
+    });
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.status, 'completed');
+    assert.ok(data.overallRisk);
+    assert.ok(data.knowYourCounterparty);
+    assert.ok(data.knowYourCounterparty.identityVerification);
+    assert.ok(data.knowYourCounterparty.ownershipAndUbo);
+    assert.ok(data.knowYourCounterparty.sanctionsAndWatchlists);
+  });
+
+  await t.test('GET /api/ai/tools should return registered AI analyst tools', async () => {
+    const res = await fetch(`${BASE_URL}/api/ai/tools`);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.ok(Array.isArray(data.tools));
+    assert.ok(data.tools.some(t => t.name === 'searchKnowledgeBase'));
+  });
+
+  await t.test('GET /api/ai/instructions should return KYCP agent instructions', async () => {
+    const res = await fetch(`${BASE_URL}/api/ai/instructions`);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.ok(data.instructions.includes('Safe Globe Senior Compliance AI Analyst'));
+  });
+
+
 
 
   const { getDb } = require('../src/db');

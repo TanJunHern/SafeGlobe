@@ -148,8 +148,29 @@ class SqliteDatabase {
         storage_path TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS source_records (
+        id TEXT PRIMARY KEY,
+        source_id TEXT NOT NULL,
+        source_label TEXT NOT NULL,
+        source_type TEXT NOT NULL,
+        entity_name TEXT NOT NULL,
+        entity_kind TEXT DEFAULT 'org',
+        jurisdiction TEXT,
+        reg_no TEXT,
+        risk_level TEXT DEFAULT 'Medium',
+        risk_score INTEGER DEFAULT 50,
+        summary TEXT,
+        details_json TEXT,
+        raw_content TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_sr_source ON source_records(source_id);
+      CREATE INDEX IF NOT EXISTS idx_sr_name ON source_records(entity_name);
     `);
+    this.seedSourceRecordsIfEmpty();
   }
+
 
   seedIfEmpty() {
     const row = this.db.prepare('SELECT COUNT(*) as count FROM entities').get();
@@ -731,6 +752,265 @@ class SqliteDatabase {
     return this.db.prepare('SELECT * FROM uploaded_files WHERE id = ?').get(id);
   }
 
+  // --- Source Records / Knowledge Base ---
+  seedSourceRecordsIfEmpty() {
+    try {
+      const row = this.db.prepare('SELECT COUNT(*) as count FROM source_records').get();
+      if (row && row.count > 0) return;
+
+      const initialRecords = [
+        // Dataset (s1: Group blocklist)
+        {
+          id: 'sr_s1_1',
+          source_id: 's1',
+          source_label: 'Group blocklist',
+          source_type: 'dataset',
+          entity_name: 'Severny Agro Export LLC',
+          entity_kind: 'org',
+          jurisdiction: 'RUS',
+          reg_no: 'RU-104779601',
+          risk_level: 'High',
+          risk_score: 92,
+          summary: 'Sectoral sanctions designation; 51% owned by Russian state agricultural enterprise.',
+          details_json: JSON.stringify({ program: 'Sectoral Sanctions (Russia)', ownership: '51% SOE', list: 'Group Blocklist CSV' }),
+          raw_content: 'Severny Agro Export LLC,RU-104779601,RUS,High,Sectoral Sanctions 51% SOE'
+        },
+        {
+          id: 'sr_s1_2',
+          source_id: 's1',
+          source_label: 'Group blocklist',
+          source_type: 'dataset',
+          entity_name: 'Varnell Maritime Ltd',
+          entity_kind: 'org',
+          jurisdiction: 'CYP',
+          reg_no: 'CY-HE83910',
+          risk_level: 'High',
+          risk_score: 88,
+          summary: 'Blocked maritime holding vehicle associated with designated transport schemes.',
+          details_json: JSON.stringify({ program: 'Designated Maritime Entity', fleet_count: 4 }),
+          raw_content: 'Varnell Maritime Ltd,CY-HE83910,CYP,High,Designated maritime holding'
+        },
+        {
+          id: 'sr_s1_3',
+          source_id: 's1',
+          source_label: 'Group blocklist',
+          source_type: 'dataset',
+          entity_name: 'Arkady Zemtsov',
+          entity_kind: 'person',
+          jurisdiction: 'RUS',
+          reg_no: 'OFAC-SDN-8821',
+          risk_level: 'High',
+          risk_score: 96,
+          summary: 'OFAC designated individual; controlling shareholder across shadow fleet networks.',
+          details_json: JSON.stringify({ program: 'OFAC SDN', dob: '1974-05-12', role: 'Controlling UBO' }),
+          raw_content: 'Arkady Zemtsov,OFAC-SDN-8821,RUS,High,OFAC SDN listed individual'
+        },
+        // API (s2: Vendor X sanctions API)
+        {
+          id: 'sr_s2_1',
+          source_id: 's2',
+          source_label: 'Vendor X sanctions API',
+          source_type: 'api',
+          entity_name: 'Kestrel Trading FZE',
+          entity_kind: 'org',
+          jurisdiction: 'ARE',
+          reg_no: 'RAK-FZ-2019-881',
+          risk_level: 'High',
+          risk_score: 82,
+          summary: 'Vendor API graph match: 50% indirect beneficial control by sanctioned individual Arkady Zemtsov.',
+          details_json: JSON.stringify({ ubo: 'Arkady Zemtsov', control_stake: 0.50, verified: true }),
+          raw_content: '{"entity":"Kestrel Trading FZE","country":"ARE","ubo":"Arkady Zemtsov","stake":0.50}'
+        },
+        {
+          id: 'sr_s2_2',
+          source_id: 's2',
+          source_label: 'Vendor X sanctions API',
+          source_type: 'api',
+          entity_name: 'Aurora Venture',
+          entity_kind: 'vessel',
+          jurisdiction: 'LBR',
+          reg_no: 'IMO 9412345',
+          risk_level: 'High',
+          risk_score: 85,
+          summary: 'Maritime intelligence feed: 31 hr AIS dark period in Arabian Sea followed by STS transfer east of Johor.',
+          details_json: JSON.stringify({ imo: '9412345', flag: 'LBR', ais_gap_hours: 31, sts_transfer: true }),
+          raw_content: '{"vessel":"Aurora Venture","imo":"9412345","flag":"LBR","dark_gap_h":31}'
+        },
+        {
+          id: 'sr_s2_3',
+          source_id: 's2',
+          source_label: 'Vendor X sanctions API',
+          source_type: 'api',
+          entity_name: 'Straits Bunkering Trading LLC',
+          entity_kind: 'org',
+          jurisdiction: 'ARE',
+          reg_no: 'AE-992812',
+          risk_level: 'Low',
+          risk_score: 14,
+          summary: 'Corporate registry differentiation: Cleared from designated list due to distinct UEN and directors.',
+          details_json: JSON.stringify({ status: 'Auto-cleared false positive', reg: 'AE-992812' }),
+          raw_content: '{"entity":"Straits Bunkering Trading LLC","status":"cleared_false_positive"}'
+        },
+        // Website (s3: MAS enforcement actions)
+        {
+          id: 'sr_s3_1',
+          source_id: 's3',
+          source_label: 'MAS enforcement actions',
+          source_type: 'website',
+          entity_name: 'Aethelgard Finance Pte Ltd',
+          entity_kind: 'org',
+          jurisdiction: 'SGP',
+          reg_no: 'UEN 201827102D',
+          risk_level: 'Medium',
+          risk_score: 62,
+          summary: 'Regulator bulletin: Reprimanded for customer due diligence deficiencies and AML compliance breaches.',
+          details_json: JSON.stringify({ regulator: 'Monetary Authority of Singapore', notice: 'MAS Notice 626' }),
+          raw_content: 'MAS Enforcement Bulletin: Reprimand issued to Aethelgard Finance Pte Ltd for AML controls.'
+        },
+        {
+          id: 'sr_s3_2',
+          source_id: 's3',
+          source_label: 'MAS enforcement actions',
+          source_type: 'website',
+          entity_name: 'Alexander Viktorov',
+          entity_kind: 'person',
+          jurisdiction: 'SGP',
+          reg_no: 'ID-PASSPORT-V9102',
+          risk_level: 'Medium',
+          risk_score: 58,
+          summary: 'Executive director named in MAS supervisory proceedings for cross-border fund flow oversight failure.',
+          details_json: JSON.stringify({ regulator: 'MAS', role: 'Executive Director' }),
+          raw_content: 'MAS enforcement notice: Executive Director Alexander Viktorov cautioned.'
+        },
+        // Document (PDF Regulatory Gazette)
+        {
+          id: 'sr_doc_1',
+          source_id: 's_doc_demo',
+          source_label: 'National Sanctions Gazette & Maritime Directives',
+          source_type: 'document',
+          entity_name: 'Halcyon Energy DMCC',
+          entity_kind: 'org',
+          jurisdiction: 'ARE',
+          reg_no: 'DMCC-55102',
+          risk_level: 'Low',
+          risk_score: 24,
+          summary: 'Document audit verified: Clean beneficial ownership register and current compliance certification.',
+          details_json: JSON.stringify({ doc_type: 'Regulatory Gazette Extract', ubo_cleared: true }),
+          raw_content: 'Gazette Extract: Halcyon Energy DMCC verified clean ownership and compliant trade licence.'
+        }
+      ];
+
+      this.addSourceRecords(initialRecords);
+    } catch (e) {
+      console.error('Error seeding source records:', e);
+    }
+  }
+
+  addSourceRecord(r) {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO source_records
+      (id, source_id, source_label, source_type, entity_name, entity_kind, jurisdiction, reg_no, risk_level, risk_score, summary, details_json, raw_content)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      r.id,
+      r.source_id,
+      r.source_label,
+      r.source_type,
+      r.entity_name,
+      r.entity_kind || 'org',
+      r.jurisdiction || 'GLB',
+      r.reg_no || '',
+      r.risk_level || 'Medium',
+      r.risk_score || 50,
+      r.summary || '',
+      typeof r.details_json === 'string' ? r.details_json : JSON.stringify(r.details_json || {}),
+      r.raw_content || ''
+    );
+    return r;
+  }
+
+  addSourceRecords(records) {
+    if (!Array.isArray(records) || records.length === 0) return [];
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO source_records
+      (id, source_id, source_label, source_type, entity_name, entity_kind, jurisdiction, reg_no, risk_level, risk_score, summary, details_json, raw_content)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const r of records) {
+      stmt.run(
+        r.id,
+        r.source_id,
+        r.source_label,
+        r.source_type,
+        r.entity_name,
+        r.entity_kind || 'org',
+        r.jurisdiction || 'GLB',
+        r.reg_no || '',
+        r.risk_level || 'Medium',
+        r.risk_score || 50,
+        r.summary || '',
+        typeof r.details_json === 'string' ? r.details_json : JSON.stringify(r.details_json || {}),
+        r.raw_content || ''
+      );
+    }
+    return records;
+  }
+
+  getSourceRecords(filter = {}) {
+    let query = 'SELECT * FROM source_records WHERE 1=1';
+    const params = [];
+    if (filter.sourceId) {
+      query += ' AND source_id = ?';
+      params.push(filter.sourceId);
+    }
+    if (filter.kind) {
+      query += ' AND entity_kind = ?';
+      params.push(filter.kind);
+    }
+    if (filter.type) {
+      query += ' AND source_type = ?';
+      params.push(filter.type);
+    }
+    query += ' ORDER BY created_at DESC';
+    const rows = this.db.prepare(query).all(...params);
+    return rows.map(r => ({
+      ...r,
+      details: (() => { try { return JSON.parse(r.details_json || '{}'); } catch(e){ return {}; } })()
+    }));
+  }
+
+  getSourceRecordsBySource(sourceId) {
+    return this.getSourceRecords({ sourceId });
+  }
+
+  deleteSourceRecordsBySourceId(sourceId) {
+    return this.db.prepare('DELETE FROM source_records WHERE source_id = ?').run(sourceId);
+  }
+
+  searchSourceRecords(searchTerm, kind = null) {
+    const term = `%${(searchTerm || '').trim().toLowerCase()}%`;
+    let query = `
+      SELECT * FROM source_records 
+      WHERE (LOWER(entity_name) LIKE ? OR LOWER(summary) LIKE ? OR LOWER(reg_no) LIKE ?)
+    `;
+    const params = [term, term, term];
+    if (kind && kind !== 'all') {
+      query += ' AND entity_kind = ?';
+      params.push(kind);
+    }
+    query += ' ORDER BY risk_score DESC LIMIT 20';
+    const rows = this.db.prepare(query).all(...params);
+    return rows.map(r => ({
+      ...r,
+      details: (() => { try { return JSON.parse(r.details_json || '{}'); } catch(e){ return {}; } })()
+    }));
+  }
+
+  getAllSourceRecords() {
+    return this.getSourceRecords();
+  }
+
   close() {
     try {
       this.db.close();
@@ -739,3 +1019,4 @@ class SqliteDatabase {
 }
 
 module.exports = SqliteDatabase;
+
