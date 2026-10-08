@@ -98,6 +98,27 @@ function solveQuery(queryText) {
     };
   }
 
+  // Knowledge Base search across converted sources (datasets, documents, APIs, web)
+  const kbHits = typeof db.searchSourceRecords === 'function' ? db.searchSourceRecords(q) : [];
+  if (kbHits.length > 0) {
+    const top = kbHits[0];
+    return {
+      steps: [
+        `Queried converted Knowledge Base sources for "${queryText}"`,
+        `Located ${kbHits.length} verified records across datasets, documents, APIs and public websites`,
+        `Cross-referenced risk status: ${top.risk_level} (${top.risk_score}/100)`
+      ],
+      res: kbHits.slice(0, 5).map(h => ({
+        id: (allEntities.find(e => e.name.toLowerCase() === h.entity_name.toLowerCase()) || {}).id || 'kb_' + h.id,
+        name: h.entity_name,
+        sub: `${h.source_label} (${h.source_type}) · ${h.risk_level} risk · ${h.reg_no || h.jurisdiction}`
+      })),
+      hl: allEntities.filter(e => kbHits.some(h => h.entity_name.toLowerCase().includes(e.name.toLowerCase()))).map(e => e.id),
+      sum: `Knowledge Base found ${kbHits.length} record(s). Top match "${top.entity_name}": ${top.summary}`,
+      src: Array.from(new Set(kbHits.map(h => h.source_label))).join('; ')
+    };
+  }
+
   // Fallback generic search across entities
   const matches = allEntities.filter(e =>
     (e.name + ' ' + (e.short || '') + ' ' + (e.role || '')).toLowerCase().includes(q)
@@ -123,3 +144,4 @@ function solveQuery(queryText) {
 module.exports = {
   solveQuery
 };
+

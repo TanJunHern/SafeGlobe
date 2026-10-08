@@ -10,5 +10,8 @@ module.exports = {
   gcpProjectId: process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'safe-globe-compliance',
   corsOrigin: process.env.CORS_ORIGIN || '*',
   confidenceThreshold: parseInt(process.env.CONFIDENCE_THRESHOLD || '80', 10),
+  geminiApiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY || '',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
   staticDir: path.join(__dirname, '..')
 };
+

@@ -724,6 +724,7 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
     <symbol id="i-feed" viewBox="0 0 24 24"><path d="M5 4h14v5H5zM5 11h14v5H5zM5 18h14"/><path d="M8 6.5h.5M8 13.5h.5"/></symbol>
     <symbol id="i-web" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M3 9h18M6 6.8h.5M8.5 6.8h.5"/></symbol>
     <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M4.5 15v4.5h15V15"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
   </defs>
 </svg>
 
@@ -929,6 +930,36 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
             </div>
           </div>
         </div>
+
+        <!-- CONVERTED KNOWLEDGE BASE (DATASET, DOCUMENTS, API, WEB) -->
+        <div class="card" style="margin-top:20px" id="kb-card">
+          <div class="card-h" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+            <div>
+              <div class="eyebrow">Converted Knowledge Base</div>
+              <h2>Readable Source Intelligence</h2>
+              <p class="muted" style="margin:2px 0 0;font-size:12.5px">Structured records extracted by AI handlers from datasets (CSV/JSON), documents (PDF), APIs, and public websites.</p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div class="seg" id="kb-filter-seg">
+                <button class="on" data-kb-type="all" type="button">All (<span id="kb-count-all">0</span>)</button>
+                <button data-kb-type="dataset" type="button">Datasets</button>
+                <button data-kb-type="document" type="button">Documents</button>
+                <button data-kb-type="api" type="button">APIs</button>
+                <button data-kb-type="website" type="button">Websites</button>
+              </div>
+              <button class="btn sm" id="kb-refresh-btn" type="button"><svg class="ic sm"><use href="#i-refresh"/></svg>Sync</button>
+              <button class="btn sm primary" id="kb-view-raw-json" type="button"><svg class="ic sm"><use href="#i-code"/></svg>Export JSON</button>
+            </div>
+          </div>
+          <div class="card-b" style="padding:0">
+            <div style="padding:10px 16px;border-bottom:1px solid var(--line-2);display:flex;gap:12px;align-items:center">
+              <input id="kb-search-input" type="text" placeholder="Search readable records by counterparty, reg number, or risk..." style="flex:1;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:6px 12px;font-size:13px;color:inherit;outline:none">
+              <span class="faint" id="kb-display-count" style="font-size:12px">0 records</span>
+            </div>
+            <div id="kb-records-list" style="max-height:480px;overflow-y:auto;display:flex;flex-direction:column"></div>
+          </div>
+        </div>
+
       </div></div>
     </section>
 
@@ -981,6 +1012,30 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
     <div class="sheet-head"><div style="flex:1"><div class="eyebrow" id="src-step">Step 1 of 3</div><h2>Add a data source</h2><p>Only admins can add or edit sources. Keys are encrypted and never shown again.</p></div><button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button></div>
     <div class="sheet-body" id="src-body"></div>
     <div class="sheet-foot" id="src-foot"></div>
+  </div>
+</div>
+
+<!-- JSON Data Inspector Modal -->
+<div class="modal" id="json-modal" hidden>
+  <div class="sheet" style="max-width:760px;max-height:85vh;display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="JSON Data Inspector">
+    <div class="sheet-head">
+      <div style="flex:1">
+        <div class="eyebrow" id="json-modal-tag">API Payload</div>
+        <h2 id="json-modal-title">Structured JSON Data</h2>
+        <p id="json-modal-sub">Machine-readable data emitted by Safe Globe AI engines and source handlers.</p>
+      </div>
+      <button class="dr-close" data-close-json type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:12px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span class="faint mono" id="json-modal-meta" style="font-size:11.5px">Content-Type: application/json</span>
+        <button class="btn sm" id="copy-json-btn" type="button"><svg class="ic sm"><use href="#i-check"/></svg>Copy JSON</button>
+      </div>
+      <pre id="json-modal-code" style="flex:1;overflow:auto;margin:0;background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:14px;font-family:var(--f-mono);font-size:12px;line-height:1.45;color:var(--fg)"></pre>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn ghost" data-close-json type="button">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1549,8 +1604,6 @@ function rebindPins(){
   }
   dirty = true;
 }
-rebindPins();
-
 /* vessels */
 function prepRoute(c){const seg=[];let tot=0;for(let i=0;i<c.length-1;i++){const d=d3.geoDistance(c[i],c[i+1]);seg.push({s:tot,d,f:d3.geoInterpolate(c[i],c[i+1])});tot+=d;}return {seg,tot};}
 function posAt(R,fr){fr=clamp(fr,0,1);const t=fr*R.tot;let k=0;while(k<R.seg.length-1&&R.seg[k].s+R.seg[k].d<t)k++;const s=R.seg[k];return s.f(s.d?clamp((t-s.s)/s.d,0,1):0);}
@@ -1573,6 +1626,7 @@ vesSel=gVessels.selectAll('g.vessel').data(VESSELS).join(enter=>{
   .on('pointermove',e=>{if(e.pointerType!=='touch')moveTip(e);})
   .on('pointerleave',hideTip)
   .on('click',(e,v)=>{e.stopPropagation();hideTip();select(v.id);});
+rebindPins();
 const stsG=gSts.append('g');
 stsG.append('circle').attr('class','sts-pulse').attr('r',8);
 stsG.append('circle').attr('r',8);
@@ -2256,7 +2310,19 @@ function runSearch(){
   box.innerHTML=qItems.length?qItems.map((r,i)=>`<button type="button" data-i="${i}" class="${i===0?'on':''}">${ic(kindIcon[r.kind],'sm')}<span>${esc(r.name)}</span><span class="r-sub">${esc(r.sub)}</span></button>`).join(''):`<div style="padding:10px 12px;font-size:12.5px" class="faint">No watchlist match. Press Enter to screen “${esc($('#q').value.trim())}” as a new counterparty.</div>`;
   box.hidden=false;
 }
-function pickSearch(i){const r=qItems[i];$('#q-results').hidden=true;$('#q').blur();if(!r){const v=$('#q').value.trim();if(v)toast('Screening “'+v+'” against 41 lists and 4 custom sources');return;}$('#q').value='';if(r.kind==='country')selectCountry(COUNTRY.get(r.id));else select(r.id);}
+function pickSearch(i){
+  const r=qItems[i];$('#q-results').hidden=true;$('#q').blur();
+  if(!r){
+    const v=$('#q').value.trim();
+    if(v){
+      runAsk({k:'free',q:v,tag:'AI KYCP'});
+    }
+    return;
+  }
+  $('#q').value='';
+  if(r.kind==='country')selectCountry(COUNTRY.get(r.id));
+  else select(r.id);
+}
 $('#q').addEventListener('input',runSearch);
 $('#q').addEventListener('keydown',e=>{const box=$('#q-results');if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!qItems.length)return;qIdx=(qIdx+(e.key==='ArrowDown'?1:-1)+qItems.length)%qItems.length;$$('button',box).forEach((b,i)=>b.classList.toggle('on',i===qIdx));}else if(e.key==='Enter'){e.preventDefault();pickSearch(qItems.length?qIdx:-1);}else if(e.key==='Escape'){box.hidden=true;$('#q').blur();}});
 $('#q-results').addEventListener('mousedown',e=>{const b=e.target.closest('button');if(b){e.preventDefault();pickSearch(+b.dataset.i);}});
@@ -2334,11 +2400,103 @@ function solve(k,text){
   return null;
 }
 let askRun=0;
-function runAsk(item){
+async function runAsk(item){
   if(!item)return;closeAsk();if(S.view!=='globe')showView('globe');
-  const k=item.k==='free'?routeQ(item.q):item.k;const r=k?solve(k,item.q):null;const run=++askRun;
+  const run=++askRun;
   const box=$('#answer');box.hidden=false;view.classList.add('has-answer');
-  if(!r){box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div><p class="answer-sum">This mockup answers questions about ownership, vessels going dark, CPI scores and beneficial owners. Try one of the suggested questions.</p><div style="display:flex;gap:8px"><button class="btn sm" data-reopen type="button">Show suggestions</button></div>`;return;}
+
+  // Check built-in mock canned questions first if matching canned keys
+  if(item.k!=='free'){
+    const r=solve(item.k,item.q);
+    if(r){
+      renderAskMockResult(box,item,r,run);
+      return;
+    }
+  }
+
+  // Live AI KYCP Query across Knowledge Base and LLM
+  box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div><ul class="steps"><li class="show run">${ic('loader','sm')}<span>Running AI search across converted sources, sanctions lists & registry graph…</span></li></ul><div class="answer-body"></div>`;
+
+  try {
+    const res = await fetch('/api/ai/kycp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: item.q })
+    });
+    const data = await res.json();
+    if(run !== askRun) return;
+
+    if(data && data.status === 'completed') {
+      const q = data.overallRisk.quadrant || 'monitor';
+      const kyc = data.knowYourCounterparty || {};
+      const steps = [
+        `Identified counterparty target "${data.target}" (${data.entityType})`,
+        `Scanned converted Knowledge Base sources (${(data.knowledgeBaseHits||[]).length} hits) & 41 sanctions lists`,
+        `Synthesized 5-pillar KYCP risk: ${data.overallRisk.level} (${data.overallRisk.score}/100) · Quadrant: ${q.toUpperCase()}`
+      ];
+
+      box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div>
+        <ul class="steps">${steps.map(s=>`<li class="show">${ic('check','sm')}<span>${esc(s)}</span></li>`).join('')}</ul>
+        <div class="answer-body">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
+            <span class="pill q-${q}" style="font-size:12px;padding:3px 8px">${data.overallRisk.level} Risk · ${data.overallRisk.score}/100 (${data.overallRisk.route})</span>
+            <button class="btn sm primary" id="view-ask-json-btn" type="button"><svg class="ic sm"><use href="#i-code"/></svg>View KYCP JSON</button>
+          </div>
+          <p class="answer-sum" style="margin-bottom:10px">${esc(kyc.executiveSummary || data.overallRisk.route)}</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:12px">
+            <div style="background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:8px">
+              <b>Identity & Reg:</b> <span class="faint">${esc(kyc.identityVerification?.status || 'N/A')}</span><br>
+              <small class="muted">${esc(kyc.identityVerification?.findings || '')}</small>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:8px">
+              <b>Ownership & UBO:</b> <span class="faint">${esc(kyc.ownershipAndUbo?.status || 'N/A')}</span><br>
+              <small class="muted">${esc(kyc.ownershipAndUbo?.findings || '')}</small>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:8px">
+              <b>Sanctions & PEP:</b> <span class="faint">${esc(kyc.sanctionsAndWatchlists?.status || 'Clean')}</span><br>
+              <small class="muted">${esc(kyc.sanctionsAndWatchlists?.findings || '')}</small>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:8px">
+              <b>Signals & Country:</b> <span class="faint">CPI: ${esc(kyc.jurisdictionRisk?.cpiScore || '')}</span><br>
+              <small class="muted">${esc(kyc.adverseMediaAndTelemetry?.findings || '')}</small>
+            </div>
+          </div>
+          ${(data.findings||[]).length ? `<div class="answer-res" style="margin-top:6px">${data.findings.slice(0,3).map(f=>`<div class="link-row" style="cursor:default">${ic(f.risk==='High'?'shield-alert':'shield')}<div class="lr-main"><div>${esc(f.title)}</div><small>${esc(f.detail)}</small></div><span class="pill ${f.risk==='High'?'q-escalate':'q-monitor'}">${f.risk}</span></div>`).join('')}</div>` : ''}
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <span class="faint" style="font-size:11px">Sources: ${esc((data.sourcesUsed||[]).join(', '))}</span>
+            <button class="btn ghost sm" data-x type="button">Clear</button>
+          </div>
+        </div>`;
+
+      const jsonBtn = $('#view-ask-json-btn');
+      if (jsonBtn) {
+        jsonBtn.onclick = () => openJsonModal(`KYCP Check: ${data.target}`, data, `Target: ${data.target} (${data.entityType})`);
+      }
+
+      const foundEnt = [...ORGS, ...VESSELS, ...PEOPLE].find(e => e.name.toLowerCase().includes(data.target.toLowerCase()) || data.target.toLowerCase().includes(e.name.toLowerCase()));
+      if (foundEnt) {
+        S.hl = new Set([foundEnt.id]);
+        S.selNet = new Set([foundEnt.id]);
+        refreshStatus();
+        const pt = foundEnt.kind === 'org' ? foundEnt.ll : foundEnt.cur;
+        if (pt) flyTo(pt[0], pt[1], 4);
+      }
+      return;
+    }
+  } catch(err) {
+    console.warn('AI search error, falling back:', err);
+  }
+
+  // Fallback to local solve
+  const k=item.k==='free'?routeQ(item.q):item.k;const r=k?solve(k,item.q):null;
+  if(!r){
+    box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div><p class="answer-sum">No exact graph match. Ask about Russian SOE links, vessels going dark, CPI scores, or counterparty names.</p><div style="display:flex;gap:8px"><button class="btn sm" data-reopen type="button">Show suggestions</button></div>`;
+    return;
+  }
+  renderAskMockResult(box,item,r,run);
+}
+
+function renderAskMockResult(box,item,r,run){
   box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div><ul class="steps">${r.steps.map(s=>`<li>${ic('check','sm')}<span>${esc(s)}</span></li>`).join('')}</ul><div class="answer-body"></div>`;
   const lis=$$('.steps li',box);
   lis.forEach((li,i)=>setTimeout(()=>{if(run!==askRun)return;li.classList.add('show','run');setTimeout(()=>li.classList.remove('run'),300);},REDUCED?0:i*340));
@@ -2429,18 +2587,189 @@ $('#thr').addEventListener('input',e=>{S.thr=+e.target.value;$('#thr-v').textCon
 const typeIcon={'API':'api','Data feed':'feed','Web':'web','PDF document':'doc','PDF':'doc'};
 function srcCard(s){
   const icon = typeIcon[s.type] || 'doc';
-  return `<div class="card src${s.health==='stale'?' warn':''}"><div class="src-top"><div class="dr-ico" style="width:36px;height:36px">${ic(icon)}</div><div style="min-width:0"><h3>${esc(s.label)}</h3><p>${esc(s.type)} · ${esc(s.how)}</p></div><span class="src-health pill ${s.health==='ok'?'q-monitor':'q-investigate'}">${s.health==='ok'?'Healthy':s.health==='new'?'Live':'Stale'}</span></div><dl class="kv"><dt>Covers</dt><dd>${esc(s.cover)}</dd><dt>Trust level</dt><dd>${esc(s.trust)}</dd>${(s.kv||[]).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl><div class="src-actions">${s.health==='stale'?`<button class="btn sm primary" data-src="retry" data-id="${s.id}" type="button">${ic('refresh','sm')}Retry now</button>`:''}<button class="btn sm" data-src="test" data-id="${s.id}" type="button">Test connection</button><button class="btn sm ghost" data-src="edit" data-id="${s.id}" type="button">Edit</button></div></div>`;
+  return `<div class="card src${s.health==='stale'?' warn':''}"><div class="src-top"><div class="dr-ico" style="width:36px;height:36px">${ic(icon)}</div><div style="min-width:0"><h3>${esc(s.label)}</h3><p>${esc(s.type)} · ${esc(s.how)}</p></div><span class="src-health pill ${s.health==='ok'?'q-monitor':'q-investigate'}">${s.health==='ok'?'Healthy':s.health==='new'?'Live':'Stale'}</span></div><dl class="kv"><dt>Covers</dt><dd>${esc(s.cover)}</dd><dt>Trust level</dt><dd>${esc(s.trust)}</dd>${(s.kv||[]).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl><div class="src-actions">${s.health==='stale'?`<button class="btn sm primary" data-src="retry" data-id="${s.id}" type="button">${ic('refresh','sm')}Retry now</button>`:''}<button class="btn sm" data-src="test" data-id="${s.id}" type="button">Test</button><button class="btn sm primary" data-src="view-records" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-doc"/></svg>Readable data</button><button class="btn sm ghost" data-src="reconvert" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-refresh"/></svg>Re-parse</button></div></div>`;
 }
-function renderSources(){$('#src-grid').innerHTML=SOURCES.map(srcCard).join('');$('#builtin').innerHTML=`<dl class="kv">${BUILTIN.map(([k,v])=>`<dt>${esc(k)}</dt><dd style="font-weight:400">${esc(v)}</dd>`).join('')}</dl>`;}
-$('#src-grid').addEventListener('click',e=>{
-  const b=e.target.closest('[data-src]');if(!b)return;const s=SOURCES.find(x=>x.id===b.dataset.id);
-  if(b.dataset.src==='retry'){
-    b.disabled=true;b.innerHTML=ic('loader','sm')+'Reading…';
-    fetch('/api/sources/'+s.id+'/retry',{method:'POST'}).catch(()=>{});
-    setTimeout(()=>{s.health='ok';s.kv=[['Last successful read','Just now'],['Field mapping','Re-learned from new layout'],['Affected findings','Confidence restored']];renderSources();toast(s.label+' is healthy again');},1400);
+
+function renderSources(){
+  $('#src-grid').innerHTML=SOURCES.map(srcCard).join('');
+  $('#builtin').innerHTML=`<dl class="kv">${BUILTIN.map(([k,v])=>`<dt>${esc(k)}</dt><dd style="font-weight:400">${esc(v)}</dd>`).join('')}</dl>`;
+  fetchKbRecords();
+}
+
+/* ===================== Converted Knowledge Base Records ===================== */
+let KB_RECORDS = [];
+let kbTypeFilter = 'all';
+
+async function fetchKbRecords() {
+  try {
+    const res = await fetch('/api/sources/records');
+    const data = await res.json();
+    if (data && Array.isArray(data.records)) {
+      KB_RECORDS = data.records;
+      renderKbRecords();
+    }
+  } catch (err) {
+    console.error('Failed to load KB records:', err);
   }
-  else if(b.dataset.src==='test'){toast(`${s.label}: test passed, field mapping unchanged`);}
-  else toast('Only admins can edit sources. You are signed in as an admin.');
+}
+
+function renderKbRecords() {
+  const listEl = $('#kb-records-list');
+  if (!listEl) return;
+  const q = ($('#kb-search-input') ? $('#kb-search-input').value : '').trim().toLowerCase();
+  
+  let filtered = KB_RECORDS;
+  if (kbTypeFilter !== 'all') {
+    filtered = filtered.filter(r => r.source_type === kbTypeFilter);
+  }
+  if (q) {
+    filtered = filtered.filter(r =>
+      (r.entity_name + ' ' + (r.reg_no || '') + ' ' + (r.jurisdiction || '') + ' ' + (r.summary || '')).toLowerCase().includes(q)
+    );
+  }
+
+  if ($('#kb-count-all')) $('#kb-count-all').textContent = KB_RECORDS.length;
+  if ($('#kb-display-count')) $('#kb-display-count').textContent = `${filtered.length} record${filtered.length === 1 ? '' : 's'}`;
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = `<div style="padding:24px;text-align:center" class="faint">No readable records match the current filter.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map((r) => {
+    const riskBadge = r.risk_level === 'High' ? 'q-escalate' : r.risk_level === 'Medium' ? 'q-investigate' : 'q-monitor';
+    const jsonEscaped = esc(JSON.stringify(r));
+    return `<div style="padding:12px 16px;border-bottom:1px solid var(--line-2);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="w-ico" style="width:20px;height:20px">${ic(r.entity_kind === 'vessel' ? 'ship' : r.entity_kind === 'person' ? 'person' : 'org', 'sm')}</span>
+          <b style="font-size:13.5px">${esc(r.entity_name)}</b>
+          <span class="chip" style="font-size:10.5px">${esc(r.source_label)} (${esc(r.source_type)})</span>
+          <span class="pill ${riskBadge}" style="font-size:10.5px;padding:2px 7px">${esc(r.risk_level)} (${r.risk_score})</span>
+          ${r.jurisdiction ? `<span class="mono faint" style="font-size:11px">${esc(r.jurisdiction)}</span>` : ''}
+          ${r.reg_no ? `<span class="mono faint" style="font-size:11px">${esc(r.reg_no)}</span>` : ''}
+        </div>
+        <p style="margin:4px 0 0;font-size:12.5px;color:var(--fg-2);line-height:1.4">${esc(r.summary)}</p>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <button class="btn sm" data-kb-screen="${esc(r.entity_name)}" data-kb-kind="${esc(r.entity_kind)}" type="button" title="Run AI KYCP Check"><svg class="ic sm"><use href="#i-spark"/></svg>AI Screen</button>
+        <button class="btn sm ghost" data-kb-json="${jsonEscaped}" type="button" title="Inspect Record JSON"><svg class="ic sm"><use href="#i-code"/></svg>JSON</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// JSON Inspector Modal Helpers
+function openJsonModal(title, data, sub = 'Machine-readable output') {
+  const m = $('#json-modal');
+  if (!m) return;
+  $('#json-modal-title').textContent = title || 'Structured JSON Data';
+  $('#json-modal-sub').textContent = sub;
+  const jsonStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  $('#json-modal-code').textContent = jsonStr;
+  m.hidden = false;
+}
+function closeJsonModal() {
+  const m = $('#json-modal');
+  if (m) m.hidden = true;
+}
+
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-close-json]')) closeJsonModal();
+  if (e.target.closest('#copy-json-btn')) {
+    const code = $('#json-modal-code') ? $('#json-modal-code').textContent : '';
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code).then(() => toast('JSON copied to clipboard'));
+    } else {
+      toast('JSON copied');
+    }
+  }
+  const kbJsonBtn = e.target.closest('[data-kb-json]');
+  if (kbJsonBtn) {
+    try {
+      const parsed = JSON.parse(kbJsonBtn.dataset.kbJson);
+      openJsonModal(parsed.entity_name || 'Knowledge Base Record', parsed, `Source: ${parsed.source_label} (${parsed.source_type})`);
+    } catch(err){}
+  }
+  const kbScreenBtn = e.target.closest('[data-kb-screen]');
+  if (kbScreenBtn) {
+    runAsk({ k: 'free', q: kbScreenBtn.dataset.kbScreen, tag: 'AI KYCP' });
+  }
+});
+
+const kbSearchInp = $('#kb-search-input');
+if (kbSearchInp) kbSearchInp.addEventListener('input', renderKbRecords);
+
+const kbSeg = $('#kb-filter-seg');
+if (kbSeg) {
+  kbSeg.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    kbTypeFilter = b.dataset.kbType;
+    $$('#kb-filter-seg button').forEach(x => x.classList.toggle('on', x === b));
+    renderKbRecords();
+  });
+}
+
+const kbRefreshBtn = $('#kb-refresh-btn');
+if (kbRefreshBtn) {
+  kbRefreshBtn.addEventListener('click', () => {
+    fetchKbRecords();
+    toast('Knowledge Base synchronized from backend');
+  });
+}
+
+const kbExportBtn = $('#kb-view-raw-json');
+if (kbExportBtn) {
+  kbExportBtn.addEventListener('click', () => {
+    openJsonModal('Complete Knowledge Base', KB_RECORDS, 'All converted records across datasets, documents, APIs and websites');
+  });
+}
+
+$('#src-grid').addEventListener('click', e => {
+  const b = e.target.closest('[data-src]');
+  if (!b) return;
+  const s = SOURCES.find(x => x.id === b.dataset.id);
+  if (!s) return;
+
+  if (b.dataset.src === 'retry') {
+    b.disabled = true;
+    b.innerHTML = ic('loader', 'sm') + 'Reading…';
+    fetch('/api/sources/' + s.id + '/retry', { method: 'POST' }).catch(() => {});
+    setTimeout(() => {
+      s.health = 'ok';
+      s.kv = [['Last successful read', 'Just now'], ['Field mapping', 'Re-learned from new layout'], ['Affected findings', 'Confidence restored']];
+      renderSources();
+      toast(s.label + ' is healthy again');
+    }, 1400);
+  } else if (b.dataset.src === 'test') {
+    toast(`${s.label}: test passed, connection healthy`);
+  } else if (b.dataset.src === 'view-records') {
+    fetch('/api/sources/' + s.id + '/records')
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.records) {
+          openJsonModal(`Records: ${s.label}`, data.records, `${data.total} readable converted records for this source`);
+        }
+      });
+  } else if (b.dataset.src === 'reconvert') {
+    b.disabled = true;
+    b.innerHTML = ic('loader', 'sm') + 'Parsing…';
+    fetch('/api/sources/' + s.id + '/convert', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        b.disabled = false;
+        b.innerHTML = `<svg class="ic sm"><use href="#i-refresh"/></svg>Re-parse`;
+        fetchKbRecords();
+        toast(`${s.label}: converted ${data.recordsCount || 0} readable records`);
+      })
+      .catch(() => {
+        b.disabled = false;
+        b.innerHTML = `<svg class="ic sm"><use href="#i-refresh"/></svg>Re-parse`;
+      });
+  } else {
+    toast('Only admins can edit sources. You are signed in as an admin.');
+  }
 });
 
 let srcState={step:1,type:'API',file:null};
