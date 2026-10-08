@@ -145,7 +145,7 @@ async function runKycpCheck({ query, type = 'organisation', jurisdiction = '' })
     try {
       const geminiResult = await callGeminiApi({
         apiKey,
-        model: config.geminiModel || 'gemini-2.5-flash',
+        model: config.geminiModel || 'gemini-3.5-flash',
         query: cleanQuery,
         entityKind,
         targetJurisdiction,
@@ -153,7 +153,8 @@ async function runKycpCheck({ query, type = 'organisation', jurisdiction = '' })
         kbHits,
         primaryEntity,
         ownership,
-        vesselSignals
+        vesselSignals,
+        sourcesUsed: Array.from(sourcesSet)
       });
 
       if (geminiResult) {
@@ -181,7 +182,7 @@ async function runKycpCheck({ query, type = 'organisation', jurisdiction = '' })
 /**
  * Call Google AI Studio Gemini REST API
  */
-async function callGeminiApi({ apiKey, model, query, entityKind, targetJurisdiction, cpiData, kbHits, primaryEntity, ownership, vesselSignals }) {
+async function callGeminiApi({ apiKey, model, query, entityKind, targetJurisdiction, cpiData, kbHits, primaryEntity, ownership, vesselSignals, sourcesUsed }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const evidencePrompt = `
@@ -264,50 +265,64 @@ Perform full KYCP background analysis and return ONLY a single JSON object with 
 }
 `;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const modelsToTry = [model, 'gemini-3.5-flash', 'gemini-flash-latest'].filter((m, i, arr) => m && arr.indexOf(m) === i);
+  let lastError = null;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    signal: controller.signal,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{ text: evidencePrompt }]
-      }],
-      systemInstruction: {
-        parts: [{ text: KYCP_INSTRUCTIONS }]
-      },
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: 'application/json'
+  for (const currentModel of modelsToTry) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 18000);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: evidencePrompt }]
+          }],
+          systemInstruction: {
+            parts: [{ text: KYCP_INSTRUCTIONS }]
+          },
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Gemini API error ${response.status} on ${currentModel}: ${errText}`);
       }
-    })
-  });
-  clearTimeout(timeoutId);
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Gemini API error ${response.status}: ${errText}`);
+      const json = await response.json();
+      const candidate = json.candidates && json.candidates[0];
+      const rawText = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
+      if (!rawText) continue;
+
+      const parsed = JSON.parse(rawText.trim());
+      return {
+        ...parsed,
+        aiModel: currentModel,
+        timestamp: new Date().toISOString(),
+        sourcesUsed: parsed.sourcesUsed || sourcesUsed || ['Built-in sanctions lists (41)', 'Transparency International CPI 2025'],
+        knowledgeBaseHits: kbHits.slice(0, 5).map(h => ({
+          source: h.source_label,
+          type: h.source_type,
+          entity: h.entity_name,
+          summary: h.summary,
+          riskLevel: h.risk_level
+        }))
+      };
+    } catch (err) {
+      lastError = err;
+    }
   }
 
-  const json = await response.json();
-  const candidate = json.candidates && json.candidates[0];
-  const rawText = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
-  if (!rawText) return null;
-
-  const parsed = JSON.parse(rawText.trim());
-  return {
-    ...parsed,
-    timestamp: new Date().toISOString(),
-    knowledgeBaseHits: kbHits.slice(0, 5).map(h => ({
-      source: h.source_label,
-      type: h.source_type,
-      entity: h.entity_name,
-      summary: h.summary,
-      riskLevel: h.risk_level
-    }))
-  };
+  throw lastError || new Error('All candidate Gemini models failed');
 }
 
 /**

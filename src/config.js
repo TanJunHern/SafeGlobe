@@ -11,7 +11,7 @@ module.exports = {
   corsOrigin: process.env.CORS_ORIGIN || '*',
   confidenceThreshold: parseInt(process.env.CONFIDENCE_THRESHOLD || '80', 10),
   geminiApiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY || '',
-  geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
   staticDir: path.join(__dirname, '..')
 };
 
