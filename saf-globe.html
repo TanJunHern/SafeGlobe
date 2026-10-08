@@ -1411,8 +1411,6 @@ function rebindPins(){
   refreshStatus();
   dirty = true;
 }
-rebindPins();
-
 /* vessels */
 function prepRoute(c){const seg=[];let tot=0;for(let i=0;i<c.length-1;i++){const d=d3.geoDistance(c[i],c[i+1]);seg.push({s:tot,d,f:d3.geoInterpolate(c[i],c[i+1])});tot+=d;}return {seg,tot};}
 function posAt(R,fr){fr=clamp(fr,0,1);const t=fr*R.tot;let k=0;while(k<R.seg.length-1&&R.seg[k].s+R.seg[k].d<t)k++;const s=R.seg[k];return s.f(s.d?clamp((t-s.s)/s.d,0,1):0);}
@@ -1435,6 +1433,7 @@ const vesSel=gVessels.selectAll('g.vessel').data(VESSELS).join(enter=>{
   .on('pointermove',e=>{if(e.pointerType!=='touch')moveTip(e);})
   .on('pointerleave',hideTip)
   .on('click',(e,v)=>{e.stopPropagation();hideTip();select(v.id);});
+rebindPins();
 const stsG=gSts.append('g');
 stsG.append('circle').attr('class','sts-pulse').attr('r',8);
 stsG.append('circle').attr('r',8);
