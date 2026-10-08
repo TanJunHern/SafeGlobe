@@ -18,6 +18,7 @@ const askRouter = require('./routes/ask');
 const statsRouter = require('./routes/stats');
 const uploadsRouter = require('./routes/uploads');
 const placesRouter = require('./routes/places');
+const aiRouter = require('./routes/ai');
 
 const app = express();
 
@@ -54,6 +55,8 @@ app.use('/api/ask', askRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/uploads', uploadsRouter);
 app.use('/api/places', placesRouter);
+app.use('/api/ai', aiRouter);
+
 
 // Forward /api/intake to entities router
 app.post('/api/intake', (req, res, next) => {
