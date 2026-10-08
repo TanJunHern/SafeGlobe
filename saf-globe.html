@@ -642,25 +642,42 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 /* UBO & Controlling Persons dynamic table */
 .ubo-section{margin-top:4px}
 .ubo-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.ubo-table-head{display:flex;gap:6px;font-size:11px;font-weight:600;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.4px;padding:0 2px 4px 2px}
+.ubo-table-head{display:grid;grid-template-columns:150px minmax(0, 1fr) 95px 28px;gap:8px;font-size:11px;font-weight:600;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.4px;padding:0 2px 4px 2px;box-sizing:border-box;width:100%}
 .ubo-wrap{display:flex;flex-direction:column;gap:8px}
-.ubo-row{display:flex;gap:6px;align-items:flex-start}
-.ubo-role-col{flex:0 0 160px;display:flex;flex-direction:column;gap:4px}
-.ubo-role-col select, .ubo-role-col input{font-size:12.5px;padding:6px 8px}
-.ubo-name-col{flex:1;min-width:0}
-.ubo-name-col input{font-size:12.5px;padding:6px 10px}
-.ubo-pct-col{flex:0 0 85px}
-.ubo-pct-wrap{position:relative;display:flex;align-items:center}
-.ubo-pct-wrap input{font-size:12.5px;padding:6px 20px 6px 8px;text-align:right}
+.ubo-row{display:grid;grid-template-columns:150px minmax(0, 1fr) 95px 28px;gap:8px;align-items:flex-start;box-sizing:border-box;width:100%}
+.ubo-role-col{min-width:0;display:flex;flex-direction:column;gap:4px}
+.ubo-role-col select, .ubo-role-col input{font-size:12.5px;padding:6px 8px;width:100% !important;box-sizing:border-box !important;min-width:0 !important}
+.ubo-name-col{min-width:0;width:100%}
+.ubo-name-col input{font-size:12.5px;padding:6px 10px;width:100% !important;box-sizing:border-box !important;min-width:0 !important;max-width:100% !important}
+.ubo-pct-col{min-width:0;width:100%}
+.ubo-pct-wrap{position:relative;display:flex;align-items:center;width:100%;box-sizing:border-box}
+.ubo-pct-wrap input{font-size:12.5px;padding:6px 20px 6px 8px !important;text-align:right;width:100% !important;box-sizing:border-box !important;min-width:0 !important;max-width:100% !important}
 .ubo-pct-wrap .ubo-pct-symbol{position:absolute;right:7px;font-size:11px;color:var(--fg-3);pointer-events:none;font-weight:600}
-.ubo-del-col{flex:0 0 28px;display:flex;align-items:center;padding-top:3px}
+.ubo-del-col{min-width:0;display:flex;align-items:center;justify-content:center;padding-top:3px}
 .ubo-del-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg-3);cursor:pointer;font-size:16px;line-height:1;transition:all .15s}
 .ubo-del-btn:hover:not(:disabled){color:var(--high);border-color:var(--high);background:var(--surface-3)}
 .ubo-del-btn:disabled{opacity:.2;cursor:not-allowed}
-.ubo-summary-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;font-size:12px;margin-top:8px;transition:all .2s;border:1px solid var(--line)}
-.ubo-summary-bar.valid{background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:var(--low)}
-.ubo-summary-bar.invalid{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.35);color:var(--high)}
-.ubo-summary-status{display:flex;align-items:center;gap:6px;flex:1}
+
+/* Visual Progress Bar out of 100 */
+.ubo-meter-wrap{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-top:8px;display:flex;flex-direction:column;gap:7px;transition:all .2s}
+.ubo-meter-wrap.valid{background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3)}
+.ubo-meter-wrap.partial{background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.35)}
+.ubo-meter-wrap.invalid{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.35)}
+.ubo-meter-header{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.ubo-meter-title{display:flex;align-items:center;gap:6px;font-weight:500;color:var(--fg)}
+.ubo-meter-wrap.valid .ubo-meter-title{color:var(--low)}
+.ubo-meter-wrap.partial .ubo-meter-title{color:var(--mid)}
+.ubo-meter-wrap.invalid .ubo-meter-title{color:var(--high)}
+.ubo-meter-val{font-weight:700;font-size:12px}
+.ubo-meter-wrap.valid .ubo-meter-val{color:var(--low)}
+.ubo-meter-wrap.partial .ubo-meter-val{color:var(--mid)}
+.ubo-meter-wrap.invalid .ubo-meter-val{color:var(--high)}
+.ubo-progress-track{width:100%;height:8px;background:var(--surface-3);border-radius:999px;overflow:hidden;position:relative;border:1px solid var(--line)}
+.ubo-progress-fill{height:100%;border-radius:999px;transition:width .2s ease,background-color .2s ease;background:var(--accent)}
+.ubo-meter-wrap.valid .ubo-progress-fill{background:var(--low)}
+.ubo-meter-wrap.partial .ubo-progress-fill{background:var(--mid)}
+.ubo-meter-wrap.invalid .ubo-progress-fill{background:var(--high)}
+
 .ubo-add-btn{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px dashed var(--line-2);background:none;color:var(--fg-2);cursor:pointer;transition:all .15s}
 .ubo-add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surface-2)}
 #intake-submit:disabled{opacity:0.45;cursor:not-allowed;filter:grayscale(0.4)}
@@ -1029,20 +1046,25 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
           <small style="display:block;margin-bottom:8px">Clear identification of all directors, beneficial owners and controlling persons. Equity ownership must total exactly 100%.</small>
           
           <div class="ubo-table-head">
-            <span style="flex:0 0 160px">Classification</span>
-            <span style="flex:1">Full legal name / Entity</span>
-            <span style="flex:0 0 85px;text-align:right">Equity share</span>
-            <span style="flex:0 0 28px"></span>
+            <span>Classification</span>
+            <span>Full legal name / Entity</span>
+            <span style="text-align:right">Equity share</span>
+            <span></span>
           </div>
 
           <div class="ubo-wrap" id="ubo-rows-container"></div>
 
-          <div class="ubo-summary-bar invalid" id="ubo-summary-bar">
-            <div class="ubo-summary-status">
-              <svg class="ic xs" id="ubo-status-icon"><use href="#i-alert"/></svg>
-              <span id="ubo-status-text">Beneficial ownership must total exactly 100.0% (Current total: 0.0%)</span>
+          <div class="ubo-meter-wrap partial" id="ubo-meter-wrap">
+            <div class="ubo-meter-header">
+              <div class="ubo-meter-title">
+                <svg class="ic xs" id="ubo-status-icon"><use href="#i-alert"/></svg>
+                <span id="ubo-status-text">Beneficial Ownership: 0.0% / 100% (100.0% unallocated)</span>
+              </div>
+              <span class="ubo-meter-val mono" id="ubo-total-display">0.0% / 100%</span>
             </div>
-            <b class="mono" id="ubo-total-display">0.0%</b>
+            <div class="ubo-progress-track">
+              <div class="ubo-progress-fill" id="ubo-progress-fill" style="width: 0%;"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -2827,10 +2849,11 @@ function getUboData(){
 function updateUboValidation(){
   const curType = $('#intake-type') ? $('#intake-type').value : 'org';
   const submitBtn = $('#intake-submit');
-  const summaryBar = $('#ubo-summary-bar');
+  const meterWrap = $('#ubo-meter-wrap');
   const statusIcon = $('#ubo-status-icon use');
   const statusText = $('#ubo-status-text');
   const totalDisplay = $('#ubo-total-display');
+  const progressFill = $('#ubo-progress-fill');
 
   if (curType !== 'org') {
     if (submitBtn) {
@@ -2842,23 +2865,30 @@ function updateUboValidation(){
 
   const { total, isValid } = getUboData();
 
-  if (totalDisplay) totalDisplay.textContent = total.toFixed(1) + '%';
+  const fillPct = Math.max(0, Math.min(100, total));
+  if (progressFill) progressFill.style.width = fillPct + '%';
 
   if (isValid) {
-    if (summaryBar) summaryBar.className = 'ubo-summary-bar valid';
+    if (meterWrap) meterWrap.className = 'ubo-meter-wrap valid';
     if (statusIcon) statusIcon.setAttribute('href', '#i-check');
-    if (statusText) statusText.textContent = 'Ownership allocation verified: 100.0% fully distributed.';
+    if (statusText) statusText.textContent = '✓ Beneficial Ownership: 100.0% / 100% (Fully allocated)';
+    if (totalDisplay) totalDisplay.textContent = '100.0% / 100%';
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.removeAttribute('title');
     }
     return true;
   } else {
-    if (summaryBar) summaryBar.className = 'ubo-summary-bar invalid';
+    const isOver = total > 100;
+    if (meterWrap) meterWrap.className = 'ubo-meter-wrap ' + (isOver ? 'invalid' : 'partial');
     if (statusIcon) statusIcon.setAttribute('href', '#i-alert');
     const diff = Math.round((100 - total) * 100) / 100;
-    const diffNote = diff > 0 ? `(${diff.toFixed(1)}% unallocated)` : `(${Math.abs(diff).toFixed(1)}% overallocated)`;
-    if (statusText) statusText.textContent = `Beneficial ownership must total exactly 100.0% (Current: ${total.toFixed(1)}% · ${diffNote})`;
+    if (isOver) {
+      if (statusText) statusText.textContent = `Beneficial Ownership: ${total.toFixed(1)}% / 100% (${Math.abs(diff).toFixed(1)}% overallocated)`;
+    } else {
+      if (statusText) statusText.textContent = `Beneficial Ownership: ${total.toFixed(1)}% / 100% (${diff.toFixed(1)}% unallocated)`;
+    }
+    if (totalDisplay) totalDisplay.textContent = `${total.toFixed(1)}% / 100%`;
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.setAttribute('title', 'Total beneficial ownership and equity distribution must equal exactly 100.0% to proceed');
