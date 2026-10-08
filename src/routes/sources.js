@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const { convertAndStoreSource } = require('../services/sourceHandlers');
 
 // GET /api/sources
 router.get('/', (req, res) => {
@@ -10,8 +11,25 @@ router.get('/', (req, res) => {
   });
 });
 
+// GET /api/sources/records (All converted readable records from dataset, documents, API, web)
+router.get('/records', (req, res) => {
+  const db = getDb();
+  const { sourceId, kind, type, q } = req.query;
+  let records;
+  if (q) {
+    records = db.searchSourceRecords(q, kind);
+  } else {
+    records = db.getSourceRecords({ sourceId, kind, type });
+  }
+  res.json({
+    total: records.length,
+    records
+  });
+});
+
+
 // POST /api/sources
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const {
     label,
     type = 'API',
@@ -93,10 +111,53 @@ router.post('/', (req, res) => {
   };
 
   db.addSource(newSource);
+
+  let conversion = null;
+  try {
+    conversion = await convertAndStoreSource({
+      ...newSource,
+      content,
+      filename,
+      format: config.format
+    });
+  } catch (err) {
+    console.error('Source conversion error:', err);
+  }
+
   res.status(201).json({
     status: 'created',
     source: newSource,
-    uploadedFile: uploadedFile ? { id: uploadedFile.id, filename: uploadedFile.filename, storage_path: uploadedFile.storage_path } : null
+    uploadedFile: uploadedFile ? { id: uploadedFile.id, filename: uploadedFile.filename, storage_path: uploadedFile.storage_path } : null,
+    conversion: conversion ? {
+      recordsCount: conversion.recordsCount,
+      summary: conversion.summary,
+      sample: (conversion.records || []).slice(0, 3)
+    } : null
+  });
+});
+
+// GET /api/sources/:id/records
+router.get('/:id/records', (req, res) => {
+  const db = getDb();
+  const records = db.getSourceRecordsBySource(req.params.id);
+  res.json({
+    sourceId: req.params.id,
+    total: records.length,
+    records
+  });
+});
+
+// POST /api/sources/:id/convert
+router.post('/:id/convert', async (req, res) => {
+  const db = getDb();
+  const sources = db.getSources();
+  const source = sources.find(s => s.id === req.params.id);
+  if (!source) return res.status(404).json({ error: 'Source not found' });
+  const result = await convertAndStoreSource(source);
+  res.json({
+    status: 'converted',
+    sourceId: source.id,
+    ...result
   });
 });
 
@@ -146,6 +207,7 @@ router.post('/:id/retry', (req, res) => {
 router.delete('/:id', (req, res) => {
   const db = getDb();
   db.deleteSource(req.params.id);
+  db.deleteSourceRecordsBySourceId(req.params.id);
   res.json({
     status: 'deleted',
     id: req.params.id
@@ -153,3 +215,4 @@ router.delete('/:id', (req, res) => {
 });
 
 module.exports = router;
+
