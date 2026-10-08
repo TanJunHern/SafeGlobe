@@ -638,6 +638,32 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 /* Person pin distinct styling on globe */
 .pin.person-pin .p-core{r:2.8}
 .pin.person-pin .p-ring{stroke-width:2.2}
+
+/* UBO & Controlling Persons dynamic table */
+.ubo-section{margin-top:4px}
+.ubo-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ubo-table-head{display:flex;gap:6px;font-size:11px;font-weight:600;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.4px;padding:0 2px 4px 2px}
+.ubo-wrap{display:flex;flex-direction:column;gap:8px}
+.ubo-row{display:flex;gap:6px;align-items:flex-start}
+.ubo-role-col{flex:0 0 160px;display:flex;flex-direction:column;gap:4px}
+.ubo-role-col select, .ubo-role-col input{font-size:12.5px;padding:6px 8px}
+.ubo-name-col{flex:1;min-width:0}
+.ubo-name-col input{font-size:12.5px;padding:6px 10px}
+.ubo-pct-col{flex:0 0 85px}
+.ubo-pct-wrap{position:relative;display:flex;align-items:center}
+.ubo-pct-wrap input{font-size:12.5px;padding:6px 20px 6px 8px;text-align:right}
+.ubo-pct-wrap .ubo-pct-symbol{position:absolute;right:7px;font-size:11px;color:var(--fg-3);pointer-events:none;font-weight:600}
+.ubo-del-col{flex:0 0 28px;display:flex;align-items:center;padding-top:3px}
+.ubo-del-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg-3);cursor:pointer;font-size:16px;line-height:1;transition:all .15s}
+.ubo-del-btn:hover:not(:disabled){color:var(--high);border-color:var(--high);background:var(--surface-3)}
+.ubo-del-btn:disabled{opacity:.2;cursor:not-allowed}
+.ubo-summary-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;font-size:12px;margin-top:8px;transition:all .2s;border:1px solid var(--line)}
+.ubo-summary-bar.valid{background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3);color:var(--low)}
+.ubo-summary-bar.invalid{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.35);color:var(--high)}
+.ubo-summary-status{display:flex;align-items:center;gap:6px;flex:1}
+.ubo-add-btn{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px dashed var(--line-2);background:none;color:var(--fg-2);cursor:pointer;transition:all .15s}
+.ubo-add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surface-2)}
+#intake-submit:disabled{opacity:0.45;cursor:not-allowed;filter:grayscale(0.4)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -993,7 +1019,32 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
           <div class="addr-dropdown" id="intake-org-addr-dropdown" hidden></div>
           <div class="addr-feedback" id="intake-org-addr-feedback"></div>
         </div>
-        <div class="field"><label for="intake-org-controllers">Directors, ultimate beneficial owners (UBOs) & controlling persons</label><textarea id="intake-org-controllers" rows="2" style="font-size:12.5px" placeholder="e.g. Maria Chen (Managing Director, 35%), Tan Wei (Director, 25%), Sovereign Capital (40%)"></textarea><small>Clear identification of all directors, beneficial owners and controlling persons.</small></div>
+        <div class="field ubo-section">
+          <div class="ubo-header-row">
+            <label style="margin:0;font-weight:600">Directors, ultimate beneficial owners (UBOs) & controlling persons</label>
+            <button type="button" class="ubo-add-btn" id="ubo-add-btn" title="Add another controller or beneficial owner">
+              <svg class="ic xs"><use href="#i-plus"/></svg><span>Add Person / UBO</span>
+            </button>
+          </div>
+          <small style="display:block;margin-bottom:8px">Clear identification of all directors, beneficial owners and controlling persons. Equity ownership must total exactly 100%.</small>
+          
+          <div class="ubo-table-head">
+            <span style="flex:0 0 160px">Classification</span>
+            <span style="flex:1">Full legal name / Entity</span>
+            <span style="flex:0 0 85px;text-align:right">Equity share</span>
+            <span style="flex:0 0 28px"></span>
+          </div>
+
+          <div class="ubo-wrap" id="ubo-rows-container"></div>
+
+          <div class="ubo-summary-bar invalid" id="ubo-summary-bar">
+            <div class="ubo-summary-status">
+              <svg class="ic xs" id="ubo-status-icon"><use href="#i-alert"/></svg>
+              <span id="ubo-status-text">Beneficial ownership must total exactly 100.0% (Current total: 0.0%)</span>
+            </div>
+            <b class="mono" id="ubo-total-display">0.0%</b>
+          </div>
+        </div>
       </div>
 
       <!-- Individual (Person) Specific Fields -->
@@ -2660,6 +2711,170 @@ function updateIntakeTypeView(t){
   if($('#intake-org-fields')) $('#intake-org-fields').style.display = t==='org' ? '' : 'none';
   if($('#intake-person-fields')) $('#intake-person-fields').style.display = t==='person' ? '' : 'none';
   if($('#intake-vessel-fields')) $('#intake-vessel-fields').style.display = t==='vessel' ? '' : 'none';
+  updateUboValidation();
+}
+
+// --- Directors, UBOs & Controlling Persons Management ---
+function createUboRowElement(data = {}){
+  const row = document.createElement('div');
+  row.className = 'ubo-row';
+  
+  const role = data.role || 'Ultimate Beneficial Owner (UBO)';
+  const isStandard = ['Director', 'Ultimate Beneficial Owner (UBO)', 'Controlling Person'].includes(role);
+  const selectVal = isStandard ? role : 'Other';
+  const customRoleVal = !isStandard ? (data.customRole || (role !== 'Other' ? role : '')) : '';
+  const isOther = selectVal === 'Other';
+  const nameVal = data.name || '';
+  const pctVal = data.pct !== undefined && data.pct !== null ? data.pct : '';
+
+  row.innerHTML = `
+    <div class="ubo-role-col">
+      <select class="ubo-role-select">
+        <option value="Director" ${selectVal === 'Director' ? 'selected' : ''}>Director</option>
+        <option value="Ultimate Beneficial Owner (UBO)" ${selectVal === 'Ultimate Beneficial Owner (UBO)' ? 'selected' : ''}>Ultimate Beneficial Owner (UBO)</option>
+        <option value="Controlling Person" ${selectVal === 'Controlling Person' ? 'selected' : ''}>Controlling Person</option>
+        <option value="Other" ${selectVal === 'Other' ? 'selected' : ''}>Other (specify)</option>
+      </select>
+      <input type="text" class="ubo-custom-role" placeholder="Specify title..." value="${esc(customRoleVal)}" style="display:${isOther ? '' : 'none'}">
+    </div>
+    <div class="ubo-name-col">
+      <input type="text" class="ubo-name-input" placeholder="Full legal name / Entity" value="${esc(nameVal)}">
+    </div>
+    <div class="ubo-pct-col">
+      <div class="ubo-pct-wrap">
+        <input type="number" class="ubo-pct-input" min="0" max="100" step="any" placeholder="0.0" value="${pctVal !== '' ? esc(pctVal) : ''}">
+        <span class="ubo-pct-symbol">%</span>
+      </div>
+    </div>
+    <div class="ubo-del-col">
+      <button type="button" class="ubo-del-btn" title="Remove person">&times;</button>
+    </div>
+  `;
+
+  const sel = row.querySelector('.ubo-role-select');
+  const customInput = row.querySelector('.ubo-custom-role');
+  const pctInput = row.querySelector('.ubo-pct-input');
+  const nameInput = row.querySelector('.ubo-name-input');
+  const delBtn = row.querySelector('.ubo-del-btn');
+
+  sel.addEventListener('change', () => {
+    if (sel.value === 'Other') {
+      customInput.style.display = '';
+      customInput.focus();
+    } else {
+      customInput.style.display = 'none';
+      customInput.value = '';
+    }
+    updateUboValidation();
+  });
+
+  customInput.addEventListener('input', updateUboValidation);
+  nameInput.addEventListener('input', updateUboValidation);
+  pctInput.addEventListener('input', updateUboValidation);
+
+  delBtn.addEventListener('click', () => {
+    const container = $('#ubo-rows-container');
+    if (!container) return;
+    const rows = container.querySelectorAll('.ubo-row');
+    if (rows.length > 1) {
+      row.remove();
+      updateUboDelButtons();
+      updateUboValidation();
+    }
+  });
+
+  return row;
+}
+
+function updateUboDelButtons(){
+  const container = $('#ubo-rows-container');
+  if (!container) return;
+  const rows = container.querySelectorAll('.ubo-row');
+  rows.forEach(r => {
+    const btn = r.querySelector('.ubo-del-btn');
+    if (btn) btn.disabled = rows.length <= 1;
+  });
+}
+
+function getUboData(){
+  const container = $('#ubo-rows-container');
+  if (!container) return { list: [], total: 0, isValid: false, formatted: '' };
+  const rows = container.querySelectorAll('.ubo-row');
+  const list = [];
+  let total = 0;
+
+  rows.forEach(r => {
+    const sel = r.querySelector('.ubo-role-select').value;
+    const custom = r.querySelector('.ubo-custom-role').value.trim();
+    const role = (sel === 'Other' && custom) ? custom : (sel === 'Other' ? 'Other' : sel);
+    const name = r.querySelector('.ubo-name-input').value.trim();
+    const rawPct = r.querySelector('.ubo-pct-input').value;
+    const pct = parseFloat(rawPct);
+    const numPct = !isNaN(pct) ? pct : 0;
+    if (!isNaN(pct)) total += numPct;
+    if (name || !isNaN(pct)) {
+      list.push({ role, name, pct: numPct });
+    }
+  });
+
+  const roundedTotal = Math.round(total * 100) / 100;
+  const isValid = Math.abs(roundedTotal - 100) < 0.001;
+  const formatted = list.filter(u => u.name).map(u => `${u.name} (${u.role}, ${u.pct}%)`).join(', ');
+
+  return { list, total: roundedTotal, isValid, formatted };
+}
+
+function updateUboValidation(){
+  const curType = $('#intake-type') ? $('#intake-type').value : 'org';
+  const submitBtn = $('#intake-submit');
+  const summaryBar = $('#ubo-summary-bar');
+  const statusIcon = $('#ubo-status-icon use');
+  const statusText = $('#ubo-status-text');
+  const totalDisplay = $('#ubo-total-display');
+
+  if (curType !== 'org') {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.removeAttribute('title');
+    }
+    return true;
+  }
+
+  const { total, isValid } = getUboData();
+
+  if (totalDisplay) totalDisplay.textContent = total.toFixed(1) + '%';
+
+  if (isValid) {
+    if (summaryBar) summaryBar.className = 'ubo-summary-bar valid';
+    if (statusIcon) statusIcon.setAttribute('href', '#i-check');
+    if (statusText) statusText.textContent = 'Ownership allocation verified: 100.0% fully distributed.';
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.removeAttribute('title');
+    }
+    return true;
+  } else {
+    if (summaryBar) summaryBar.className = 'ubo-summary-bar invalid';
+    if (statusIcon) statusIcon.setAttribute('href', '#i-alert');
+    const diff = Math.round((100 - total) * 100) / 100;
+    const diffNote = diff > 0 ? `(${diff.toFixed(1)}% unallocated)` : `(${Math.abs(diff).toFixed(1)}% overallocated)`;
+    if (statusText) statusText.textContent = `Beneficial ownership must total exactly 100.0% (Current: ${total.toFixed(1)}% · ${diffNote})`;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('title', 'Total beneficial ownership and equity distribution must equal exactly 100.0% to proceed');
+    }
+    return false;
+  }
+}
+
+function resetUboRows(){
+  const container = $('#ubo-rows-container');
+  if (!container) return;
+  container.innerHTML = '';
+  container.appendChild(createUboRowElement({ role: 'Ultimate Beneficial Owner (UBO)', name: '', pct: '' }));
+  container.appendChild(createUboRowElement({ role: 'Director', name: '', pct: '' }));
+  updateUboDelButtons();
+  updateUboValidation();
 }
 
 let intakeAttachedFeed = null;
@@ -2918,7 +3133,7 @@ function openIntakeModal(defaultName){
   }
   if($('#intake-org-addr-dropdown')) $('#intake-org-addr-dropdown').hidden = true;
   if($('#intake-org-addr-clear')) $('#intake-org-addr-clear').hidden = true;
-  if($('#intake-org-controllers')) $('#intake-org-controllers').value = '';
+  resetUboRows();
 
   if($('#intake-person-name')) $('#intake-person-name').value = defaultName || '';
   if($('#intake-person-aliases')) $('#intake-person-aliases').value = '';
@@ -2977,6 +3192,17 @@ attachGoogleAddressAutocomplete(
   $('#intake-person-addr-clear'),
   $('#intake-person-nationality')
 );
+
+const uboAddBtn = $('#ubo-add-btn');
+if (uboAddBtn) {
+  uboAddBtn.addEventListener('click', () => {
+    const container = $('#ubo-rows-container');
+    if (!container) return;
+    container.appendChild(createUboRowElement({ role: 'Controlling Person', name: '', pct: '' }));
+    updateUboDelButtons();
+    updateUboValidation();
+  });
+}
 
 $('#intake-open').addEventListener('click', ()=>openIntakeModal());
 
@@ -3072,6 +3298,7 @@ $('#intake-submit').addEventListener('click', async ()=>{
   let tradingNames = '';
   let operatingAddresses = '';
   let controllers = '';
+  let uboList = [];
   let aliases = '';
   let dob = '';
   let nationality = '';
@@ -3126,7 +3353,14 @@ $('#intake-submit').addEventListener('click', async ()=>{
     a3 = $('#intake-country').value || 'SGP';
     reg = $('#intake-reg').value.trim() || 'REG-PENDING';
     role = $('#intake-role').value.trim() || 'Commodities supplier';
-    controllers = $('#intake-org-controllers').value.trim();
+
+    const uboCheck = getUboData();
+    if (!uboCheck.isValid) {
+      toast(`Total beneficial ownership & equity distribution must equal exactly 100.0% (Current total: ${uboCheck.total.toFixed(1)}%). Please distribute 100% equity before screening.`);
+      return;
+    }
+    controllers = uboCheck.formatted;
+    uboList = uboCheck.list;
 
     const orgAddrInput = $('#intake-org-address');
     const rawOrgAddr = orgAddrInput ? orgAddrInput.value.trim() : '';
@@ -3423,6 +3657,7 @@ $('#intake-submit').addEventListener('click', async ()=>{
       tradingNames: tradingNames,
       operatingAddresses: operatingAddresses,
       controllers: controllers,
+      controllersList: uboList,
       factors: factors,
       findings: findings,
       raise: raise
@@ -3450,6 +3685,7 @@ $('#intake-submit').addEventListener('click', async ()=>{
         tradingNames,
         operatingAddresses,
         controllers,
+        controllersList: uboList,
         aliases,
         dob,
         nationality,

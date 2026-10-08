@@ -378,6 +378,7 @@ class SqliteDatabase {
       tradingNames: entity.tradingNames || entity.trading_names || '',
       operatingAddresses: entity.operatingAddresses || entity.operating_addresses || '',
       controllers: entity.controllers || entity.directors_ubos || '',
+      controllersList: entity.controllersList || null,
       // Individual fields
       aliases: entity.aliases || entity.name_variants || '',
       dob: entity.dob || entity.date_of_birth || '',

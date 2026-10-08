@@ -338,6 +338,40 @@ test('API Integration Tests', async (t) => {
     assert.ok(data.entity.factors.some(f => f[1].includes('Marcus Vance')));
   });
 
+  await t.test('POST /api/intake for Organisation should persist structured controllersList totaling 100%', async () => {
+    const controllersList = [
+      { role: 'Ultimate Beneficial Owner (UBO)', name: 'Evelyn Reed', pct: 60 },
+      { role: 'Director', name: 'James Thorne', pct: 40 }
+    ];
+    const totalPct = controllersList.reduce((acc, u) => acc + u.pct, 0);
+    assert.equal(totalPct, 100);
+
+    const res = await fetch(`${BASE_URL}/api/intake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Equitas Maritime Capital Pte Ltd',
+        type: 'org',
+        country: 'SGP',
+        reg: 'UEN 202619890M',
+        role: 'Maritime financing',
+        controllers: 'Evelyn Reed (Ultimate Beneficial Owner (UBO), 60%), James Thorne (Director, 40%)',
+        controllersList
+      })
+    });
+
+    assert.equal(res.status, 201);
+    const data = await res.json();
+    assert.ok(data.entity);
+    assert.equal(data.entity.controllers, 'Evelyn Reed (Ultimate Beneficial Owner (UBO), 60%), James Thorne (Director, 40%)');
+    assert.deepEqual(data.entity.controllersList, controllersList);
+
+    const getRes = await fetch(`${BASE_URL}/api/entities/${data.entity.id}`);
+    assert.equal(getRes.status, 200);
+    const entData = await getRes.json();
+    assert.deepEqual(entData.controllersList, controllersList);
+  });
+
   await t.test('GET /api/places/autocomplete should return address predictions with coordinates', async () => {
     const res = await fetch(`${BASE_URL}/api/places/autocomplete?input=Marina+Bay`);
     assert.equal(res.status, 200);
