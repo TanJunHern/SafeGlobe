@@ -1,0 +1,498 @@
+<title>Safe Globe — Hackathon Readiness Checklist</title>
+<style>
+@font-face{
+  font-family:"Fraunces";
+  src:local("Fraunces");
+  font-weight:300 700;
+}
+:root{
+  --bg:#f6f5f1;
+  --surface:#ffffff;
+  --surface-2:#eeece5;
+  --line:#dbd8cf;
+  --fg:#1b1f1d;
+  --fg-dim:#5c6460;
+  --fg-faint:#8a9089;
+  --accent:#1f7a68;
+  --accent-soft:#e3f0ec;
+  --crit:#b8432f;
+  --crit-soft:#f7e6e1;
+  --warn:#9c6f12;
+  --warn-soft:#f6edd9;
+  --ok:#2e7d46;
+  --ok-soft:#e5f1e6;
+  --mono-bg:#1b1f1d;
+  --mono-fg:#e8ece9;
+  --shadow:0 1px 2px rgba(20,20,15,.06), 0 8px 24px -16px rgba(20,20,15,.18);
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1210;
+    --surface:#141a18;
+    --surface-2:#1a211e;
+    --line:#283430;
+    --fg:#e8ece9;
+    --fg-dim:#9aa6a0;
+    --fg-faint:#687670;
+    --accent:#4fb8a0;
+    --accent-soft:#16302a;
+    --crit:#e0795f;
+    --crit-soft:#331e18;
+    --warn:#d9a441;
+    --warn-soft:#332a14;
+    --ok:#6fcf87;
+    --ok-soft:#163322;
+    --mono-bg:#0a0e0c;
+    --mono-fg:#cfe0d8;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1210; --surface:#141a18; --surface-2:#1a211e; --line:#283430;
+  --fg:#e8ece9; --fg-dim:#9aa6a0; --fg-faint:#687670;
+  --accent:#4fb8a0; --accent-soft:#16302a;
+  --crit:#e0795f; --crit-soft:#331e18;
+  --warn:#d9a441; --warn-soft:#332a14;
+  --ok:#6fcf87; --ok-soft:#163322;
+  --mono-bg:#0a0e0c; --mono-fg:#cfe0d8;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.5);
+}
+:root[data-theme="light"]{
+  --bg:#f6f5f1; --surface:#ffffff; --surface-2:#eeece5; --line:#dbd8cf;
+  --fg:#1b1f1d; --fg-dim:#5c6460; --fg-faint:#8a9089;
+  --accent:#1f7a68; --accent-soft:#e3f0ec;
+  --crit:#b8432f; --crit-soft:#f7e6e1;
+  --warn:#9c6f12; --warn-soft:#f6edd9;
+  --ok:#2e7d46; --ok-soft:#e5f1e6;
+  --mono-bg:#1b1f1d; --mono-fg:#e8ece9;
+  --shadow:0 1px 2px rgba(20,20,15,.06), 0 8px 24px -16px rgba(20,20,15,.18);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--accent-soft);color:var(--fg)}
+
+a{color:var(--accent)}
+
+.shell{
+  max-width:1180px;
+  margin:0 auto;
+  padding:40px 28px 120px;
+  display:grid;
+  grid-template-columns:220px minmax(0,1fr);
+  gap:48px;
+}
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr; padding:24px 16px 80px;}
+  .rail{display:none}
+}
+
+/* ---------- rail ---------- */
+.rail{position:sticky; top:28px; align-self:start; display:flex; flex-direction:column; gap:22px;}
+.rail-brand{display:flex; flex-direction:column; gap:3px;}
+.rail-brand b{font-family:"Fraunces",Georgia,serif; font-weight:600; font-size:18px; letter-spacing:-.01em;}
+.rail-brand span{font-size:11.5px; color:var(--fg-faint); letter-spacing:.03em;}
+.rail nav{display:flex; flex-direction:column; gap:2px; font-size:13px;}
+.rail nav a{
+  color:var(--fg-dim); text-decoration:none; padding:5px 0;
+  border-left:2px solid transparent; padding-left:10px;
+  transition:color .15s, border-color .15s;
+}
+.rail nav a:hover{color:var(--fg); border-left-color:var(--line);}
+.rail-meta{font-size:11.5px; color:var(--fg-faint); border-top:1px solid var(--line); padding-top:14px; line-height:1.7;}
+.rail-meta b{color:var(--fg-dim); font-weight:600;}
+
+/* ---------- main ---------- */
+main{min-width:0; display:flex; flex-direction:column; gap:52px;}
+
+header.doc-head{display:flex; flex-direction:column; gap:10px; padding-bottom:28px; border-bottom:1px solid var(--line);}
+.eyebrow{
+  font-size:11px; text-transform:uppercase; letter-spacing:.09em; font-weight:600;
+  color:var(--accent); display:flex; align-items:center; gap:8px;
+}
+.eyebrow::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--accent);}
+h1{
+  font-family:"Fraunces",Georgia,serif; font-weight:600; font-size:clamp(28px,4vw,36px);
+  margin:0; letter-spacing:-.015em; text-wrap:balance; line-height:1.15;
+}
+.dek{font-size:15.5px; color:var(--fg-dim); max-width:62ch; margin:0;}
+
+section{display:flex; flex-direction:column; gap:16px; scroll-margin-top:24px;}
+.sec-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+h2{
+  font-family:"Fraunces",Georgia,serif; font-weight:600; font-size:22px;
+  margin:0; letter-spacing:-.01em;
+}
+.sec-sub{font-size:13.5px; color:var(--fg-dim); margin:0 0 4px;}
+h3{font-size:14.5px; font-weight:650; margin:0; letter-spacing:-.005em;}
+
+/* ---------- checklist cards ---------- */
+.phase{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); overflow:hidden;
+}
+.phase-head{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 18px; background:var(--surface-2); border-bottom:1px solid var(--line);
+}
+.phase-head h3{display:flex; align-items:center; gap:10px;}
+.phase-num{
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--fg-faint);
+  background:var(--surface); border:1px solid var(--line); border-radius:5px;
+  padding:1px 6px;
+}
+.effort{font-size:11px; color:var(--fg-faint); font-family:"IBM Plex Mono",monospace;}
+ul.items{list-style:none; margin:0; padding:0;}
+ul.items li{
+  display:grid; grid-template-columns:20px minmax(0,1fr); gap:12px;
+  padding:12px 18px; border-bottom:1px solid var(--line);
+  align-items:start;
+}
+ul.items li:last-child{border-bottom:none;}
+.box{
+  width:16px; height:16px; margin-top:2px; border-radius:4px;
+  border:1.5px solid var(--fg-faint); flex:none;
+}
+.item-body{display:flex; flex-direction:column; gap:3px; min-width:0;}
+.item-title{font-size:14px; font-weight:600;}
+.item-why{font-size:13px; color:var(--fg-dim); line-height:1.5;}
+.item-why code{
+  font-family:"IBM Plex Mono",monospace; font-size:12px; background:var(--surface-2);
+  border:1px solid var(--line); border-radius:4px; padding:1px 5px; color:var(--fg);
+}
+.tag{
+  display:inline-flex; align-items:center; font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px; letter-spacing:.02em; padding:1px 7px; border-radius:20px;
+  border:1px solid currentColor; margin-left:8px; vertical-align:1px;
+}
+.tag.must{color:var(--crit); background:var(--crit-soft); border-color:transparent;}
+.tag.should{color:var(--warn); background:var(--warn-soft); border-color:transparent;}
+.tag.stretch{color:var(--fg-dim); background:var(--surface-2); border-color:transparent;}
+
+/* ---------- architecture comparison ---------- */
+.arch-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+@media (max-width:720px){.arch-grid{grid-template-columns:1fr;}}
+.arch-card{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:18px 20px; display:flex; flex-direction:column; gap:10px;
+}
+.arch-card.local{border-top:3px solid var(--ok);}
+.arch-card.deploy{border-top:3px solid var(--warn);}
+.arch-label{display:flex; align-items:center; gap:8px; font-weight:650; font-size:14.5px;}
+.dot{width:8px; height:8px; border-radius:50%;}
+.dot.ok{background:var(--ok);}
+.dot.warn{background:var(--warn);}
+.arch-card p{margin:0; font-size:13px; color:var(--fg-dim);}
+.arch-card ul{margin:4px 0 0; padding-left:18px; font-size:13px; color:var(--fg-dim); display:flex; flex-direction:column; gap:4px;}
+.arch-card ul li::marker{color:var(--fg-faint);}
+.use-when{
+  margin-top:4px; font-size:12px; padding:8px 10px; border-radius:7px;
+  background:var(--surface-2); color:var(--fg-dim); border:1px solid var(--line);
+}
+.use-when b{color:var(--fg);}
+
+figure{margin:0; display:flex; flex-direction:column; gap:10px;}
+.diagram-wrap{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:20px 18px 14px;
+}
+svg.diagram{width:100%; height:auto; display:block; color:var(--fg);}
+figcaption{font-size:12.5px; color:var(--fg-faint); padding:0 4px;}
+
+/* ---------- table ---------- */
+.table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);}
+table{width:100%; border-collapse:collapse; font-size:13px; background:var(--surface); min-width:560px;}
+th{
+  text-align:left; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--fg-dim); padding:10px 14px; background:var(--surface-2); border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+td{padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--fg-dim);}
+tr:last-child td{border-bottom:none;}
+td.strong{color:var(--fg); font-weight:600;}
+td code{font-family:"IBM Plex Mono",monospace; font-size:12px; background:var(--surface-2); border:1px solid var(--line); border-radius:4px; padding:1px 5px; color:var(--fg);}
+
+/* ---------- code block ---------- */
+.code{
+  background:var(--mono-bg); color:var(--mono-fg); border-radius:9px;
+  padding:14px 16px; font-family:"IBM Plex Mono",monospace; font-size:12.5px;
+  line-height:1.65; overflow-x:auto; white-space:pre;
+}
+.code .cmt{color:#7a8a81; font-style:italic;}
+
+/* ---------- callout ---------- */
+.callout{
+  display:flex; gap:12px; padding:14px 16px; border-radius:9px;
+  border:1px solid var(--line); background:var(--surface);
+  font-size:13px; color:var(--fg-dim); align-items:flex-start;
+}
+.callout b{color:var(--fg)}
+.callout.warn{background:var(--warn-soft); border-color:transparent;}
+.callout.ok{background:var(--ok-soft); border-color:transparent;}
+
+footer{
+  border-top:1px solid var(--line); padding-top:18px; font-size:12px; color:var(--fg-faint);
+  display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="rail-brand">
+      <b>Safe Globe</b>
+      <span>Hackathon readiness</span>
+    </div>
+    <nav>
+      <a href="#agents">1 · Agent depth</a>
+      <a href="#data">2 · Real data</a>
+      <a href="#arch">3 · Architecture</a>
+      <a href="#resilience">4 · Resilience</a>
+      <a href="#demo">5 · Demo day</a>
+      <a href="#cutlist">What to cut</a>
+    </nav>
+    <div class="rail-meta">
+      <b>Legend</b><br>
+      <span class="tag must" style="margin-left:0">must</span> blocks the win case<br>
+      <span class="tag should" style="margin-left:0">should</span> strengthens it<br>
+      <span class="tag stretch" style="margin-left:0">stretch</span> if time remains
+    </div>
+  </aside>
+
+  <main>
+    <header class="doc-head">
+      <span class="eyebrow">Working checklist · updated for H2O flood-intelligence benchmark</span>
+      <h1>What it takes to win with Safe Globe</h1>
+      <p class="dek">A punch list against the H2O.ai Flood Intelligence blueprint, plus a two-track architecture — an offline build for UAT that cannot fail on stage, and a deploy build for judges to poke at afterward.</p>
+    </header>
+
+    <section id="agents">
+      <div class="sec-head">
+        <h2>1 · Make one agent genuinely reason</h2>
+        <span class="effort">~1 day</span>
+      </div>
+      <p class="sec-sub">Flood intelligence won partly because its agents call real models for real judgment calls, not scripted scoring. Pick one Safe Globe agent and do the same — don't spread this thin across all five.</p>
+      <div class="phase">
+        <div class="phase-head">
+          <h3><span class="phase-num">01</span>Truth Check → real LLM reasoning</h3>
+          <span class="tag must">must</span>
+        </div>
+        <ul class="items">
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Replace the rule-based contradiction check in <code>truthCheck.js</code> with an actual LLM call</span><span class="item-why">Feed it the statement text + retrieved registry facts, ask it to label each claim <code>Consistent / Unverified / Contradicted</code> with a one-line reason. This is your cheapest path to "real reasoning, not a lookup table."</span></div></li>
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Keep a local fallback path for when the API key is absent or the call times out</span><span class="item-why">Same pattern your <code>places.js</code> already uses (curated data → live API → graceful empty state). Reuse it — don't invent a new fallback shape.</span></div></li>
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Log and surface the prompt + raw model output in the case drawer</span><span class="item-why">Judges reward visible reasoning. An "Explain this finding" expandable beats a black-box score.</span></div></li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-head">
+          <h3><span class="phase-num">02</span>Forecast → a backtestable method</h3>
+          <span class="tag should">should</span>
+        </div>
+        <ul class="items">
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Swap the "Beta" placeholder for a simple, stated model</span><span class="item-why">Even an exponential-decay score over historical sanctions-event frequency beats an unexplained percentage. State the method name out loud in the demo.</span></div></li>
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Compute and display one backtest number</span><span class="item-why">"On held-out cases, flagged 8 of 10 true escalations" is a sentence the flood project's NeMo Evaluator narrative trained judges to expect. You don't need their tooling, just the number.</span></div></li>
+        </ul>
+      </div>
+      <div class="callout">
+        <span>→</span>
+        <span><b>Don't</b> try to wire all five agents (Sentry, Radar, Web, Tide, Forecast) to real LLM calls under time pressure. One agent done convincingly, narrated well, beats five done shallowly — and it's the one thing a judge will actually probe by clicking around.</span>
+      </div>
+    </section>
+
+    <section id="data">
+      <div class="sec-head">
+        <h2>2 · Wire one agent to a real external feed</h2>
+        <span class="effort">~0.5 day</span>
+      </div>
+      <p class="sec-sub">Flood intelligence polls USGS and NOAA live. Right now every Safe Globe agent reads seed data only — judges will ask "is this calling a real API, or is it fixtures?"</p>
+      <div class="phase">
+        <div class="phase-head">
+          <h3><span class="phase-num">03</span>Pick one real, free, no-auth-friction source</h3>
+          <span class="tag must">must</span>
+        </div>
+        <ul class="items">
+          <li><span class="box"></span><div class="item-body"><span class="item-title">OpenSanctions API for Sentry (free tier, no key required for light use)</span><span class="item-why">Closest match to "41 sanctions lists" framing already in your PRD copy — makes the existing narrative true instead of simulated.</span></div></li>
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Or AISHub / a free AIS feed for Tide, if vessel tracking is the more visual win</span><span class="item-why">Dark-period detection against a live feed is a strong live-demo beat — "watch this update in real time" plays better on stage than sanctions-list text.</span></div></li>
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Cache responses to disk/SQLite with a TTL, same pattern as <code>sources.js</code> health states (<code>ok / stale / new</code>)</span><span class="item-why">So a flaky upstream API during the actual demo window degrades to "stale, last good data" instead of a blank panel.</span></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="arch">
+      <div class="sec-head">
+        <h2>3 · Two-track architecture</h2>
+        <span class="effort">~0.5 day</span>
+      </div>
+      <p class="sec-sub">You already have Cloud Run + Firebase Hosting config and a SQLite/Firestore abstraction in <code>src/db/</code> — the gap isn't new infrastructure, it's making local and deployed explicitly separate, so a deploy-side failure never touches the demo machine.</p>
+
+      <figure>
+        <div class="diagram-wrap">
+          <svg class="diagram" viewBox="0 0 980 360" role="img" aria-label="Local UAT track runs entirely on the demo laptop with no network dependency; deploy track runs on Cloud Run behind Firebase Hosting with a load balancer, used only for judge follow-up after the live demo.">
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+
+            <!-- LOCAL TRACK -->
+            <text x="20" y="28" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1" fill="currentColor" opacity="0.55">LOCAL · UAT · DEMO DAY</text>
+            <rect x="16" y="40" width="430" height="290" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="1.5"/>
+
+            <rect x="40" y="66" width="180" height="46" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="130" y="94" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Demo laptop</text>
+
+            <line x1="130" y1="112" x2="130" y2="140" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+            <text x="140" y="130" font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" opacity="0.7">localhost:8080</text>
+
+            <rect x="40" y="140" width="180" height="46" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="130" y="163" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Node + Express</text>
+            <text x="130" y="178" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" opacity="0.65">src/server.js</text>
+
+            <line x1="130" y1="186" x2="130" y2="214" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+
+            <rect x="40" y="214" width="180" height="46" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="130" y="237" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12.5" font-weight="600" fill="currentColor">SQLite file</text>
+            <text x="130" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" opacity="0.65">data/safe_globe.db</text>
+
+            <rect x="260" y="140" width="165" height="46" rx="8" fill="none" stroke="currentColor" stroke-dasharray="4 3" stroke-width="1.4"/>
+            <text x="342" y="163" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Live feed</text>
+            <text x="342" y="178" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" opacity="0.65">cached, TTL</text>
+            <line x1="220" y1="163" x2="260" y2="163" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 3" marker-end="url(#arr)"/>
+            <text x="238" y="153" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity="0.6">polls</text>
+
+            <text x="130" y="300" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity="0.75">no internet required for core demo</text>
+
+            <!-- DEPLOY TRACK -->
+            <text x="530" y="28" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1" fill="currentColor" opacity="0.55">DEPLOY · JUDGE FOLLOW-UP ONLY</text>
+            <rect x="526" y="40" width="434" height="290" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="1.5"/>
+
+            <rect x="640" y="62" width="200" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="740" y="87" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Firebase Hosting</text>
+
+            <line x1="740" y1="102" x2="740" y2="128" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+            <text x="750" y="120" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="currentColor" opacity="0.65">/api/** rewrite</text>
+
+            <rect x="640" y="128" width="200" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="740" y="153" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Cloud Run (managed LB)</text>
+
+            <line x1="740" y1="168" x2="740" y2="194" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr)"/>
+            <text x="752" y="186" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="currentColor" opacity="0.65">autoscale 0→N</text>
+
+            <rect x="552" y="194" width="130" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="617" y="219" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11.5" font-weight="600" fill="currentColor">Instance A</text>
+            <rect x="698" y="194" width="130" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="763" y="219" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="11.5" font-weight="600" fill="currentColor">Instance B</text>
+
+            <line x1="700" y1="168" x2="617" y2="194" stroke="currentColor" stroke-width="1.1" opacity="0.5"/>
+            <line x1="780" y1="168" x2="763" y2="194" stroke="currentColor" stroke-width="1.1" opacity="0.5"/>
+
+            <line x1="617" y1="234" x2="700" y2="266" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+            <line x1="763" y1="234" x2="760" y2="266" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>
+
+            <rect x="640" y="266" width="200" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <text x="740" y="291" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12.5" font-weight="600" fill="currentColor">Firestore</text>
+            <text x="742" y="248" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity="0.55">shared state —</text>
+            <text x="742" y="256" font-family="IBM Plex Mono, monospace" font-size="9" fill="currentColor" opacity="0.55">SQLite can't do this</text>
+          </svg>
+        </div>
+        <figcaption>Local track (left) is the demo-day machine: Node, SQLite, nothing crosses the network boundary unless a cached live feed is enabled. Deploy track (right) is Firebase Hosting in front of Cloud Run's built-in load balancer across stateless instances sharing Firestore — only used so judges can revisit the link after the pitch, never live on stage.</figcaption>
+      </figure>
+
+      <div class="arch-grid">
+        <div class="arch-card local">
+          <span class="arch-label"><span class="dot ok"></span>Local — UAT &amp; live demo</span>
+          <p>Single Node process, SQLite file, everything on one machine.</p>
+          <ul>
+            <li><code>npm start</code>, zero cloud dependency</li>
+            <li>External feeds cached with TTL — stale data beats no data</li>
+            <li>Seed-reset script so a bad demo run resets in seconds</li>
+            <li>No load balancer, no autoscaling — nothing extra to fail</li>
+          </ul>
+          <div class="use-when"><b>Use for:</b> the actual pitch. A dead wifi connection or a cold Cloud Run instance must never be visible on stage.</div>
+        </div>
+        <div class="arch-card deploy">
+          <span class="arch-label"><span class="dot warn"></span>Deploy — judge follow-up</span>
+          <p>Firebase Hosting rewrites <code>/api/**</code> and <code>/v1/**</code> to Cloud Run; Cloud Run's managed load balancer fans out across autoscaled instances; Firestore replaces SQLite as shared state.</p>
+          <ul>
+            <li><code>DATABASE_TYPE=firestore</code> flips the existing <code>src/db/</code> abstraction</li>
+            <li><code>min-instances: 0</code> already set — accept the cold-start cost, it's not demo-critical</li>
+            <li>Cloud Build pipeline already wired (<code>cloudbuild.yaml</code>) — push-to-deploy</li>
+          </ul>
+          <div class="use-when"><b>Use for:</b> the link in your submission form, so judges can click around after the room empties. Never the thing you present from.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="resilience">
+      <div class="sec-head">
+        <h2>4 · Harden what's already built</h2>
+        <span class="effort">~0.5 day</span>
+      </div>
+      <p class="sec-sub">You don't need new infrastructure — <code>src/db/index.js</code> already abstracts SQLite vs. Firestore, and Firebase + Cloud Run already gives you hosting and a load balancer for free. The gap is making the two tracks fail independently.</p>
+      <div class="phase">
+        <div class="phase-head">
+          <h3><span class="phase-num">04</span>Demo-day safety net</h3>
+          <span class="tag must">must</span>
+        </div>
+        <ul class="items">
+          <li><span class="box"></span><div class="item-body"><span class="item-title">A one-command reset script: kill the dev server, delete and reseed <code>data/safe_globe.db</code>, restart</span><span class="item-why">If a live click corrupts demo state mid-pitch, recovery is 10 seconds, not a restart from scratch.</span></div></li>
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Feature-flag any live external API call behind a cached/offline fallback, defaulted <b>on</b> for the local build</span><span class="item-why">Conference wifi is the single most common hackathon demo failure. The LLM call for Truth Check and the live feed for Sentry/Tide both need this.</span></div></li>
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Record a 60-second screen capture of the full golden path as literal backup</span><span class="item-why">Not glamorous, but it's what separates "technical difficulties, moving on" from a blank stare.</span></div></li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-head">
+          <h3><span class="phase-num">05</span>Deploy track, done once and left alone</h3>
+          <span class="tag should">should</span>
+        </div>
+        <ul class="items">
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Deploy via <code>cloudbuild.yaml</code> once before submission, confirm <code>/api/health</code> on the live URL</span><span class="item-why">A judge following your submission link to a 502 reads worse than not submitting a link at all.</span></div></li>
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Set Cloud Run <code>min-instances: 1</code> only for the 48h judging window, then back to 0</span><span class="item-why">Avoids a cold-start first impression for a judge clicking in; not worth paying for outside that window.</span></div></li>
+          <li><span class="box"></span><div class="item-body"><span class="item-title">Freeze the deploy branch after the pre-submission check — no more pushes</span><span class="item-why">A last-minute push that breaks the Cloud Build pipeline during judging is a self-inflicted wound with no upside.</span></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="demo">
+      <div class="sec-head">
+        <h2>5 · The pitch itself</h2>
+        <span class="effort">narration</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Beat</th><th>What you show</th><th>What you say</th></tr></thead>
+          <tbody>
+            <tr><td class="strong">Open</td><td>Globe loads, pins render, watchlist populated</td><td>"Every counterparty here is live-screened, not a static list."</td></tr>
+            <tr><td class="strong">Real reasoning</td><td>Open a claimed org, trigger Truth Check, expand the reasoning panel</td><td>Read the model's actual output loud — this is the moment that answers "is this just rules?"</td></tr>
+            <tr><td class="strong">Real data</td><td>Sentry/Tide panel pulling the live feed you wired in §2</td><td>"That score just came from <span style="white-space:nowrap">[OpenSanctions / AISHub]</span>, queried seconds ago."</td></tr>
+            <tr><td class="strong">Judgment, not noise</td><td>Confidence × Risk quadrant routing a case to Escalate vs. Auto-clear</td><td>This is your actual differentiator over the flood project — they don't have a human-in-the-loop routing model.</td></tr>
+            <tr><td class="strong">Close</td><td>Deploy URL on a slide, not opened live</td><td>"It's also live at this link if you want to dig in afterward."</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="cutlist">
+      <div class="sec-head">
+        <h2>What to cut if time runs short</h2>
+      </div>
+      <div class="callout warn">
+        <span>→</span>
+        <span>Cut in this order: (1) Forecast backtest number — state the method, skip the number. (2) Second live data source — one real feed is enough, don't chase Tide <i>and</i> Sentry. (3) Deploy-track Firestore migration — SQLite-on-Cloud-Run with a single instance still proves the architecture story, even if it's not "real" multi-instance state. <b>Never cut:</b> the one real LLM call in Truth Check and the demo-day reset script — those are what the whole pitch leans on.</span>
+      </div>
+    </section>
+
+    <footer>
+      <span>Safe Globe — internal working doc, not for distribution</span>
+      <span>Benchmark: h2oai/h2oai-flood-intelligence-agent</span>
+    </footer>
+  </main>
+</div>
