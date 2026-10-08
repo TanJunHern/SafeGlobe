@@ -94,6 +94,10 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px
 .ask-btn:hover{transform:translateY(-1px)}
 .ask-btn kbd{border-color:transparent;background:rgba(127,127,127,.25);color:inherit;opacity:.8}
 .ask-btn .spark{color:var(--accent-hi)}
+.vessel-toggle-wrap{display:flex;align-items:center;gap:7px;height:36px;padding:0 10px 0 9px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line-2);cursor:pointer;user-select:none;transition:background .15s,border-color .15s}
+.vessel-toggle-wrap:hover{background:var(--surface-3);border-color:var(--line)}
+.vessel-toggle-wrap .ship-ic{color:var(--accent);width:16px;height:16px;flex:none}
+.vessel-toggle-wrap .vessel-toggle-lbl{font-size:12.5px;font-weight:500;color:var(--fg);white-space:nowrap}
 .icon-btn{position:relative;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--fg-2)}
 .icon-btn:hover{background:var(--surface-2);color:var(--fg)}
 .icon-btn .dot{position:absolute;top:6px;right:6px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-size:10px;font-weight:600;display:grid;place-items:center;border:2px solid var(--surface)}
@@ -574,7 +578,7 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
   .wordmark span,.ws-switch{display:none}
   .kpis{display:none}
   .stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .ask-btn .lbl,.ask-btn kbd{display:none}
+  .ask-btn .lbl,.ask-btn kbd,.vessel-toggle-lbl{display:none}
 }
 @media (max-width:760px){
   .app{grid-template-columns:minmax(0,1fr);grid-template-rows:52px minmax(0,1fr) 58px;grid-template-areas:"top" "stage" "rail"}
@@ -739,6 +743,14 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
     </div>
     <div class="top-actions">
       <button class="ask-btn" id="ask-open" type="button"><svg class="ic spark"><use href="#i-spark"/></svg><span class="lbl">Ask the Globe</span><kbd>⌘K</kbd></button>
+      <label class="vessel-toggle-wrap" for="vessel-toggle-btn" title="Toggle live vessel tracking and route path lines">
+        <svg class="ic sm ship-ic"><use href="#i-ship"/></svg>
+        <span class="vessel-toggle-lbl">Vessels</span>
+        <span class="switch">
+          <input id="vessel-toggle-btn" type="checkbox" checked>
+          <span></span>
+        </span>
+      </label>
       <button class="btn sm" id="intake-open" type="button" title="Intake new counterparty (PRD B.1)" style="height:36px;padding:0 12px;gap:6px"><svg class="ic sm"><use href="#i-plus"/></svg><span class="lbl">Intake</span></button>
       <button class="icon-btn" id="theme-btn" type="button" title="Switch theme" aria-label="Switch theme"><svg class="ic"><use href="#i-moon"/></svg></button>
       <button class="icon-btn" id="bell" type="button" title="Alerts" aria-label="Alerts"><svg class="ic"><use href="#i-bell"/></svg><span class="dot" id="bell-count">7</span></button>
@@ -1372,7 +1384,23 @@ FEATURES.forEach((f,i)=>{
   f.i=i;const p=f.properties;p.display=NAME_FIX[p.name]||p.name;const cr=p.a3&&CPI.get(p.a3);if(cr){p.cpi=cr.score;p.rank=cr.rank;}
   const g=f.geometry;let main=g,area=0;
   const ga=geom=>{let a=d3.geoArea(geom);if(a>2*Math.PI)a=4*Math.PI-a;return a;};
-  if(g.type==='MultiPolygon'){let best=null,ba=-1;for(const poly of g.coordinates){const a=ga({type:'Polygon',coordinates:poly});area+=a;if(a>ba){ba=a;best=poly;}}main={type:'Polygon',coordinates:best};}
+  if(g.type==='MultiPolygon'){
+    let best=null,ba=-1;
+    for(const poly of g.coordinates){
+      const a=ga({type:'Polygon',coordinates:poly});
+      area+=a;
+      if(a>ba){ba=a;best=poly;}
+    }
+    if((p.a3==='MYS'||p.name==='Malaysia')&&g.coordinates.length>1){
+      const pen=g.coordinates.find(poly=>{
+        const ring=poly[0];
+        const avgLon=d3.mean(ring,pt=>pt[0]);
+        return avgLon>99&&avgLon<105;
+      });
+      if(pen)best=pen;
+    }
+    main={type:'Polygon',coordinates:best};
+  }
   else area=ga(g);
   f.area=area;f.main={type:'Feature',properties:{},geometry:main};f.cent=d3.geoCentroid(f.main);
   const b=d3.geoBounds(f.main);let dx=b[1][0]-b[0][0];if(dx<0)dx+=360;f.span=Math.max(dx,b[1][1]-b[0][1]);
@@ -1964,7 +1992,7 @@ drawer.addEventListener('click',ev=>{
   else if(a==='rescreen')toast(`Re-screened ${e.short||e.name} against 41 lists and 4 custom sources. No change`);
   else if(a==='invite')toast('Claim invitation sent to the registered email on file');
   else if(a==='watch')toast('Radar will alert you on law and sanctions changes here');
-  else if(a==='pin'){S.layers.ves=true;$('#ly-ves').checked=true;flyToSelection();}
+  else if(a==='pin'){S.layers.ves=true;$('#ly-ves').checked=true;if($('#vessel-toggle-btn'))$('#vessel-toggle-btn').checked=true;flyToSelection();}
 });
 function meters(e){
   return `<div class="meters">
@@ -2162,7 +2190,20 @@ $('#watch-open').addEventListener('click',()=>{view.classList.remove('watch-clos
 
 /* ===================== layers, legend ===================== */
 $('#layers-btn').addEventListener('click',()=>{const l=$('#layers');l.hidden=!l.hidden;$('#layers-btn').classList.toggle('on',!l.hidden);$('#layers-btn').setAttribute('aria-expanded',String(!l.hidden));});
-[['ly-org','org'],['ly-ves','ves'],['ly-arc','arc'],['ly-wx','wx'],['ly-lbl','lbl']].forEach(([id,k])=>$('#'+id).addEventListener('change',e=>{S.layers[k]=e.target.checked;dirty=true;}));
+[['ly-org','org'],['ly-ves','ves'],['ly-arc','arc'],['ly-wx','wx'],['ly-lbl','lbl']].forEach(([id,k])=>$('#'+id).addEventListener('change',e=>{
+  S.layers[k]=e.target.checked;
+  if(k==='ves' && $('#vessel-toggle-btn')) $('#vessel-toggle-btn').checked = e.target.checked;
+  dirty=true;
+}));
+const vesToggle = $('#vessel-toggle-btn');
+if(vesToggle){
+  vesToggle.addEventListener('change',e=>{
+    S.layers.ves = e.target.checked;
+    if($('#ly-ves')) $('#ly-ves').checked = e.target.checked;
+    dirty = true;
+    toast(S.layers.ves ? 'Vessel tracking & route paths: ON' : 'Vessel tracking & route paths: OFF');
+  });
+}
 $('#fill-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.fill=b.dataset.fill;$$('#fill-seg button').forEach(x=>x.classList.toggle('on',x===b));$('#legend').classList.toggle('cov',S.fill==='cov');$('#legend').hidden=S.fill==='off';recolor();});
 function recolor(stagger){
   cSel.each(function(f){const c=fillFor(f);if(stagger){this.style.transitionDelay=Math.round(((f.cent[0]+180)/360)*1100)+'ms';}else this.style.transitionDelay='';this.style.fill=c;});
