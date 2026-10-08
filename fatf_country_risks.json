@@ -1,0 +1,41 @@
+{
+  "source_url": "https://www.fatf-gafi.org/en/publications/High-risk-and-other-monitored-jurisdictions/call-for-action-june-2026.html",
+  "source_urls": [
+    "https://www.fatf-gafi.org/en/publications/High-risk-and-other-monitored-jurisdictions/increased-monitoring-june-2026.html",
+    "https://www.fatf-gafi.org/en/publications/High-risk-and-other-monitored-jurisdictions/call-for-action-june-2026.html"
+  ],
+  "effective_date": "June 2026",
+  "black_list": [
+    "Iran",
+    "Myanmar",
+    "North Korea"
+  ],
+  "grey_list": [
+    "Angola",
+    "Bolivia",
+    "Bosnia and Herzegovina",
+    "Bulgaria",
+    "Cameroon",
+    "C\u00f4te d'Ivoire",
+    "Democratic Republic of the Congo",
+    "Haiti",
+    "Iraq",
+    "Kenya",
+    "Kuwait",
+    "Lao PDR",
+    "Lebanon",
+    "Monaco",
+    "Nepal",
+    "Papua New Guinea",
+    "South Sudan",
+    "Syria",
+    "Venezuela",
+    "Vietnam",
+    "Virgin Islands (UK)",
+    "Yemen"
+  ],
+  "removed_countries": [
+    "Algeria",
+    "Namibia"
+  ]
+}

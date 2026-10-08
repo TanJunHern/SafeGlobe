@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const config = require('./config');
 const { getDb } = require('./db');
 
@@ -56,6 +57,19 @@ app.use('/api/stats', statsRouter);
 app.use('/api/uploads', uploadsRouter);
 app.use('/api/places', placesRouter);
 app.use('/api/ai', aiRouter);
+
+// Serve FATF country risk analysis
+app.get('/api/fatf', (req, res) => {
+  const rootPath = path.join(__dirname, '..', 'fatf_country_risks.json');
+  const pyPath = path.join(__dirname, '..', 'python', 'fatf_country_risks.json');
+  const target = fs.existsSync(rootPath) ? rootPath : fs.existsSync(pyPath) ? pyPath : null;
+  if (target) {
+    res.setHeader('Content-Type', 'application/json');
+    res.sendFile(target);
+  } else {
+    res.status(404).json({ error: 'FATF risk data not found' });
+  }
+});
 
 
 // Forward /api/intake to entities router

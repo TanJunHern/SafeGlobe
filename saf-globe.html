@@ -296,7 +296,10 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px
 .legend-tune{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:grid;gap:8px}
 .legend-tune label{display:grid;grid-template-columns:1fr auto;font-size:11.5px;color:var(--fg-2);gap:2px 8px;align-items:center}
 .legend-tune input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}
-.legend.cov .legend-cpi,.legend:not(.cov) .legend-cov{display:none}
+.legend .legend-cpi,.legend .legend-cov,.legend .legend-fatf{display:none}
+.legend:not(.cov):not(.fatf) .legend-cpi{display:block}
+.legend.cov .legend-cov{display:block}
+.legend.fatf .legend-fatf{display:block}
 
 .ticker{position:absolute;z-index:5;left:var(--wl);right:calc(14px + var(--dr));bottom:14px;height:36px;display:flex;align-items:center;gap:10px;padding:0 6px 0 12px;overflow:hidden;transition:left .35s ease,right .4s cubic-bezier(.2,.8,.2,1)}
 .ticker .live{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--accent);white-space:nowrap;text-transform:uppercase}
@@ -806,7 +809,8 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
         <div class="layers panel" id="layers" hidden>
           <h3 class="eyebrow">Country fill</h3>
           <div class="seg" id="fill-seg" style="width:100%">
-            <button class="on" data-fill="cpi" type="button" style="flex:1;justify-content:center">CPI 2025</button>
+            <button class="on" data-fill="cpi" type="button" style="flex:1;justify-content:center">CPI</button>
+            <button data-fill="fatf" type="button" style="flex:1;justify-content:center">FATF</button>
             <button data-fill="cov" type="button" style="flex:1;justify-content:center">Coverage</button>
             <button data-fill="off" type="button" style="flex:1;justify-content:center">Off</button>
           </div>
@@ -845,6 +849,14 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
             <div style="color:var(--cov-3)"><b style="color:var(--fg-2)">Limited</b><small>weak registries</small></div>
           </div>
           <div class="legend-src"><span>Lowers profile confidence where weak</span></div>
+        </div>
+        <div class="legend-fatf">
+          <div class="legend-head"><b>FATF Jurisdictions</b><span class="chip" style="height:18px;font-size:10.5px" id="fatf-date-badge">June 2026</span></div>
+          <div class="legend-keys">
+            <div style="color:var(--high)"><b>Black list</b><small id="fatf-black-count">Call for action · 3</small></div>
+            <div style="color:#fab005"><b>Grey list</b><small id="fatf-grey-count">Increased monitoring · 22</small></div>
+          </div>
+          <div class="legend-src"><span>Financial Action Task Force public statements</span></div>
         </div>
       </div>
 
@@ -1472,10 +1484,139 @@ const covLabel=['No data','Strong','Partial','Limited'];
 
 let C={};
 function readColors(){const cs=getComputedStyle(document.documentElement);['low','low-soft','mid','mid-soft','high','high-soft','land-none','cov-1','cov-2','cov-3'].forEach(k=>C[k]=cs.getPropertyValue('--'+k).trim());}
+
+/* ===================== FATF country risks ===================== */
+let FATF_DATA = {
+  "source_urls": [
+    "https://www.fatf-gafi.org/en/publications/High-risk-and-other-monitored-jurisdictions/increased-monitoring-june-2026.html",
+    "https://www.fatf-gafi.org/en/publications/High-risk-and-other-monitored-jurisdictions/call-for-action-june-2026.html"
+  ],
+  "effective_date": "June 2026",
+  "black_list": [
+    "Iran",
+    "Myanmar",
+    "North Korea"
+  ],
+  "grey_list": [
+    "Angola",
+    "Bolivia",
+    "Bosnia and Herzegovina",
+    "Bulgaria",
+    "Cameroon",
+    "Côte d'Ivoire",
+    "Democratic Republic of the Congo",
+    "Haiti",
+    "Iraq",
+    "Kenya",
+    "Kuwait",
+    "Lao PDR",
+    "Lebanon",
+    "Monaco",
+    "Nepal",
+    "Papua New Guinea",
+    "South Sudan",
+    "Syria",
+    "Venezuela",
+    "Vietnam",
+    "Virgin Islands (UK)",
+    "Yemen"
+  ],
+  "removed_countries": [
+    "Algeria",
+    "Namibia"
+  ]
+};
+
+const FATF_NAME_MAP = {
+  "democratic people's republic of korea": "PRK",
+  "north korea": "PRK",
+  "dprk": "PRK",
+  "iran": "IRN",
+  "myanmar": "MMR",
+  "burma": "MMR",
+  "angola": "AGO",
+  "bolivia": "BOL",
+  "bosnia and herzegovina": "BIH",
+  "bosnia and herz.": "BIH",
+  "bulgaria": "BGR",
+  "cameroon": "CMR",
+  "côte d'ivoire": "CIV",
+  "cote d'ivoire": "CIV",
+  "ivory coast": "CIV",
+  "democratic republic of the congo": "COD",
+  "dem. rep. congo": "COD",
+  "dr congo": "COD",
+  "haiti": "HTI",
+  "iraq": "IRQ",
+  "kenya": "KEN",
+  "kuwait": "KWT",
+  "lao pdr": "LAO",
+  "laos": "LAO",
+  "lebanon": "LBN",
+  "monaco": "MCO",
+  "nepal": "NPL",
+  "papua new guinea": "PNG",
+  "south sudan": "SSD",
+  "s. sudan": "SSD",
+  "syria": "SYR",
+  "venezuela": "VEN",
+  "vietnam": "VNM",
+  "virgin islands (uk)": "VGB",
+  "british virgin islands": "VGB",
+  "yemen": "YEM"
+};
+
+function getFatfStatus(f){
+  if(!FATF_DATA) return null;
+  const p = f.properties || {};
+  const a3 = (p.a3 || '').toUpperCase();
+  const name = (p.name || '').toLowerCase().trim();
+  const display = (p.display || '').toLowerCase().trim();
+
+  const matchCountry = list => {
+    if(!list || !Array.isArray(list)) return false;
+    return list.some(item => {
+      const it = item.toLowerCase().trim();
+      if(it === name || it === display) return true;
+      const targetA3 = FATF_NAME_MAP[it];
+      if(targetA3 && (targetA3 === a3 || targetA3 === (FATF_NAME_MAP[name] || ''))) return true;
+      return false;
+    });
+  };
+
+  if(matchCountry(FATF_DATA.black_list)) return 'black';
+  if(matchCountry(FATF_DATA.grey_list)) return 'grey';
+  return null;
+}
+
+async function loadFatfData(){
+  try {
+    const res = await fetch('/api/fatf');
+    if(res.ok){
+      const data = await res.json();
+      if(data && (data.black_list || data.grey_list)){
+        FATF_DATA = data;
+        recolor();
+        if(typeof renderLegend === 'function') renderLegend();
+      }
+    }
+  } catch(e) {}
+}
+loadFatfData();
+
 function fillFor(f){
   const p=f.properties;
+  const fatf = getFatfStatus(f);
+
   if(S.fill==='off')return C['land-none'];
   if(S.fill==='cov'){const c=coverage(p);return c?C['cov-'+c]:C['land-none'];}
+
+  // Color code black listed countries with red and grey list with yellow per FATF json
+  if(fatf==='black') return 'var(--high)'; // Red (#e5484d)
+  if(fatf==='grey') return '#fab005';     // Yellow (#fab005)
+
+  if(S.fill==='fatf') return C['land-none'];
+
   const s=p.cpi;if(s==null)return C['land-none'];
   const b=band(s);let t;
   if(b==='low')t=(s-S.th.low)/Math.max(1,90-S.th.low);
@@ -1976,10 +2117,21 @@ function moveTip(e){const r=wrap.getBoundingClientRect();let x=e.clientX-r.left+
 function hideTip(){tip.classList.remove('on');}
 function countryTip(f){
   const p=f.properties;const n=ORGS.filter(o=>o.a3===p.a3&&p.name!=='Somaliland').length;
-  if(S.fill==='cov'&&p.cpi!=null){const c=coverage(p);return `<div class="tt-name">${esc(p.display)}</div><div class="tt-row"><span>Data coverage</span><b>${covLabel[c]}</b></div><div class="tt-row"><span>CPI 2025</span><b class="mono">${p.cpi}/100</b></div><div class="faint" style="margin-top:6px;font-size:11px">Demo estimate</div>`;}
-  if(p.cpi==null)return `<div class="tt-name">${esc(p.display)}</div><div class="faint">No CPI 2025 score in the loaded sample</div>`;
+  const fatf=getFatfStatus(f);
+  const fatfRow = fatf==='black'
+    ? '<div class="tt-row"><span>FATF list</span><b style="color:var(--high);font-weight:700">Call for Action (Black list)</b></div>'
+    : fatf==='grey'
+      ? '<div class="tt-row"><span>FATF list</span><b style="color:#fab005;font-weight:700">Increased Monitoring (Grey list)</b></div>'
+      : '';
+  const fatfPill = fatf==='black'
+    ? '<span class="pill" style="background:var(--high);color:#fff">FATF Black</span>'
+    : fatf==='grey'
+      ? '<span class="pill" style="background:#fab005;color:#111">FATF Grey</span>'
+      : '';
+  if(S.fill==='cov'&&p.cpi!=null){const c=coverage(p);return `<div class="tt-name">${esc(p.display)} ${fatfPill}</div><div class="tt-row"><span>Data coverage</span><b>${covLabel[c]}</b></div><div class="tt-row"><span>CPI 2025</span><b class="mono">${p.cpi}/100</b></div>${fatfRow}<div class="faint" style="margin-top:6px;font-size:11px">Demo estimate</div>`;}
+  if(p.cpi==null)return `<div class="tt-name">${esc(p.display)} ${fatfPill}</div>${fatfRow}<div class="faint">No CPI 2025 score in the loaded sample</div>`;
   const b=band(p.cpi);const fc=FORECAST.find(x=>x.a3===p.a3);
-  return `<div class="tt-name">${esc(p.display)} <span class="pill b-${b}">${bandLabel[b]}</span></div><div class="tt-score"><b>${p.cpi}</b><span class="faint">/100 · rank ${p.rank} of 182</span></div>${p.name==='Somaliland'?'<div class="faint" style="font-size:11.5px">Scored as part of Somalia</div>':''}<div class="tt-row"><span>Counterparties here</span><b class="mono">${n}</b></div>${fc&&S.layers.wx?`<div class="tt-row"><span>Risk outlook, 90 days</span><b class="mono" style="color:var(--high)">${Math.round(fc.p*100)}%</b></div>`:''}`;
+  return `<div class="tt-name">${esc(p.display)} <span class="pill b-${b}">${bandLabel[b]}</span> ${fatfPill}</div><div class="tt-score"><b>${p.cpi}</b><span class="faint">/100 · rank ${p.rank} of 182</span></div>${p.name==='Somaliland'?'<div class="faint" style="font-size:11.5px">Scored as part of Somalia</div>':''}${fatfRow}<div class="tt-row"><span>Counterparties here</span><b class="mono">${n}</b></div>${fc&&S.layers.wx?`<div class="tt-row"><span>Risk outlook, 90 days</span><b class="mono" style="color:var(--high)">${Math.round(fc.p*100)}%</b></div>`:''}`;
 }
 function entityTip(e){
   const q=quad(e);
@@ -2258,12 +2410,19 @@ if(vesToggle){
     toast(S.layers.ves ? 'Vessel tracking & route paths: ON' : 'Vessel tracking & route paths: OFF');
   });
 }
-$('#fill-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.fill=b.dataset.fill;$$('#fill-seg button').forEach(x=>x.classList.toggle('on',x===b));$('#legend').classList.toggle('cov',S.fill==='cov');$('#legend').hidden=S.fill==='off';recolor();});
+$('#fill-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.fill=b.dataset.fill;$$('#fill-seg button').forEach(x=>x.classList.toggle('on',x===b));$('#legend').classList.toggle('cov',S.fill==='cov');$('#legend').classList.toggle('fatf',S.fill==='fatf');$('#legend').hidden=S.fill==='off';renderLegend();recolor();});
 function recolor(stagger){
   cSel.each(function(f){const c=fillFor(f);if(stagger){this.style.transitionDelay=Math.round(((f.cent[0]+180)/360)*1100)+'ms';}else this.style.transitionDelay='';this.style.fill=c;});
   if(stagger)setTimeout(()=>cSel.each(function(){this.style.transitionDelay='';}),1800);
 }
 function renderLegend(){
+  if(S.fill==='fatf'){
+    const bl=(FATF_DATA&&FATF_DATA.black_list)?FATF_DATA.black_list.length:3;
+    const gl=(FATF_DATA&&FATF_DATA.grey_list)?FATF_DATA.grey_list.length:22;
+    if($('#fatf-black-count')) $('#fatf-black-count').textContent=`Call for action · ${bl}`;
+    if($('#fatf-grey-count')) $('#fatf-grey-count').textContent=`Increased monitoring · ${gl}`;
+    return;
+  }
   $('#legend-count').textContent=`Sample: ${CPI_2025.length} of 182 countries`;
   const h=S.th.high,l=S.th.low;
   $('#legend-bar').innerHTML=`<i style="width:${h}%;background:linear-gradient(90deg,var(--high),var(--high-soft))"></i><i style="width:${l-h}%;background:linear-gradient(90deg,var(--mid),var(--mid-soft))"></i><i style="width:${100-l}%;background:linear-gradient(90deg,var(--low-soft),var(--low))"></i>`;
