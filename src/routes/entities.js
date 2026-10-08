@@ -52,6 +52,7 @@ router.post('/intake', (req, res) => {
     tradingNames = '',
     operatingAddresses = '',
     controllers = '',
+    controllersList = null,
     // Individual fields
     aliases = '',
     dob = '',
@@ -243,6 +244,7 @@ router.post('/intake', (req, res) => {
     tradingNames,
     operatingAddresses,
     controllers,
+    controllersList,
     aliases,
     dob,
     nationality: nationality || country,
