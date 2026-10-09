@@ -16,10 +16,20 @@ test('Tri-Party Portal Tests', async (t) => {
   let token;
 
   await t.test('portal routes serve the single-page app', async () => {
-    for (const route of ['/login', '/portal/employee', '/portal/compliance', '/ddq/portal?token=abc']) {
+    for (const route of ['/login', '/portal/compliance']) {
       const res = await fetch(`${BASE_URL}${route}`);
       assert.equal(res.status, 200);
       assert.ok((await res.text()).includes('id="view-login"'));
+    }
+  });
+
+  await t.test('/portal/employee serves the table-only page without globe, reviews, sources or policies', async () => {
+    const res = await fetch(`${BASE_URL}/portal/employee`);
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    assert.ok(html.includes('id="kyc-table"'));
+    for (const forbidden of ['id="view-globe"', 'id="view-reviews"', 'id="view-sources"', 'id="view-policies"', 'id="view-compliance"', 'class="rail"']) {
+      assert.ok(!html.includes(forbidden), `employee page must not contain ${forbidden}`);
     }
   });
 

@@ -210,6 +210,25 @@ class SqliteDatabase {
       CREATE INDEX IF NOT EXISTS idx_kyc_creator ON kyc_requests(created_by_email);
     `);
 
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS ddq_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        is_active INTEGER DEFAULT 0,
+        source_filename TEXT,
+        template_json TEXT NOT NULL,
+        updated_by TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS ddq_translations (
+        cache_key TEXT PRIMARY KEY,
+        language TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Migrate any existing kyc_requests table
     const migrationCols = [
       'counterparty_email TEXT',
@@ -217,7 +236,10 @@ class SqliteDatabase {
       'ddq_token_expires_at TEXT',
       'ddq_responses_json TEXT',
       'compliance_notes TEXT',
-      're_screening_result TEXT'
+      're_screening_result TEXT',
+      'ddq_template_json TEXT',
+      'ddq_draft_json TEXT',
+      'ddq_submitted_at TEXT'
     ];
     for (const col of migrationCols) {
       try {
@@ -1382,6 +1404,7 @@ class SqliteDatabase {
     this.db.prepare(`
       UPDATE kyc_requests
       SET ddq_responses_json = ?,
+          ddq_submitted_at = CURRENT_TIMESTAMP,
           request_status = 'DDQ Under Review',
           ddq_status = 'Under Review',
           re_screening_result = ?,
@@ -1411,6 +1434,102 @@ class SqliteDatabase {
     return this.getKycRequestById(id);
   }
 
+  // ---------------------------------------------------------------------
+  // DDQ templates, drafts and translation cache
+  // ---------------------------------------------------------------------
+  _hydrateDdqTemplate(row, withBody = true) {
+    if (!row) return null;
+    const { template_json, ...meta } = row;
+    const out = { ...meta, is_active: Boolean(row.is_active) };
+    if (withBody) {
+      try { out.template = JSON.parse(template_json); } catch (e) { out.template = null; }
+    }
+    return out;
+  }
+
+  listDdqTemplates() {
+    return this.db.prepare('SELECT * FROM ddq_templates ORDER BY is_active DESC, updated_at DESC').all()
+      .map(row => {
+        const t = this._hydrateDdqTemplate(row);
+        const sections = (t.template && t.template.sections) || [];
+        return {
+          id: t.id, name: t.name, is_active: t.is_active, source_filename: t.source_filename,
+          updated_by: t.updated_by, created_at: t.created_at, updated_at: t.updated_at,
+          section_count: sections.length,
+          question_count: sections.reduce((n, s) => n + (s.questions || []).length, 0)
+        };
+      });
+  }
+
+  getDdqTemplate(id) {
+    return this._hydrateDdqTemplate(this.db.prepare('SELECT * FROM ddq_templates WHERE id = ?').get(id));
+  }
+
+  getActiveDdqTemplate() {
+    return this._hydrateDdqTemplate(this.db.prepare('SELECT * FROM ddq_templates WHERE is_active = 1 LIMIT 1').get());
+  }
+
+  nextDdqTemplateId() {
+    const rows = this.db.prepare('SELECT id FROM ddq_templates').all();
+    const max = rows.reduce((m, r) => Math.max(m, parseInt((r.id.match(/(\d+)$/) || [0, 0])[1], 10) || 0), 0);
+    return `TPL-${String(max + 1).padStart(4, '0')}`;
+  }
+
+  saveDdqTemplate({ id, name, source_filename = '', template, updated_by = 'Compliance Officer' }) {
+    const tplId = id || this.nextDdqTemplateId();
+    const existing = this.db.prepare('SELECT id FROM ddq_templates WHERE id = ?').get(tplId);
+    if (existing) {
+      this.db.prepare(`
+        UPDATE ddq_templates SET name = ?, template_json = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run(name, JSON.stringify(template), updated_by, tplId);
+    } else {
+      this.db.prepare(`
+        INSERT INTO ddq_templates (id, name, is_active, source_filename, template_json, updated_by) VALUES (?, ?, 0, ?, ?, ?)
+      `).run(tplId, name, source_filename, JSON.stringify(template), updated_by);
+    }
+    return this.getDdqTemplate(tplId);
+  }
+
+  activateDdqTemplate(id) {
+    if (!this.db.prepare('SELECT id FROM ddq_templates WHERE id = ?').get(id)) return null;
+    this.db.exec('UPDATE ddq_templates SET is_active = 0');
+    this.db.prepare('UPDATE ddq_templates SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(id);
+    return this.getDdqTemplate(id);
+  }
+
+  deleteDdqTemplate(id) {
+    return this.db.prepare('DELETE FROM ddq_templates WHERE id = ? AND is_active = 0').run(id).changes > 0;
+  }
+
+  getKycDdqBundle(id) {
+    const row = this.db.prepare('SELECT ddq_template_json, ddq_draft_json FROM kyc_requests WHERE id = ?').get(id);
+    if (!row) return null;
+    const parse = v => { try { return v ? JSON.parse(v) : null; } catch (e) { return null; } };
+    return { template: parse(row.ddq_template_json), draft: parse(row.ddq_draft_json) };
+  }
+
+  setKycDdqTemplate(id, template) {
+    this.db.prepare('UPDATE kyc_requests SET ddq_template_json = ? WHERE id = ?').run(JSON.stringify(template), id);
+  }
+
+  setKycDdqResponses(id, responses) {
+    this.db.prepare('UPDATE kyc_requests SET ddq_responses_json = ? WHERE id = ?').run(JSON.stringify(responses || {}), id);
+  }
+
+  saveKycDdqDraft(id, draft) {
+    this.db.prepare('UPDATE kyc_requests SET ddq_draft_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(JSON.stringify(draft || {}), id);
+  }
+
+  getDdqTranslation(cacheKey) {
+    const row = this.db.prepare('SELECT payload_json FROM ddq_translations WHERE cache_key = ?').get(cacheKey);
+    try { return row ? JSON.parse(row.payload_json) : null; } catch (e) { return null; }
+  }
+
+  saveDdqTranslation(cacheKey, language, payload) {
+    this.db.prepare('INSERT OR REPLACE INTO ddq_translations (cache_key, language, payload_json) VALUES (?, ?, ?)')
+      .run(cacheKey, language, JSON.stringify(payload));
+  }
+
   markKycDdqSent(id, sentBy = 'Employee Portal') {
     this.db.prepare(`
       UPDATE kyc_requests
@@ -1431,6 +1550,10 @@ class SqliteDatabase {
     try { location = JSON.parse(r.location_json || '{}'); } catch(e){}
     try { attachments = JSON.parse(r.attachments_json || '[]'); } catch(e){}
     try { ddq_responses = JSON.parse(r.ddq_responses_json || '{}'); } catch(e){}
+
+    // Template snapshot and draft are large; they are served by getKycDdqBundle() instead
+    const { ddq_template_json, ddq_draft_json, ...rest } = r;
+    r = rest;
 
     return {
       ...r,

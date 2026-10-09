@@ -48,6 +48,7 @@ app.use('/api/entities', entitiesRouter);
 app.use('/api/claim', claimsRouter);
 app.use('/api/statements', statementsRouter);
 app.use('/api/ddq', ddqRouter);
+app.use('/api/ddq-templates', require('./routes/ddqTemplates'));
 app.use('/api/alerts', alertsRouter);
 app.use('/api/sources', sourcesRouter);
 app.use('/api/policies', policiesRouter);
@@ -106,8 +107,24 @@ app.post('/api/intake', (req, res, next) => {
 // Serve frontend: safe-globe.html and portal routes
 const htmlPath = path.join(config.staticDir, 'safe-globe.html');
 
-app.get(['/', '/portal/employee', '/portal/compliance', '/ddq/portal', '/login'], (req, res) => {
+app.get(['/', '/portal/compliance', '/login'], (req, res) => {
   res.sendFile(htmlPath);
+});
+
+// Standalone DDQ pages: counterparty wizard, compliance template manager, printable copy
+const pageRoutes = {
+  '/ddq/portal': 'ddq-portal.html',
+  '/portal/ddq-manager': 'ddq-manager.html',
+  '/ddq/print': 'ddq-print.html'
+};
+for (const [route, file] of Object.entries(pageRoutes)) {
+  app.get(route, (req, res) => res.sendFile(path.join(config.staticDir, file)));
+}
+
+// Employees get a standalone page: KYC table only, no globe / reviews / sources / policies
+const employeeHtmlPath = path.join(config.staticDir, 'employee-portal.html');
+app.get(['/portal/employee', '/employee-portal.html'], (req, res) => {
+  res.sendFile(employeeHtmlPath);
 });
 
 app.get('/safe-globe.html', (req, res) => {
@@ -139,6 +156,7 @@ let server = null;
 
 function startServer(port = config.port) {
   try {
+    require('./services/ddqTemplateService').ensureDefaultTemplate();
     require('./services/kycService').ensurePersonaSeed();
   } catch (err) {
     console.error('[Safe Globe] Persona seed skipped:', err.message);

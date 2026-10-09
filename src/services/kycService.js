@@ -13,6 +13,7 @@ const config = require('../config');
 const { getDb } = require('../db');
 const { screenCounterparty } = require('./screening');
 const jwt = require('jsonwebtoken');
+const gemini = require('./geminiClient');
 const { evaluatePolicyRAG } = require('./policyRagService');
 const { generateKycExcelWorkbook } = require('./excelService');
 
@@ -192,7 +193,7 @@ async function extractDocumentData({ filename = '', fileContent = '', mimeType =
   // 1. Try Gemini Multimodal / Text Extraction if API Key is configured
   if (isRealKey) {
     try {
-      const model = config.geminiModel || 'gemini-2.5-flash';
+      let model = config.geminiModel;
       const prompt = `You are the SafeGlobe Compliance Document Extraction AI.
 Analyze the following onboarding document (${filename || 'document'}).
 Extract counterparty KYC fields and respond strictly in valid JSON matching this schema:
@@ -215,7 +216,6 @@ Extract counterparty KYC fields and respond strictly in valid JSON matching this
   "remarks": "<Brief extraction summary>"
 }`;
 
-      const contents = [];
       const parts = [{ text: prompt }];
 
       if (base64Data && (mimeType.startsWith('image/') || mimeType === 'application/pdf')) {
@@ -229,31 +229,12 @@ Extract counterparty KYC fields and respond strictly in valid JSON matching this
         parts.push({ text: `DOCUMENT CONTENT:\n${fileContent.substring(0, 10000)}` });
       }
 
-      contents.push({ parts });
-
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-      const resp = await fetch(url, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json'
-          }
-        })
-      });
-      clearTimeout(timeoutId);
-
-      if (resp.ok) {
-        const json = await resp.json();
-        const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          const parsed = JSON.parse(rawText.trim());
+      // Shared client walks the model fallback chain (lite-latest first)
+      const result = await gemini.generateJsonDetailed(parts, { timeoutMs: 20000 });
+      if (result) {
+        model = result.model;
+        {
+          const parsed = result.data;
           const extractedKeys = Object.keys(parsed).filter(k => parsed[k] !== null && parsed[k] !== '');
           return {
             success: true,
@@ -586,6 +567,17 @@ function createKycRequest(input, userContext = {}) {
   };
 
   const saved = db.addKycRequest(record);
+
+  // Freeze the questionnaire the counterparty will see at the moment the DDQ is issued
+  if (policyEval.ddq_required) {
+    try {
+      const template = require('./ddqTemplateService').getActiveTemplate();
+      if (template) db.setKycDdqTemplate(saved.id, template);
+    } catch (err) {
+      console.error('Could not snapshot DDQ template:', err.message);
+    }
+  }
+
   return {
     ...saved,
     ddq_link: ddqToken ? `/ddq/portal?token=${ddqToken}` : null
