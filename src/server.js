@@ -60,16 +60,53 @@ app.use('/api/ai', aiRouter);
 app.use('/api/kyc', kycRouter);
 
 
+// Auth routes
+const { authenticate, getRoleForEmail } = require('./middleware/auth');
+
+app.get('/api/auth/session', authenticate, (req, res) => {
+  res.json({
+    authenticated: true,
+    user: req.user,
+    googleClientId: config.googleClientId
+  });
+});
+
+// Public, non-secret client configuration (never includes the Gemini key)
+app.get('/api/config/public', (req, res) => {
+  // Placeholder / malformed keys fall back to the mock landmark map instead of a broken embed
+  const mapsKey = /^AIza[\w-]{35}$/.test(config.googleMapsApiKey) ? config.googleMapsApiKey : '';
+  res.json({
+    googleClientId: config.googleClientId,
+    googleMapsApiKey: mapsKey,
+    mapsEnabled: Boolean(mapsKey)
+  });
+});
+
+app.post('/api/auth/switch-persona', (req, res) => {
+  const { email, role, name, department } = req.body;
+  const targetEmail = (email || 'john.doe@safeglobe.com').toLowerCase().trim();
+  const targetRole = role || getRoleForEmail(targetEmail);
+  res.json({
+    success: true,
+    user: {
+      email: targetEmail,
+      role: targetRole,
+      name: name || (targetRole === 'compliance_officer' ? 'Grace Teo' : 'John Doe'),
+      department: department || (targetRole === 'compliance_officer' ? 'Compliance & Risk Governance' : 'Procurement & Logistics')
+    }
+  });
+});
+
 // Forward /api/intake to entities router
 app.post('/api/intake', (req, res, next) => {
   req.url = '/intake';
   entitiesRouter(req, res, next);
 });
 
-// Serve frontend: safe-globe.html and saf-globe.html
+// Serve frontend: safe-globe.html and portal routes
 const htmlPath = path.join(config.staticDir, 'safe-globe.html');
 
-app.get('/', (req, res) => {
+app.get(['/', '/portal/employee', '/portal/compliance', '/ddq/portal', '/login'], (req, res) => {
   res.sendFile(htmlPath);
 });
 
@@ -101,6 +138,11 @@ app.use((err, req, res, next) => {
 let server = null;
 
 function startServer(port = config.port) {
+  try {
+    require('./services/kycService').ensurePersonaSeed();
+  } catch (err) {
+    console.error('[Safe Globe] Persona seed skipped:', err.message);
+  }
   return new Promise((resolve) => {
     server = app.listen(port, config.host, () => {
       console.log(`[Safe Globe] Server running on http://${config.host}:${port}`);
