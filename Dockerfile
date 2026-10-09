@@ -16,6 +16,8 @@ RUN npm ci --omit=dev
 COPY src/ ./src/
 COPY data/ ./data/
 COPY safe-globe.html ./safe-globe.html
+COPY employee-portal.html ./employee-portal.html
+COPY ddq-portal.html ddq-manager.html ddq-print.html portal-shared.css portal-shared.js ./
 COPY saf-globe.html ./saf-globe.html
 COPY "Final PRD.pdf" ./"Final PRD.pdf"
 

@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safe Globe · Due Diligence Questionnaire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/portal-shared.css">
+<style>
+/* Counterparty DDQ wizard: one slide per section, a progress slider along the bottom,
+   and the AI guide docked at the bottom right beside it. */
+body{padding-bottom:96px}
+.stage{max-width:860px;margin:0 auto;padding:28px 20px 40px}
+.banner{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:12px;margin-bottom:16px;font-size:13px;border:1px solid var(--mid);background:var(--mid-soft);color:var(--fg)}
+.banner.bad{border-color:var(--high);background:var(--high-soft)}
+.banner b{display:block}
+
+/* slide: heading -> subheading -> questions and answers */
+.slide{padding:28px 30px}
+.slide h1{margin:4px 0 6px;font-family:var(--f-display);font-weight:500;font-size:28px;letter-spacing:-.01em}
+.slide .sub{margin:0 0 20px;color:var(--fg-2);font-size:13.5px;max-width:68ch}
+.slide h2{font-size:13px;font-weight:600;margin:20px 0 8px}
+.slide ol,.slide ul.plain{margin:0;padding-left:20px;color:var(--fg-2);font-size:13.5px;display:flex;flex-direction:column;gap:6px}
+
+.q{padding:16px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 10px}
+.q:first-of-type{border-top:0}
+.q.current{background:linear-gradient(90deg,var(--accent-soft),transparent 60%);margin:0 -30px;padding-left:30px;padding-right:30px}
+.q-no{font-family:var(--f-mono);font-size:12px;color:var(--accent);font-weight:600;padding-top:2px}
+.q-head{display:flex;gap:8px;align-items:flex-start}
+.q-text{flex:1;font-size:14px;font-weight:500;line-height:1.4}
+.q-explain{flex:none;height:24px;padding:0 8px;border-radius:999px;border:1px solid var(--line-2);font-size:11px;color:var(--fg-2);display:inline-flex;align-items:center;gap:4px}
+.q-explain:hover{border-color:var(--accent);color:var(--accent)}
+.q-body{grid-column:2;display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.q.missing .q-no{color:var(--high)}
+.q.missing .q-text::after{content:" *";color:var(--high)}
+.yn{display:flex;gap:10px;flex-wrap:wrap}
+.yn label,.check{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:9px;border:1px solid var(--line-2);font-size:13px;cursor:pointer;background:var(--surface)}
+.yn label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.details-prompt{font-size:12px;color:var(--fg-2)}
+.ai-note{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--accent);flex-wrap:wrap}
+.ai-note .src{color:var(--fg-3)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+.tbl th{text-align:left;font-size:11px;font-weight:600;color:var(--fg-3);text-transform:uppercase;letter-spacing:.04em;padding:8px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.tbl td{padding:6px 8px;border-bottom:1px solid var(--line)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .input{height:32px}
+.tbl-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* documents + declaration + review */
+.doc-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.doc-row:first-of-type{border-top:0}
+.doc-row small{display:block;color:var(--fg-3);font-size:11.5px}
+.sign-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.sign-grid{grid-template-columns:1fr}.slide{padding:22px 18px}.q.current{margin:0 -18px;padding-left:18px;padding-right:18px}}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:500;color:var(--fg-2)}
+.sig-box{position:relative;border:1px dashed var(--line-2);border-radius:10px;background:#fff;height:150px;touch-action:none}
+.sig-box canvas{width:100%;height:100%;display:block;border-radius:10px;cursor:crosshair}
+.sig-box .hint{position:absolute;inset:0;display:grid;place-items:center;color:#9a958a;font-size:13px;pointer-events:none}
+.review-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
+.review-row:first-of-type{border-top:0}
+.review-row .grow{flex:1}
+.prefill{display:flex;gap:14px;align-items:center;padding:16px;border-radius:12px;border:1px dashed var(--accent);background:var(--accent-soft);margin-top:20px;flex-wrap:wrap}
+.prefill .grow{flex:1;min-width:220px}
+.prefill b{display:block;font-size:13.5px}
+.prefill small{color:var(--fg-2);font-size:12px}
+
+/* bottom bar: Back / progress slider / Next, then the guide */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--glass);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;gap:14px}
+.slider{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.slider-meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--fg-3);gap:10px}
+.slider-meta b{color:var(--fg);font-weight:600}
+.track{display:flex;gap:4px}
+.seg{flex:1;height:8px;border-radius:4px;background:var(--surface-3);position:relative;overflow:hidden;cursor:pointer;min-width:6px}
+.seg i{position:absolute;inset:0;width:0;background:var(--accent);transition:width .3s}
+.seg.done i{background:var(--low)}
+.seg.on{outline:2px solid var(--accent);outline-offset:2px}
+.guide-fab{flex:none;height:52px;padding:0 16px 0 6px;border-radius:26px;background:var(--fg);color:var(--bg);display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg)}
+.guide-fab .face,.guide-head .face{width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none}
+.guide-fab .dot{width:8px;height:8px;border-radius:50%;background:var(--low)}
+@media (max-width:720px){.guide-fab span.lbl{display:none}.guide-fab{padding:0 6px}.dock{gap:8px;padding:10px 12px}.dock .btn .lbl{display:none}}
+
+/* guide panel */
+.guide{position:fixed;right:20px;bottom:92px;z-index:40;width:min(390px,calc(100vw - 24px));height:min(560px,calc(100vh - 170px));display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-lg)}
+.guide-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.guide-head b{display:block;font-size:14px}
+.guide-head small{color:var(--fg-3);font-size:11.5px}
+.guide-lang{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--line);align-items:center;font-size:12px;color:var(--fg-2)}
+.guide-lang .input{height:30px;font-size:12.5px}
+.guide-ctx{padding:6px 14px;font-size:11.5px;color:var(--fg-3);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.guide-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.bot{align-self:flex-start;background:var(--surface-2);border-bottom-left-radius:4px}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--on-accent);border-bottom-right-radius:4px}
+.msg.bot.typing{color:var(--fg-3);font-style:italic}
+.guide-chips{display:flex;gap:6px;padding:8px 14px;flex-wrap:wrap;border-top:1px solid var(--line)}
+.guide-chips button{height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--line-2);font-size:11.5px;background:var(--surface)}
+.guide-chips button:hover{border-color:var(--accent);color:var(--accent)}
+.guide-input{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wordmark"><b>Safe Globe</b><span id="top-sub">Due Diligence Questionnaire</span></div>
+  <div class="grow"></div>
+  <span class="pill" id="save-state" hidden></span>
+  <button class="btn sm" id="print-btn" type="button" hidden></button>
+  <button class="icon-btn" id="theme-btn" type="button" aria-label="Switch theme"></button>
+</header>
+
+<main class="stage">
+  <div id="banner"></div>
+  <section class="card slide" id="slide" aria-live="polite"></section>
+</main>
+
+<footer class="dock" id="dock" hidden>
+  <button class="btn" id="back-btn" type="button"></button>
+  <div class="slider">
+    <div class="slider-meta"><span id="slider-label"></span><span><b id="slider-count"></b></span></div>
+    <div class="track" id="track"></div>
+  </div>
+  <button class="btn primary" id="next-btn" type="button"></button>
+  <button class="guide-fab" id="guide-fab" type="button" aria-expanded="false">
+    <span class="face" aria-hidden="true"></span><span class="lbl" id="guide-fab-lbl"></span><span class="dot" aria-hidden="true"></span>
+  </button>
+</footer>
+
+<aside class="card guide" id="guide" hidden aria-label="DDQ Guide">
+  <div class="guide-head">
+    <span class="face" aria-hidden="true"></span>
+    <div style="flex:1"><b>Aria</b><small id="guide-role"></small></div>
+    <button class="icon-btn" id="guide-close" type="button" aria-label="Close guide"></button>
+  </div>
+  <div class="guide-lang">
+    <span id="lang-label"></span>
+    <input class="input" id="lang-input" list="lang-list" placeholder="English" autocomplete="off">
+    <datalist id="lang-list">
+      <option value="English"><option value="中文 (Chinese)"><option value="Bahasa Melayu"><option value="Bahasa Indonesia">
+      <option value="தமிழ் (Tamil)"><option value="Tiếng Việt"><option value="ไทย (Thai)"><option value="日本語"><option value="한국어"><option value="Español">
+    </datalist>
+    <button class="btn sm" id="lang-apply" type="button"></button>
+  </div>
+  <div class="guide-ctx" id="guide-ctx"></div>
+  <div class="guide-log" id="guide-log"></div>
+  <div class="guide-chips" id="guide-chips"></div>
+  <form class="guide-input" id="guide-form">
+    <input class="input" id="guide-text" autocomplete="off">
+    <button class="btn primary" type="submit" aria-label="Send"></button>
+  </form>
+</aside>
+
+<script src="/portal-shared.js"></script>
+<script>
+(function(){
+'use strict';
+const { $, $$, esc, icon, toast, initTheme } = SG;
+
+/* ===================== state ===================== */
+const TOKEN = new URLSearchParams(location.search).get('token');
+let META = null;          // request info from verify-token
+let BASE = null;          // English template snapshot (source of question ids and table column keys)
+let T = null;             // template as displayed (BASE or a translation of it)
+let R = { format: 'template-v1', answers: {}, tables: {}, documents: {}, declaration: {}, language: 'English' };
+let SLIDES = [];
+let at = 0;
+let currentQ = null;
+let readOnly = false;
+let showMissing = false;
+let saveTimer = null;
+const chat = [];
+
+/* Interface labels; translated together with the questionnaire */
+const UI_EN = {
+  back: 'Back', next: 'Next', review: 'Review', submit: 'Submit questionnaire', print: 'Print / Save PDF',
+  guide: 'Ask Aria', guideRole: 'Your DDQ guide', language: 'Language', apply: 'Apply',
+  explain: 'Explain', yes: 'Yes', no: 'No', addRow: 'Add row', none: 'None to declare', remove: 'Remove',
+  answerPlaceholder: 'Type your answer', detailsPlaceholder: 'Give details',
+  welcome: 'Welcome', howTo: 'How to complete it', docsNeeded: 'Supporting documents to have ready',
+  prefillTitle: 'Already have this information in a document?',
+  prefillBody: 'Upload a previous questionnaire, company profile or registry extract and Aria will suggest answers for you to check.',
+  prefillBtn: 'Upload a document', prefilling: 'Reading your document…',
+  aiSuggested: 'AI suggested — please check', confirm: 'Confirm', confirmAll: 'Confirm all on this page',
+  documents: 'Supporting documents', documentsSub: 'Tick each document you are providing and attach the file.',
+  attach: 'Attach file', uploading: 'Uploading', uploaded: 'Uploaded', declaration: 'Declaration', agree: 'I have read and agree to the declaration above',
+  fullName: 'Full name', jobTitle: 'Job title', company: 'Company name', date: 'Date',
+  signature: 'Signature', signHint: 'Sign here with your mouse or finger', clear: 'Clear',
+  reviewTitle: 'Review and submit', reviewSub: 'Check each part is complete, then submit. You can print or save a PDF copy at any time.',
+  complete: 'Complete', toDo: 'to do', open: 'Open', saved: 'Saved', saving: 'Saving…',
+  section: 'Section', of: 'of', answered: 'answered', notSigned: 'Not signed',
+  lockedTitle: 'Questionnaire submitted', lockedBody: 'This questionnaire has been submitted and is locked under compliance review. You can still print or save a copy.',
+  missing: 'Please complete the highlighted questions.', needSign: 'Please agree, add your name and sign the declaration.',
+  submitted: 'Thank you — your questionnaire has been submitted.',
+  askPlaceholder: 'Ask about this question…', chipExplain: 'Explain this question', chipDocs: 'Which documents do I need?', chipLeft: "What's left?",
+  greeting: "Hi, I'm Aria. I can explain any question in plain language, tell you which documents to attach, and keep track of what's left. Tap “Explain” next to a question to start.",
+  about: 'About', thinking: 'Aria is thinking…', englishNote: 'The English text is the authoritative version of this questionnaire.',
+  translating: 'Translating the questionnaire…'
+};
+const UI_KEYS = Object.keys(UI_EN);
+let UI = Object.assign({}, UI_EN);
+const t = k => UI[k] || UI_EN[k] || k;
+
+/* ===================== data helpers ===================== */
+const hasText = v => typeof v === 'string' && v.trim().length > 0;
+const ans = id => (R.answers[id] = R.answers[id] || {});
+const needsConfirm = id => Boolean(R.answers[id] && R.answers[id].ai_suggested && !R.answers[id].confirmed);
+
+function isAnswered(q) {
+  if (needsConfirm(q.id)) return false;
+  if (q.type === 'table') {
+    if (R.answers[q.id] && R.answers[q.id].none) return true;
+    return (R.tables[q.id] || []).some(r => Object.values(r || {}).some(hasText));
+  }
+  const a = R.answers[q.id] || {};
+  if (q.type === 'yesno') {
+    if (a.value === 'No') return true;
+    return a.value === 'Yes' && (!q.detailsPrompt || hasText(a.details));
+  }
+  return hasText(a.value);
+}
+function sectionProgress(s) {
+  const req = s.questions.filter(q => q.required !== false);
+  return { done: req.filter(isAnswered).length, total: req.length };
+}
+function declarationDone() {
+  const d = R.declaration || {};
+  return Boolean(d.agreed && hasText(d.full_name) && hasText(d.signature));
+}
+function totals() {
+  let done = 0, total = 0;
+  T.sections.forEach(s => { const p = sectionProgress(s); done += p.done; total += p.total; });
+  return { done, total };
+}
+
+function buildSlides() {
+  SLIDES = [{ kind: 'welcome' }, ...T.sections.map((s, i) => ({ kind: 'section', index: i })), { kind: 'documents' }, { kind: 'declaration' }, { kind: 'review' }];
+}
+function slideTitle(s) {
+  if (s.kind === 'welcome') return t('welcome');
+  if (s.kind === 'section') return T.sections[s.index].title;
+  if (s.kind === 'documents') return t('documents');
+  if (s.kind === 'declaration') return t('declaration');
+  return t('reviewTitle');
+}
+function slideFill(s) {
+  if (s.kind === 'section') { const p = sectionProgress(T.sections[s.index]); return p.total ? p.done / p.total : 1; }
+  if (s.kind === 'declaration') return declarationDone() ? 1 : 0;
+  if (s.kind === 'documents') { const n = (T.documents || []).length; return n ? Object.values(R.documents).filter(d => d && d.checked).length / n : 1; }
+  if (s.kind === 'welcome') return 1;
+  const tot = totals();
+  return tot.done === tot.total && declarationDone() ? 1 : 0;
+}
+
+/* ===================== autosave ===================== */
+function touch() {
+  if (readOnly) return;
+  renderDock();
+  const pill = $('#save-state');
+  pill.hidden = false; pill.className = 'pill'; pill.textContent = t('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveDraft, 700);
+}
+async function saveDraft() {
+  if (readOnly) return;
+  try {
+    const res = await fetch('/api/ddq/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: TOKEN, draft: R }) });
+    const pill = $('#save-state');
+    if (res.ok) { pill.className = 'pill ok'; pill.textContent = t('saved'); }
+    else { pill.className = 'pill bad'; pill.textContent = '!'; }
+  } catch (e) {}
+}
+
+/* ===================== rendering ===================== */
+const dis = () => (readOnly ? 'disabled' : '');
+
+function questionHtml(q) {
+  const a = R.answers[q.id] || {};
+  let body = '';
+  if (q.type === 'yesno') {
+    const showDetails = a.value === 'Yes' && q.detailsPrompt;
+    body = `<div class="yn">
+        <label><input type="checkbox" data-yn="Yes" ${a.value === 'Yes' ? 'checked' : ''} ${dis()}> ${esc(t('yes'))}</label>
+        <label><input type="checkbox" data-yn="No" ${a.value === 'No' ? 'checked' : ''} ${dis()}> ${esc(t('no'))}</label>
+      </div>
+      <div data-details ${showDetails ? '' : 'hidden'}>
+        <div class="details-prompt">${esc(q.detailsPrompt || '')}</div>
+        <textarea class="textarea" rows="2" data-field="details" placeholder="${esc(t('detailsPlaceholder'))}" ${dis()}>${esc(a.details || '')}</textarea>
+      </div>`;
+  } else if (q.type === 'table') {
+    const keys = BASE_Q[q.id].columns;
+    const labels = q.columnLabels || q.columns;
+    const rows = R.tables[q.id] && R.tables[q.id].length ? R.tables[q.id] : [{}];
+    body = `<div class="tbl-wrap" ${a.none ? 'hidden' : ''} data-tbl><table class="tbl"><thead><tr>${labels.map(l => `<th>${esc(l)}</th>`).join('')}<th></th></tr></thead><tbody>
+        ${rows.map((r, ri) => `<tr data-row="${ri}">${keys.map((k, ci) => `<td><input class="input" data-col="${ci}" value="${esc(r[k] || '')}" aria-label="${esc(labels[ci])}" ${dis()}></td>`).join('')}
+          <td>${readOnly ? '' : `<button class="icon-btn" type="button" data-row-del title="${esc(t('remove'))}">${icon('close', 'sm')}</button>`}</td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="tbl-actions">
+        ${readOnly ? '' : `<button class="btn sm" type="button" data-row-add ${a.none ? 'hidden' : ''}>${icon('plus', 'sm')}${esc(t('addRow'))}</button>`}
+        <label class="check"><input type="checkbox" data-none ${a.none ? 'checked' : ''} ${dis()}> ${esc(t('none'))}</label>
+      </div>`;
+  } else {
+    body = `<textarea class="textarea" rows="2" data-field="value" placeholder="${esc(t('answerPlaceholder'))}" ${dis()}>${esc(a.value || '')}</textarea>`;
+  }
+  const ai = needsConfirm(q.id)
+    ? `<div class="ai-note">${icon('spark', 'sm')}<b>${esc(t('aiSuggested'))}</b>${a.source ? `<span class="src">“${esc(a.source)}”</span>` : ''}<button class="btn sm" type="button" data-confirm>${icon('check', 'sm')}${esc(t('confirm'))}</button></div>`
+    : '';
+  const missing = showMissing && q.required !== false && !isAnswered(q);
+  return `<div class="q ${missing ? 'missing' : ''} ${currentQ === q.id ? 'current' : ''}" data-q="${esc(q.id)}">
+      <div class="q-no">${esc(q.id)}</div>
+      <div class="q-head"><div class="q-text">${esc(q.text)}</div>
+        <button class="q-explain" type="button" data-explain>${icon('spark', 'sm')}${esc(t('explain'))}</button></div>
+      <div class="q-body">${body}${ai}</div>
+    </div>`;
+}
+
+function renderSlide() {
+  const s = SLIDES[at];
+  const el = $('#slide');
+  let html = '';
+  if (s.kind === 'welcome') {
+    html = `<div class="eyebrow">${esc(META.kyc_id)} · ${esc(META.counterparty_name)}</div>
+      <h1>${esc(T.title)}</h1>
+      <p class="sub">${esc(T.intro)}</p>
+      ${T.instructions.length ? `<h2>${esc(t('howTo'))}</h2><ol>${T.instructions.map(i => `<li>${esc(i)}</li>`).join('')}</ol>` : ''}
+      ${T.documents.length ? `<h2>${esc(t('docsNeeded'))}</h2><ul class="plain">${T.documents.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}
+      ${readOnly ? '' : `<div class="prefill">
+        <div class="grow"><b>${icon('spark', 'sm')} ${esc(t('prefillTitle'))}</b><small>${esc(t('prefillBody'))}</small></div>
+        <input type="file" id="prefill-file" accept=".pdf,.txt,.md,.csv,.json,image/*" hidden>
+        <button class="btn primary" id="prefill-btn" type="button">${icon('upload', 'sm')}<span>${esc(t('prefillBtn'))}</span></button>
+      </div>`}
+      ${R.language !== 'English' ? `<p class="faint" style="font-size:12px;margin-top:16px">${esc(t('englishNote'))}</p>` : ''}`;
+  } else if (s.kind === 'section') {
+    const sec = T.sections[s.index];
+    const pending = sec.questions.filter(q => needsConfirm(q.id)).length;
+    html = `<div class="eyebrow">${esc(t('section'))} ${s.index + 1} ${esc(t('of'))} ${T.sections.length}</div>
+      <h1>${esc(sec.title)}</h1>
+      ${sec.subheading ? `<p class="sub">${esc(sec.subheading)}</p>` : '<p class="sub"></p>'}
+      ${pending && !readOnly ? `<div class="ai-note" style="margin-bottom:8px">${icon('spark', 'sm')}<b>${pending} × ${esc(t('aiSuggested'))}</b><button class="btn sm" type="button" id="confirm-all">${icon('check', 'sm')}${esc(t('confirmAll'))}</button></div>` : ''}
+      ${sec.questions.map(questionHtml).join('')}`;
+  } else if (s.kind === 'documents') {
+    html = `<div class="eyebrow">${esc(t('documents'))}</div><h1>${esc(t('documents'))}</h1><p class="sub">${esc(t('documentsSub'))}</p>
+      ${T.documents.map((d, i) => {
+        const doc = R.documents[i] || {};
+        return `<div class="doc-row" data-doc="${i}">
+          <input type="checkbox" data-doc-check ${doc.checked ? 'checked' : ''} ${dis()} aria-label="${esc(d)}">
+          <div><b style="font-weight:500">${esc(d)}</b><small>${doc.filename ? esc(doc.filename) + (doc.size ? ` · ${Math.max(1, Math.round(doc.size / 1024))} KB` : '') + (doc.key ? ` · ✓ ${esc(t('uploaded'))}` : '') : ''}</small></div>
+          ${readOnly ? '' : `<label class="btn sm">${icon('upload', 'sm')}${esc(t('attach'))}<input type="file" data-doc-file hidden></label>`}
+        </div>`;
+      }).join('') || '<p class="faint">—</p>'}`;
+  } else if (s.kind === 'declaration') {
+    const d = R.declaration;
+    html = `<div class="eyebrow">${esc(t('declaration'))}</div><h1>${esc(t('declaration'))}</h1>
+      <p class="sub">${esc(T.declaration.intro)}</p>
+      <ol>${T.declaration.statements.map(x => `<li>${esc(x)}</li>`).join('')}</ol>
+      <label class="check" style="margin:18px 0"><input type="checkbox" id="decl-agree" ${d.agreed ? 'checked' : ''} ${dis()}> ${esc(t('agree'))}</label>
+      <div class="sign-grid">
+        <div class="field"><label>${esc(t('fullName'))}</label><input class="input" data-decl="full_name" value="${esc(d.full_name || '')}" ${dis()}></div>
+        <div class="field"><label>${esc(t('jobTitle'))}</label><input class="input" data-decl="job_title" value="${esc(d.job_title || '')}" ${dis()}></div>
+        <div class="field"><label>${esc(t('company'))}</label><input class="input" data-decl="company" value="${esc(d.company || META.counterparty_name || '')}" ${dis()}></div>
+        <div class="field"><label>${esc(t('date'))}</label><input class="input" type="date" data-decl="date" value="${esc(d.date || new Date().toISOString().slice(0, 10))}" ${dis()}></div>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label style="display:flex;justify-content:space-between;align-items:center">${esc(t('signature'))}
+          ${readOnly ? '' : `<button class="btn sm ghost" type="button" id="sig-clear">${esc(t('clear'))}</button>`}</label>
+        <div class="sig-box"><canvas id="sig" width="1200" height="300"></canvas><div class="hint" id="sig-hint" ${d.signature ? 'hidden' : ''}>${esc(readOnly ? t('notSigned') : t('signHint'))}</div></div>
+      </div>`;
+  } else {
+    const tot = totals();
+    const ready = tot.done === tot.total && declarationDone();
+    html = `<div class="eyebrow">${esc(META.kyc_id)}</div><h1>${esc(t('reviewTitle'))}</h1><p class="sub">${esc(t('reviewSub'))}</p>
+      ${T.sections.map((sec, i) => {
+        const p = sectionProgress(sec);
+        return `<div class="review-row"><span class="grow">${i + 1}. ${esc(sec.title)}</span>
+          <span class="pill ${p.done === p.total ? 'ok' : 'warn'}">${p.done === p.total ? esc(t('complete')) : `${p.total - p.done} ${esc(t('toDo'))}`}</span>
+          <button class="btn sm ghost" type="button" data-goto="${i + 1}">${esc(t('open'))}</button></div>`;
+      }).join('')}
+      <div class="review-row"><span class="grow">${esc(t('declaration'))}</span>
+        <span class="pill ${declarationDone() ? 'ok' : 'warn'}">${declarationDone() ? esc(t('complete')) : esc(t('notSigned'))}</span>
+        <button class="btn sm ghost" type="button" data-goto="${SLIDES.length - 2}">${esc(t('open'))}</button></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px;flex-wrap:wrap">
+        <button class="btn" type="button" id="review-print">${icon('doc', 'sm')}${esc(t('print'))}</button>
+        ${readOnly ? '' : `<button class="btn primary" type="button" id="submit-btn" ${ready ? '' : 'data-notready'}>${icon('check', 'sm')}${esc(t('submit'))}</button>`}
+      </div>`;
+  }
+  el.innerHTML = html;
+  if (s.kind === 'declaration') initSignature();
+  renderDock();
+  renderGuideContext();
+}
+
+function renderDock() {
+  if (!T) return;
+  const tot = totals();
+  $('#slider-label').textContent = `${at + 1} / ${SLIDES.length} · ${slideTitle(SLIDES[at])}`;
+  $('#slider-count').textContent = `${tot.done} / ${tot.total} ${t('answered')}`;
+  $('#track').innerHTML = SLIDES.map((s, i) => {
+    const f = slideFill(s);
+    return `<div class="seg ${i === at ? 'on' : ''} ${f >= 1 ? 'done' : ''}" data-goto="${i}" title="${esc(slideTitle(s))}"><i style="width:${Math.round(f * 100)}%"></i></div>`;
+  }).join('');
+  $('#back-btn').disabled = at === 0;
+  $('#next-btn').hidden = at === SLIDES.length - 1;
+  $('#next-btn').innerHTML = `<span class="lbl">${esc(at === SLIDES.length - 2 ? t('review') : t('next'))}</span>${icon('chev', 'sm')}`;
+}
+
+function renderChrome() {
+  $('#back-btn').innerHTML = `<span class="lbl">${esc(t('back'))}</span>`;
+  $('#print-btn').innerHTML = `${icon('doc', 'sm')}${esc(t('print'))}`;
+  $('#print-btn').hidden = false;
+  $('#guide-fab-lbl').textContent = t('guide');
+  $('#guide-role').textContent = t('guideRole');
+  $('#lang-label').textContent = t('language');
+  $('#lang-apply').textContent = t('apply');
+  $('#guide-text').placeholder = t('askPlaceholder');
+  $('#guide-chips').innerHTML = [['explain', 'chipExplain'], ['docs', 'chipDocs'], ['left', 'chipLeft']]
+    .map(([k, label]) => `<button type="button" data-chip="${k}">${esc(t(label))}</button>`).join('');
+  $$('.face').forEach(f => { f.innerHTML = icon('spark'); });
+  $('#guide-close').innerHTML = icon('close');
+  $('#guide-form button').innerHTML = icon('send', 'sm');
+  $('#top-sub').textContent = `${T.title} · ${META.kyc_id}`;
+  document.title = `${T.title} · ${META.counterparty_name}`;
+}
+
+function go(i) {
+  at = Math.max(0, Math.min(SLIDES.length - 1, i));
+  currentQ = null;
+  renderSlide();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ===================== slide interactions ===================== */
+const qOf = el => { const w = el.closest('[data-q]'); return w ? w.dataset.q : null; };
+let BASE_Q = {};
+
+function setCurrent(id) {
+  if (currentQ === id) return;
+  currentQ = id;
+  $$('#slide .q').forEach(q => q.classList.toggle('current', q.dataset.q === id));
+  renderGuideContext();
+}
+function rerenderQuestion(id) {
+  const sec = T.sections.find(s => s.questions.some(q => q.id === id));
+  const q = sec.questions.find(x => x.id === id);
+  const node = $(`#slide [data-q="${CSS.escape(id)}"]`);
+  if (node) node.outerHTML = questionHtml(q);
+}
+function userEdited(id) {
+  const a = ans(id);
+  if (a.ai_suggested) { a.confirmed = true; const note = $(`#slide [data-q="${CSS.escape(id)}"] .ai-note`); if (note) note.remove(); }
+}
+
+$('#slide').addEventListener('focusin', e => { const id = qOf(e.target); if (id) setCurrent(id); });
+
+$('#slide').addEventListener('input', e => {
+  const el = e.target;
+  const id = qOf(el);
+  if (id && el.dataset.field) { ans(id)[el.dataset.field] = el.value; userEdited(id); touch(); return; }
+  if (id && el.dataset.col !== undefined) {
+    const keys = BASE_Q[id].columns;
+    const rows = (R.tables[id] = R.tables[id] && R.tables[id].length ? R.tables[id] : [{}]);
+    const ri = Number(el.closest('[data-row]').dataset.row);
+    rows[ri] = rows[ri] || {};
+    rows[ri][keys[Number(el.dataset.col)]] = el.value;
+    userEdited(id); touch(); return;
+  }
+  if (el.dataset.decl) { R.declaration[el.dataset.decl] = el.value; touch(); }
+});
+
+$('#slide').addEventListener('change', e => {
+  const el = e.target;
+  const id = qOf(el);
+  if (id && el.dataset.yn) {
+    const a = ans(id);
+    a.value = el.checked ? el.dataset.yn : '';
+    if (a.value !== 'Yes') a.details = a.details || '';
+    userEdited(id);
+    rerenderQuestion(id); touch(); return;
+  }
+  if (id && el.hasAttribute('data-none')) { ans(id).none = el.checked; userEdited(id); rerenderQuestion(id); touch(); return; }
+  if (el.id === 'decl-agree') { R.declaration.agreed = el.checked; touch(); return; }
+  const docRow = el.closest('[data-doc]');
+  if (docRow) {
+    const i = docRow.dataset.doc;
+    const doc = (R.documents[i] = R.documents[i] || {});
+    if (el.hasAttribute('data-doc-check')) doc.checked = el.checked;
+    if (el.hasAttribute('data-doc-file') && el.files[0]) { uploadDocument(i, el.files[0]); return; }
+    renderSlide(); touch(); return;
+  }
+  if (el.id === 'prefill-file' && el.files[0]) runPrefill(el.files[0]);
+});
+
+$('#slide').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const id = qOf(btn);
+  if (btn.hasAttribute('data-explain')) { setCurrent(id); openGuide(); askGuide(t('chipExplain')); return; }
+  if (btn.hasAttribute('data-confirm')) { ans(id).confirmed = true; rerenderQuestion(id); touch(); return; }
+  if (btn.hasAttribute('data-row-add')) { (R.tables[id] = R.tables[id] && R.tables[id].length ? R.tables[id] : [{}]).push({}); rerenderQuestion(id); return; }
+  if (btn.hasAttribute('data-row-del')) {
+    const ri = Number(btn.closest('[data-row]').dataset.row);
+    (R.tables[id] || []).splice(ri, 1);
+    rerenderQuestion(id); touch(); return;
+  }
+  if (btn.dataset.goto !== undefined) { go(Number(btn.dataset.goto)); return; }
+  if (btn.id === 'confirm-all') {
+    T.sections[SLIDES[at].index].questions.forEach(q => { if (needsConfirm(q.id)) R.answers[q.id].confirmed = true; });
+    renderSlide(); touch(); return;
+  }
+  if (btn.id === 'prefill-btn') { $('#prefill-file').click(); return; }
+  if (btn.id === 'sig-clear') { R.declaration.signature = ''; renderSlide(); touch(); return; }
+  if (btn.id === 'review-print') { openPrint(); return; }
+  if (btn.id === 'submit-btn') submit();
+});
+
+$('#track').addEventListener('click', e => { const seg = e.target.closest('[data-goto]'); if (seg) go(Number(seg.dataset.goto)); });
+$('#back-btn').addEventListener('click', () => go(at - 1));
+$('#next-btn').addEventListener('click', () => go(at + 1));
+$('#print-btn').addEventListener('click', openPrint);
+function openPrint() { window.open(`/ddq/print?token=${encodeURIComponent(TOKEN)}`, '_blank', 'noopener'); }
+
+/* ===================== supporting document upload ===================== */
+async function uploadDocument(index, file) {
+  if (file.size > 7 * 1024 * 1024) { toast('File is larger than the 7 MB limit'); renderSlide(); return; }
+  toast(`${t('uploading')} ${file.name}`);
+  try {
+    const base64Data = await new Promise(resolve => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result).split(',')[1] || ''); fr.readAsDataURL(file); });
+    const res = await fetch('/api/ddq/document', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, index: Number(index), filename: file.name, mimeType: file.type, base64Data })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error);
+    R.documents[index] = Object.assign({}, data.document, { checked: true });
+    toast(`${t('uploaded')}: ${data.document.filename}`);
+    touch();
+  } catch (err) {
+    toast(err.message);
+  }
+  renderSlide();
+}
+
+/* ===================== digital signature ===================== */
+function initSignature() {
+  const canvas = $('#sig');
+  const ctx = canvas.getContext('2d');
+  ctx.lineWidth = 3.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1c2a4a';
+  if (R.declaration.signature) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    img.src = R.declaration.signature;
+  }
+  if (readOnly) return;
+  let drawing = false, moved = false;
+  const pos = e => {
+    const r = canvas.getBoundingClientRect();
+    return [(e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height];
+  };
+  canvas.addEventListener('pointerdown', e => {
+    drawing = true; moved = false;
+    canvas.setPointerCapture(e.pointerId);
+    ctx.beginPath(); ctx.moveTo(...pos(e));
+    $('#sig-hint').hidden = true;
+  });
+  canvas.addEventListener('pointermove', e => { if (!drawing) return; moved = true; ctx.lineTo(...pos(e)); ctx.stroke(); });
+  const end = () => {
+    if (!drawing) return;
+    drawing = false;
+    if (moved) { R.declaration.signature = canvas.toDataURL('image/png'); R.declaration.signed_at = new Date().toISOString(); touch(); }
+  };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+}
+
+/* ===================== prefill from an uploaded document ===================== */
+async function runPrefill(file) {
+  const btn = $('#prefill-btn');
+  btn.disabled = true;
+  btn.querySelector('span').textContent = t('prefilling');
+  try {
+    const body = { token: TOKEN, filename: file.name, mimeType: file.type || '' };
+    if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+      body.base64Data = await new Promise(resolve => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result).split(',')[1] || ''); fr.readAsDataURL(file); });
+    } else {
+      body.fileContent = (await file.text()).slice(0, 60000);
+    }
+    const res = await fetch('/api/ddq/prefill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error);
+    let applied = 0;
+    // Never overwrite something the person has already answered themselves
+    for (const [id, a] of Object.entries(data.answers || {})) {
+      const existing = R.answers[id];
+      if (existing && (hasText(existing.value)) && !existing.ai_suggested) continue;
+      R.answers[id] = { value: a.value, details: a.details || '', source: a.source || '', ai_suggested: true, confirmed: false };
+      applied++;
+    }
+    for (const [id, rows] of Object.entries(data.tables || {})) {
+      if ((R.tables[id] || []).some(r => Object.values(r || {}).some(hasText))) continue;
+      R.tables[id] = rows;
+      R.answers[id] = Object.assign(R.answers[id] || {}, { ai_suggested: true, confirmed: false, none: false });
+      applied++;
+    }
+    toast(applied ? data.message : (data.message || 'No answers found'));
+    pushBot(applied ? `${data.message}${data.summary ? `\n\n${data.summary}` : ''}` : data.message);
+    touch();
+    if (applied) go(1); else renderSlide();
+  } catch (err) {
+    toast(err.message);
+    renderSlide();
+  }
+}
+
+/* ===================== AI guide ===================== */
+function currentQuestion() {
+  if (!currentQ) return null;
+  for (const s of T.sections) { const q = s.questions.find(x => x.id === currentQ); if (q) return q; }
+  return null;
+}
+function renderGuideContext() {
+  const q = currentQuestion();
+  $('#guide-ctx').textContent = q ? `${t('about')} ${q.id} · ${q.text}` : `${t('about')}: ${slideTitle(SLIDES[at] || { kind: 'welcome' })}`;
+}
+function renderChat() {
+  const log = $('#guide-log');
+  log.innerHTML = chat.map(m => `<div class="msg ${m.role === 'user' ? 'me' : 'bot'} ${m.typing ? 'typing' : ''}">${esc(m.text)}</div>`).join('');
+  log.scrollTop = log.scrollHeight;
+}
+function pushBot(text) { chat.push({ role: 'guide', text }); renderChat(); }
+function openGuide() {
+  $('#guide').hidden = false;
+  $('#guide-fab').setAttribute('aria-expanded', 'true');
+  if (!chat.length) pushBot(t('greeting'));
+}
+function closeGuide() { $('#guide').hidden = true; $('#guide-fab').setAttribute('aria-expanded', 'false'); }
+
+async function askGuide(message) {
+  const text = String(message || '').trim();
+  if (!text) return;
+  const history = chat.filter(m => !m.typing).slice(-6).map(m => ({ role: m.role, text: m.text }));
+  chat.push({ role: 'user', text });
+  const typing = { role: 'guide', text: t('thinking'), typing: true };
+  chat.push(typing);
+  renderChat();
+  try {
+    const s = SLIDES[at];
+    const res = await fetch('/api/ddq/assistant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: TOKEN, message: text, questionId: currentQ,
+        sectionId: s.kind === 'section' ? T.sections[s.index].id : null,
+        language: R.language, history, responses: R
+      })
+    });
+    const data = await res.json();
+    typing.typing = false;
+    typing.text = res.ok ? data.reply : (data.message || 'Sorry, I could not answer that just now.');
+  } catch (err) {
+    typing.typing = false;
+    typing.text = 'Sorry, I could not reach the guide service. Please try again.';
+  }
+  renderChat();
+}
+
+$('#guide-fab').addEventListener('click', () => ($('#guide').hidden ? openGuide() : closeGuide()));
+$('#guide-close').addEventListener('click', closeGuide);
+$('#guide-form').addEventListener('submit', e => { e.preventDefault(); const i = $('#guide-text'); askGuide(i.value); i.value = ''; });
+$('#guide-chips').addEventListener('click', e => {
+  const b = e.target.closest('[data-chip]');
+  if (!b) return;
+  askGuide({ explain: t('chipExplain'), docs: t('chipDocs'), left: t('chipLeft') }[b.dataset.chip]);
+});
+
+/* ===================== language ===================== */
+async function applyLanguage(language) {
+  const lang = String(language || '').replace(/\s*\(.*\)\s*$/, '').trim() || 'English';
+  const btn = $('#lang-apply');
+  btn.disabled = true;
+  if (!/^english$/i.test(lang)) pushBot(t('translating'));
+  try {
+    const res = await fetch('/api/ddq/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: TOKEN, language: lang, ui: UI_KEYS.map(k => UI_EN[k]) })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error);
+    T = data.template;
+    UI = Object.assign({}, UI_EN);
+    if (data.translated && Array.isArray(data.ui)) UI_KEYS.forEach((k, i) => { if (data.ui[i]) UI[k] = data.ui[i]; });
+    R.language = data.translated ? data.language : 'English';
+    $('#lang-input').value = R.language === 'English' ? '' : R.language;
+    document.documentElement.lang = R.language === 'English' ? 'en' : '';
+    renderChrome(); renderSlide();
+    if (data.message) pushBot(data.message);
+    else if (data.translated) pushBot(`${t('language')}: ${data.language}. ${t('englishNote')}`);
+    touch();
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+$('#lang-apply').addEventListener('click', () => applyLanguage($('#lang-input').value));
+$('#lang-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyLanguage(e.target.value); } });
+
+/* ===================== submit ===================== */
+async function submit() {
+  const tot = totals();
+  if (tot.done < tot.total) {
+    showMissing = true;
+    toast(t('missing'));
+    const first = SLIDES.findIndex(s => s.kind === 'section' && sectionProgress(T.sections[s.index]).done < sectionProgress(T.sections[s.index]).total);
+    go(first);
+    return;
+  }
+  if (!declarationDone()) { toast(t('needSign')); go(SLIDES.length - 2); return; }
+  const btn = $('#submit-btn');
+  btn.disabled = true;
+  try {
+    clearTimeout(saveTimer);
+    const res = await fetch('/api/ddq/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: TOKEN, responses: R }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error);
+    lock(true);
+    toast(t('submitted'));
+    go(SLIDES.length - 1);
+  } catch (err) {
+    toast(err.message);
+    btn.disabled = false;
+  }
+}
+
+function lock(justSubmitted) {
+  readOnly = true;
+  $('#save-state').hidden = true;
+  $('#banner').innerHTML = `<div class="banner">${icon('lock')}<div><b>${esc(t('lockedTitle'))}</b>${esc(justSubmitted ? t('submitted') + ' ' : '')}${esc(t('lockedBody'))}</div></div>`;
+}
+
+function fail(message) {
+  $('#slide').innerHTML = `<div class="eyebrow">Safe Globe</div><h1>This link can't be opened</h1><p class="sub">${esc(message)} Please ask your SafeGlobe contact to issue a new secure link.</p>`;
+  $('#banner').innerHTML = `<div class="banner bad">${icon('alert')}<div><b>Link invalid or expired</b>The questionnaire could not be loaded.</div></div>`;
+}
+
+/* ===================== boot ===================== */
+async function boot() {
+  initTheme($('#theme-btn'));
+  if (!TOKEN) { fail('No access token was supplied.'); return; }
+  let d;
+  try {
+    d = await (await fetch(`/api/ddq/verify-token?token=${encodeURIComponent(TOKEN)}`)).json();
+  } catch (e) { fail('The questionnaire service is unavailable.'); return; }
+  if (!d.valid) { fail(d.error || 'This link could not be verified.'); return; }
+  if (!d.template) { fail('No questionnaire has been configured yet.'); return; }
+
+  META = d;
+  BASE = T = d.template;
+  BASE.sections.forEach(s => s.questions.forEach(q => { BASE_Q[q.id] = q; }));
+  const saved = d.readOnly && d.existing_responses && d.existing_responses.format === 'template-v1' ? d.existing_responses : d.draft;
+  if (saved && saved.format === 'template-v1') R = Object.assign(R, saved, { format: 'template-v1' });
+  ['answers', 'tables', 'documents', 'declaration'].forEach(k => { R[k] = R[k] || {}; });
+  if (!R.declaration.company) R.declaration.company = d.counterparty_name;
+  if (!R.declaration.date) R.declaration.date = new Date().toISOString().slice(0, 10);
+
+  buildSlides();
+  if (d.readOnly) lock(false);
+  $('#dock').hidden = false;
+  renderChrome();
+  if (R.language && R.language !== 'English') await applyLanguage(R.language);
+  else renderSlide();
+}
+boot();
+})();
+</script>
+</body>
+</html>

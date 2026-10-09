@@ -176,6 +176,75 @@ router.get('/:id', (req, res) => {
 });
 
 /**
+ * GET /api/kyc/:id/ddq
+ * Questionnaire snapshot + counterparty answers, for the review drawer and the PDF copy
+ */
+router.get('/:id/ddq', (req, res) => {
+  try {
+    const db = getDb();
+    const request = db.getKycRequestById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ error: 'KYC request not found' });
+    }
+    if (isScopedEmployee(req) && (request.created_by_email || '').toLowerCase() !== req.user.email) {
+      return res.status(403).json({ error: 'Access denied', message: 'Employees can only view DDQs for their own requests' });
+    }
+    const bundle = db.getKycDdqBundle(request.id) || {};
+    const submitted = Object.keys(request.ddq_responses || {}).length > 0;
+    res.json({
+      success: true,
+      submitted,
+      request: {
+        id: request.id,
+        counterparty_name: request.counterparty_name,
+        counterparty_email: request.counterparty_email,
+        entity_type: request.entity_type,
+        country: request.country,
+        request_status: request.request_status,
+        ddq_status: request.ddq_status,
+        ddq_clause: request.ddq_clause,
+        submitted_at: request.ddq_submitted_at || null
+      },
+      template: bundle.template,
+      responses: submitted ? request.ddq_responses : null
+    });
+  } catch (err) {
+    console.error('Error fetching DDQ document:', err);
+    res.status(500).json({ error: 'Failed to retrieve DDQ', message: err.message });
+  }
+});
+
+/**
+ * GET /api/kyc/:id/ddq/documents/:index
+ * Downloads a supporting document the counterparty attached to its DDQ
+ */
+router.get('/:id/ddq/documents/:index', async (req, res) => {
+  try {
+    const db = getDb();
+    const request = db.getKycRequestById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ error: 'KYC request not found' });
+    }
+    if (isScopedEmployee(req) && (request.created_by_email || '').toLowerCase() !== req.user.email) {
+      return res.status(403).json({ error: 'Access denied', message: 'Employees can only view documents for their own requests' });
+    }
+    const doc = ((request.ddq_responses || {}).documents || {})[req.params.index];
+    const buffer = doc && doc.key
+      ? await require('../services/documentStorage').readDdqDocument({ kycId: request.id, key: doc.key })
+      : null;
+    if (!buffer) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    res.setHeader('Content-Type', doc.mime_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${String(doc.filename || 'document').replace(/"/g, '')}"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('Error downloading DDQ document:', err);
+    res.status(500).json({ error: 'Failed to download document', message: err.message });
+  }
+});
+
+/**
  * POST /api/kyc and POST /api/kyc/submit
  * Create and submit KYC request with automated Policy RAG check and signed DDQ link
  */
