@@ -196,12 +196,37 @@ class SqliteDatabase {
         ip_address TEXT DEFAULT '127.0.0.1',
         client_timestamp TEXT,
         last_modified_by TEXT DEFAULT 'System',
+        counterparty_email TEXT,
+        ddq_token TEXT,
+        ddq_token_expires_at TEXT,
+        ddq_responses_json TEXT,
+        compliance_notes TEXT,
+        re_screening_result TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_kyc_status ON kyc_requests(request_status);
       CREATE INDEX IF NOT EXISTS idx_kyc_date ON kyc_requests(submission_date);
+      CREATE INDEX IF NOT EXISTS idx_kyc_creator ON kyc_requests(created_by_email);
     `);
+
+    // Migrate any existing kyc_requests table
+    const migrationCols = [
+      'counterparty_email TEXT',
+      'ddq_token TEXT',
+      'ddq_token_expires_at TEXT',
+      'ddq_responses_json TEXT',
+      'compliance_notes TEXT',
+      're_screening_result TEXT'
+    ];
+    for (const col of migrationCols) {
+      try {
+        this.db.exec(`ALTER TABLE kyc_requests ADD COLUMN ${col}`);
+      } catch (e) {}
+    }
+    // Must run after the migration: older tables lack ddq_token until the ALTER above
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_kyc_token ON kyc_requests(ddq_token)');
+
     this.seedSourceRecordsIfEmpty();
     this.seedKycRequestsIfEmpty();
   }
@@ -1260,8 +1285,9 @@ class SqliteDatabase {
       (id, submission_date, counterparty_name, entity_type, country, relationship_type, contract_value, ongoing_monitoring,
        request_status, screening_result, ai_result, ai_score, ai_confidence, ai_rationale, ddq_required, ddq_status, ddq_clause,
        remarks, attributes_json, location_json, attachments_json, created_by_user_id, created_by_email, created_by_department,
-       ip_address, client_timestamp, last_modified_by, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+       ip_address, client_timestamp, last_modified_by, counterparty_email, ddq_token, ddq_token_expires_at, ddq_responses_json,
+       compliance_notes, re_screening_result, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
 
     stmt.run(
@@ -1291,7 +1317,13 @@ class SqliteDatabase {
       r.created_by_department || 'Procurement & Supply Chain',
       r.ip_address || '127.0.0.1',
       r.client_timestamp || new Date().toISOString(),
-      r.last_modified_by || 'Employee Portal'
+      r.last_modified_by || 'Employee Portal',
+      r.counterparty_email || '',
+      r.ddq_token || null,
+      r.ddq_token_expires_at || null,
+      typeof r.ddq_responses_json === 'string' ? r.ddq_responses_json : JSON.stringify(r.ddq_responses_json || r.ddq_responses || {}),
+      r.compliance_notes || '',
+      r.re_screening_result || ''
     );
     return this.getKycRequestById(r.id);
   }
@@ -1299,6 +1331,13 @@ class SqliteDatabase {
   getAllKycRequests(filter = {}) {
     let query = 'SELECT * FROM kyc_requests WHERE 1=1';
     const params = [];
+
+    // Row-level employee scoping (WHERE created_by_email == session.email)
+    const emailFilter = filter.created_by_email || filter.user_email;
+    if (emailFilter && emailFilter !== 'all') {
+      query += ' AND LOWER(created_by_email) = ?';
+      params.push(emailFilter.trim().toLowerCase());
+    }
 
     if (filter.status && filter.status !== 'all') {
       query += ' AND request_status = ?';
@@ -1324,6 +1363,12 @@ class SqliteDatabase {
     return row ? this._hydrateKycRequest(row) : null;
   }
 
+  getKycRequestByDdqToken(token) {
+    if (!token) return null;
+    const row = this.db.prepare('SELECT * FROM kyc_requests WHERE ddq_token = ?').get(token);
+    return row ? this._hydrateKycRequest(row) : null;
+  }
+
   updateKycRequestStatus(id, status, lastModifiedBy = 'Compliance Officer') {
     this.db.prepare(`
       UPDATE kyc_requests
@@ -1333,13 +1378,59 @@ class SqliteDatabase {
     return this.getKycRequestById(id);
   }
 
+  updateDdqSubmission(id, { responses = {}, reScreeningResult = '', complianceNotes = '' } = {}) {
+    this.db.prepare(`
+      UPDATE kyc_requests
+      SET ddq_responses_json = ?,
+          request_status = 'DDQ Under Review',
+          ddq_status = 'Under Review',
+          re_screening_result = ?,
+          compliance_notes = ?,
+          last_modified_by = 'Counterparty (DDQ Portal)',
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      JSON.stringify(responses),
+      reScreeningResult || 'DDQ Submitted - Awaiting Compliance Review',
+      complianceNotes || 'Counterparty completed mandatory due diligence questionnaire.',
+      id
+    );
+    return this.getKycRequestById(id);
+  }
+
+  updateKycDecision(id, { status, notes = '', reviewer = 'Compliance Officer', ddqStatus = null }) {
+    this.db.prepare(`
+      UPDATE kyc_requests
+      SET request_status = ?,
+          compliance_notes = ?,
+          last_modified_by = ?,
+          ddq_status = COALESCE(?, ddq_status),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(status, notes, reviewer, ddqStatus, id);
+    return this.getKycRequestById(id);
+  }
+
+  markKycDdqSent(id, sentBy = 'Employee Portal') {
+    this.db.prepare(`
+      UPDATE kyc_requests
+      SET ddq_status = 'Sent to Counterparty',
+          last_modified_by = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(sentBy, id);
+    return this.getKycRequestById(id);
+  }
+
   _hydrateKycRequest(r) {
     let attributes = {};
     let location = {};
     let attachments = [];
+    let ddq_responses = {};
     try { attributes = JSON.parse(r.attributes_json || '{}'); } catch(e){}
     try { location = JSON.parse(r.location_json || '{}'); } catch(e){}
     try { attachments = JSON.parse(r.attachments_json || '[]'); } catch(e){}
+    try { ddq_responses = JSON.parse(r.ddq_responses_json || '{}'); } catch(e){}
 
     return {
       ...r,
@@ -1347,7 +1438,9 @@ class SqliteDatabase {
       ddq_required: Boolean(r.ddq_required),
       attributes,
       location,
-      attachments
+      attachments,
+      ddq_responses,
+      ddq_link: r.ddq_token ? `/ddq/portal?token=${r.ddq_token}` : null
     };
   }
 
