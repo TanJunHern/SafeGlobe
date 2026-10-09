@@ -2,25 +2,65 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const kycService = require('../services/kycService');
+const { authenticate, requireRole } = require('../middleware/auth');
+
+// Mount auth middleware across KYC routes
+router.use(authenticate);
+
+// Row-level scoping: a signed-in employee only ever sees their own rows.
+// Requests carrying no identity at all (legacy API callers) keep the unscoped view.
+function isScopedEmployee(req) {
+  return req.user.role === 'employee' && !req.user.anonymous;
+}
 
 /**
- * GET /api/kyc
- * List all submitted KYC requests with optional query filters:
- * - status (e.g. 'all', 'Pending DDQ', 'Approved', 'Submitted')
- * - entity_type (e.g. 'all', 'Organisation', 'Vessel', 'Person')
- * - search (searches counterparty_name, id, country)
+ * GET /api/kyc/my-requests
+ * Employee scoped requests: strictly filtered by session email (WHERE created_by_email == session.email)
  */
-router.get('/', (req, res) => {
+router.get('/my-requests', (req, res) => {
   try {
     const db = getDb();
     const filter = {
       status: req.query.status || 'all',
       entity_type: req.query.entity_type || 'all',
-      search: req.query.search || ''
+      search: req.query.search || '',
+      created_by_email: req.user.email
     };
     const requests = db.getAllKycRequests(filter);
     res.json({
       success: true,
+      scoped_user: req.user.email,
+      count: requests.length,
+      requests
+    });
+  } catch (err) {
+    console.error('Error fetching employee KYC requests:', err);
+    res.status(500).json({ error: 'Failed to retrieve employee requests', message: err.message });
+  }
+});
+
+/**
+ * GET /api/kyc
+ * Global / triage view for Compliance Officers, with optional scope filter
+ */
+router.get('/', (req, res) => {
+  try {
+    const db = getDb();
+    const scope = req.query.scope;
+    const filter = {
+      status: req.query.status || 'all',
+      entity_type: req.query.entity_type || 'all',
+      search: req.query.search || ''
+    };
+
+    if (scope === 'my' || isScopedEmployee(req)) {
+      filter.created_by_email = req.user.email;
+    }
+
+    const requests = db.getAllKycRequests(filter);
+    res.json({
+      success: true,
+      user_role: req.user.role,
       count: requests.length,
       requests
     });
@@ -31,9 +71,39 @@ router.get('/', (req, res) => {
 });
 
 /**
+ * GET /api/kyc/export-excel
+ * Streams real Microsoft Excel (.xlsx) file with visible data + hidden audit trail
+ */
+router.get('/export-excel', async (req, res) => {
+  try {
+    const db = getDb();
+    const filter = {
+      status: req.query.status || 'all',
+      entity_type: req.query.entity_type || 'all',
+      search: req.query.search || ''
+    };
+    if (req.query.scope === 'my' || isScopedEmployee(req)) {
+      filter.created_by_email = req.user.email;
+    }
+
+    const requests = db.getAllKycRequests(filter);
+    const workbook = await kycService.generateKycExcelWorkbook(requests);
+
+    const filename = `SafeGlobe_KYC_Requests_${new Date().toISOString().substring(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Error streaming Excel workbook:', err);
+    res.status(500).json({ error: 'Failed to export Excel file', message: err.message });
+  }
+});
+
+/**
  * GET /api/kyc/export
- * Section 5: Export to Excel (.xlsx / CSV with UTF-8 BOM)
- * Downloads all matching records with both visible table columns and hidden audit trail.
+ * Backwards-compatible CSV export with UTF-8 BOM
  */
 router.get('/export', (req, res) => {
   try {
@@ -43,6 +113,10 @@ router.get('/export', (req, res) => {
       entity_type: req.query.entity_type || 'all',
       search: req.query.search || ''
     };
+    if (req.query.scope === 'my' || isScopedEmployee(req)) {
+      filter.created_by_email = req.user.email;
+    }
+
     const requests = db.getAllKycRequests(filter);
     const csvContent = kycService.exportKycCsv(requests);
 
@@ -58,8 +132,7 @@ router.get('/export', (req, res) => {
 
 /**
  * POST /api/kyc/extract-document
- * Point A: Document Auto-Fill (Multimodal Extraction)
- * Analyzes uploaded business file and returns structured attributes for human verification.
+ * Multimodal file extraction via Gemini 2.5 Flash
  */
 router.post('/extract-document', async (req, res) => {
   try {
@@ -80,7 +153,7 @@ router.post('/extract-document', async (req, res) => {
 
 /**
  * GET /api/kyc/:id
- * Retrieve a specific KYC request by ID
+ * Retrieve specific KYC request by ID
  */
 router.get('/:id', (req, res) => {
   try {
@@ -88,6 +161,9 @@ router.get('/:id', (req, res) => {
     const request = db.getKycRequestById(req.params.id);
     if (!request) {
       return res.status(404).json({ error: 'KYC request not found' });
+    }
+    if (isScopedEmployee(req) && (request.created_by_email || '').toLowerCase() !== req.user.email) {
+      return res.status(403).json({ error: 'Access denied', message: 'Employees can only view their own KYC requests' });
     }
     res.json({
       success: true,
@@ -100,16 +176,15 @@ router.get('/:id', (req, res) => {
 });
 
 /**
- * POST /api/kyc
- * Create and submit a new KYC Request with automated Policy RAG & AI screening
+ * POST /api/kyc and POST /api/kyc/submit
+ * Create and submit KYC request with automated Policy RAG check and signed DDQ link
  */
-router.post('/', async (req, res) => {
+const submitKycHandler = async (req, res) => {
   try {
-    // Derive user audit context from session / headers
     const userContext = {
-      userId: req.headers['x-user-id'] || 'EMP-1042',
-      email: req.headers['x-user-email'] || 'sarah.tan@safeglobe.internal',
-      department: req.headers['x-user-department'] || 'Procurement & Supply Chain',
+      userId: req.user.userId || 'EMP-1042',
+      email: req.user.email || 'john.doe@safeglobe.com',
+      department: req.user.department || 'Procurement & Logistics',
       ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1',
       clientTimestamp: req.headers['x-client-timestamp'] || new Date().toISOString()
     };
@@ -124,20 +199,112 @@ router.post('/', async (req, res) => {
     console.error('Error creating KYC request:', err);
     res.status(400).json({ error: 'Failed to create KYC request', message: err.message });
   }
+};
+
+router.post('/', submitKycHandler);
+router.post('/submit', submitKycHandler);
+
+/**
+ * POST /api/kyc/:id/triage
+ * Compliance officer one-click triage: Approve, Reject, or Request More Info
+ */
+const TRIAGE_STATUS = {
+  'Approve': 'Approved',
+  'Reject': 'Rejected',
+  'Request More Info': 'Pending DDQ',
+  'Request Info': 'Pending DDQ'
+};
+
+router.post('/:id/triage', requireRole('compliance_officer'), (req, res) => {
+  try {
+    const { action, notes = '' } = req.body;
+    const status = TRIAGE_STATUS[action];
+    if (!status) {
+      return res.status(400).json({ error: 'Action is required (Approve, Reject, Request More Info)' });
+    }
+
+    const db = getDb();
+    const existing = db.getKycRequestById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ error: 'KYC request not found' });
+    }
+
+    // Requesting more info re-opens the counterparty questionnaire; approval closes it out
+    let ddqStatus = null;
+    if (existing.ddq_required) {
+      if (status === 'Pending DDQ') ddqStatus = 'Sent to Counterparty';
+      else if (status === 'Approved' && existing.ddq_status === 'Under Review') ddqStatus = 'Completed';
+    }
+
+    const reviewer = `${req.user.name} (Compliance Officer)`;
+    const updated = db.updateKycDecision(req.params.id, {
+      status,
+      notes,
+      reviewer,
+      ddqStatus
+    });
+
+    res.json({
+      success: true,
+      message: `KYC request updated to ${status}`,
+      request: updated
+    });
+  } catch (err) {
+    console.error('Error triaging KYC request:', err);
+    res.status(500).json({ error: 'Failed to triage KYC request', message: err.message });
+  }
+});
+
+/**
+ * POST /api/kyc/:id/send-ddq
+ * Dispatches the signed one-time DDQ guest link to the counterparty
+ */
+router.post('/:id/send-ddq', (req, res) => {
+  try {
+    const db = getDb();
+    const existing = db.getKycRequestById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ error: 'KYC request not found' });
+    }
+    if (isScopedEmployee(req) && (existing.created_by_email || '').toLowerCase() !== req.user.email) {
+      return res.status(403).json({ error: 'Access denied', message: 'Employees can only dispatch DDQs for their own requests' });
+    }
+    if (!existing.ddq_required || !existing.ddq_link) {
+      return res.status(400).json({ error: 'No DDQ is required for this request' });
+    }
+
+    const updated = existing.ddq_status === 'Triggered'
+      ? db.markKycDdqSent(existing.id, req.user.name)
+      : existing;
+
+    res.json({
+      success: true,
+      message: `DDQ link dispatched to ${updated.counterparty_email || 'counterparty'}`,
+      ddq_link: updated.ddq_link,
+      request: updated
+    });
+  } catch (err) {
+    console.error('Error dispatching DDQ link:', err);
+    res.status(500).json({ error: 'Failed to dispatch DDQ link', message: err.message });
+  }
 });
 
 /**
  * PATCH /api/kyc/:id/status
- * Update status of KYC request (e.g. Approved, Rejected, Pending DDQ)
+ * Update status of KYC request
  */
 router.patch('/:id/status', (req, res) => {
   try {
-    const { status, last_modified_by } = req.body;
+    const { status, last_modified_by, notes } = req.body;
     if (!status) {
       return res.status(400).json({ error: 'Status is required' });
     }
     const db = getDb();
-    const updated = db.updateKycRequestStatus(req.params.id, status, last_modified_by || 'Compliance Officer');
+    const modifier = last_modified_by || req.user.name || 'Compliance Officer';
+    const updated = notes
+      ? db.updateKycDecision(req.params.id, { status, notes, reviewer: modifier })
+      : db.updateKycRequestStatus(req.params.id, status, modifier);
+
     if (!updated) {
       return res.status(404).json({ error: 'KYC request not found' });
     }

@@ -623,7 +623,7 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 
 .addr-input-wrap{position:relative;display:flex;align-items:center}
 .addr-input-wrap .addr-pin-ico{position:absolute;left:10px;color:var(--accent);pointer-events:none;z-index:2}
-.addr-input-wrap input{padding-left:32px;padding-right:28px}
+.addr-input-wrap input{padding-left:32px;padding-right:28px;flex:1;min-width:0}
 .addr-input-wrap .addr-clear-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--fg-3);font-size:16px;cursor:pointer;padding:0 4px;border-radius:4px}
 .addr-input-wrap .addr-clear-btn:hover{color:var(--fg);background:var(--surface-3)}
 
@@ -753,6 +753,105 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
 :root[data-theme="dark"] .ai-chip{color:#38bdf8;background:rgba(56,189,248,0.2)}
 .dynamic-group{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface-2);margin-top:6px}
 .audit-kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+
+/* =====================================================================
+   SAFEGLOBE KYC: LOGIN UI, COMPLIANCE WORKSPACE & GUEST DDQ PORTAL
+   ===================================================================== */
+.login-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.login-container{display:grid;grid-template-columns:1fr 1.1fr;max-width:1040px;width:100%;min-height:580px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden}
+@media (max-width: 860px){.login-container{grid-template-columns:1fr}}
+.login-hero{background:linear-gradient(145deg, var(--surface-2) 0%, var(--surface-3) 100%);padding:40px 30px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;border-right:1px solid var(--line);text-align:center}
+.hero-canvas-wrap{width:260px;height:260px;position:relative;margin:16px 0}
+#hero-globe-canvas{width:100%;height:100%;display:block;cursor:grab}
+#hero-globe-canvas:active{cursor:grabbing}
+.hero-emblem{position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);width:52px;height:52px;background:var(--surface);border:2px solid var(--accent);border-radius:50%;display:grid;place-items:center;box-shadow:0 0 24px var(--atmo);pointer-events:none}
+.hero-emblem svg{width:26px;height:26px}
+.login-card{padding:40px 36px;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.login-header{display:flex;flex-direction:column;gap:5px}
+.login-header h1{font-family:var(--f-display);font-size:27px;margin:0;font-weight:600;letter-spacing:-0.02em}
+.login-header p{margin:0;color:var(--fg-3);font-size:13px}
+
+/* Dual Hackathon Persona Switcher */
+.persona-cards{display:flex;flex-direction:column;gap:9px}
+.persona-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;transition:all .18s;text-align:left}
+.persona-card:hover{border-color:var(--accent);background:var(--surface-3);transform:translateY(-1px)}
+.persona-card.active{border-color:var(--accent);background:var(--accent-soft)}
+.persona-card .p-avatar{width:36px;height:36px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;display:grid;place-items:center;flex-shrink:0}
+.persona-card .p-avatar.comp{background:var(--cov-1)}
+.persona-card .p-meta{flex:1;min-width:0}
+.persona-card .p-meta b{display:block;font-size:13px;color:var(--fg)}
+.persona-card .p-meta small{display:block;font-size:11px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.persona-card .p-badge{font-size:9.5px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--line);color:var(--fg-2);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+
+/* Google Sign In Button */
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:42px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font-size:13px;font-weight:500;transition:all .15s}
+.btn-google:hover{background:var(--surface-2);border-color:var(--fg-3)}
+.btn-google svg{width:18px;height:18px}
+
+/* Topbar Persistent Persona Badge */
+.persona-badge-wrap{display:flex;align-items:center;gap:8px;padding:3px 9px;border-radius:9px;background:var(--surface-2);border:1px solid var(--line);cursor:pointer;transition:all .15s}
+.persona-badge-wrap:hover{background:var(--surface-3);border-color:var(--line-2)}
+.persona-badge-wrap .p-mini-avatar{width:26px;height:26px;border-radius:7px;background:var(--accent);color:#fff;font-size:10.5px;font-weight:600;display:grid;place-items:center}
+.persona-badge-wrap .p-mini-avatar.comp{background:var(--cov-1)}
+.persona-badge-wrap .p-mini-text{display:flex;flex-direction:column;line-height:1.2;text-align:left}
+.persona-badge-wrap .p-mini-text b{font-size:11.5px;color:var(--fg)}
+.persona-badge-wrap .p-mini-text small{font-size:10px;color:var(--fg-3)}
+
+/* Login hero polish, guest mode, AI popover, policy citations */
+.toast{z-index:10000}
+.hero-canvas-wrap{width:320px;height:320px;max-width:100%}
+#hero-globe-canvas{touch-action:none}
+.hero-emblem{animation:emblemGlow 3.2s ease-in-out infinite}
+@keyframes emblemGlow{0%,100%{box-shadow:0 0 18px var(--atmo),0 0 0 0 var(--accent-soft)}50%{box-shadow:0 0 38px var(--accent),0 0 0 10px var(--accent-soft)}}
+@media (prefers-reduced-motion: reduce){.hero-emblem{animation:none}}
+body.guest-mode .app{grid-template-columns:0 minmax(0,1fr)}
+body.guest-mode .brand,body.guest-mode .rail,body.guest-mode .ws-switch,body.guest-mode .topbar .search,body.guest-mode .top-actions>*:not(#theme-btn){display:none}
+body.guest-mode .topbar .wordmark{margin-right:auto}
+#view-ddq{overflow-y:auto}
+.ubo-entry input{height:36px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);padding:0 10px;outline:none;font-size:13px;min-width:0}
+.ubo-entry input:focus{border-color:var(--accent)}
+#ddq-guest-form textarea,#triage-officer-notes{width:100%;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);padding:8px 10px;outline:none;font-size:13px;resize:vertical}
+#ddq-guest-form input:disabled,#ddq-guest-form textarea:disabled{opacity:.7;cursor:not-allowed}
+.ai-pop{position:fixed;z-index:70;max-width:300px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line-2);box-shadow:var(--shadow-lg);font-size:11.5px;line-height:1.45;color:var(--fg-2);pointer-events:none;display:flex;flex-direction:column;gap:3px}
+.ai-pop b{font-size:12px;color:var(--fg)}
+.ai-pop .mono{font-size:10.5px;color:var(--fg-3)}
+.ai-pop p{margin:2px 0 0}
+#comp-triage-modal{padding-top:4vh}
+#comp-triage-modal .sheet{width:min(1180px,100%)}
+.policy-cites{display:flex;flex-direction:column;gap:2px;margin-top:3px}
+.policy-cite{font-family:var(--f-mono,monospace);font-size:10.5px;color:var(--accent);white-space:normal;line-height:1.35}
+.policy-cite.none{color:var(--fg-3)}
+.policy-cite-card{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--surface);font-size:11.5px;color:var(--fg-2)}
+.policy-cite-card b{font-size:12px;color:var(--accent)}
+.policy-cite-card.ok{border-left-color:var(--low)}
+.policy-cite-card.ok b{color:var(--low)}
+.badge-status.ddq-under-review{background:rgba(245,158,11,0.14);color:#fbbf24}
+.badge-status.under-review{background:rgba(245,158,11,0.14);color:#fbbf24}
+
+/* Interactive Google Maps Landmark Selector */
+.landmark-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.landmark-chip{font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg-2);cursor:pointer;transition:all .15s}
+.landmark-chip:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.map-preview-box{height:140px;border-radius:10px;border:1px solid var(--line);background:var(--surface-3);position:relative;overflow:hidden;margin-top:8px;display:flex;align-items:center;justify-content:center}
+.map-pin-marker{position:absolute;transform:translate(-50%, -100%);color:var(--accent);filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));animation:pinBounce .4s ease}
+@keyframes pinBounce{0%{transform:translate(-50%, -160%)}100%{transform:translate(-50%, -100%)}}
+
+/* Guest DDQ External Portal */
+.ddq-portal-stage{max-width:880px;margin:0 auto;padding:36px 20px 80px}
+.ddq-hero-banner{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 28px;box-shadow:var(--shadow);margin-bottom:20px}
+.ddq-lock-notice{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;font-size:13px;margin-bottom:20px}
+.ddq-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow);margin-bottom:18px;display:flex;flex-direction:column;gap:14px}
+.ddq-card-head{border-bottom:1px solid var(--line);padding-bottom:10px}
+.ddq-card-head h3{margin:0;font-size:14.5px;font-weight:600}
+.ddq-card-head p{margin:2px 0 0;font-size:11.5px;color:var(--fg-3)}
+.ubo-entry{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+
+/* Compliance Officer Side-by-Side Review Drawer */
+.triage-drawer-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:14px 0}
+@media (max-width: 1024px){.triage-drawer-grid{grid-template-columns:1fr}}
+.triage-col{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.triage-col-head{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-3);padding-bottom:8px;border-bottom:1px solid var(--line)}
+.policy-flag-item{padding:9px 12px;border-radius:8px;background:rgba(217,119,87,0.12);border:1px solid rgba(217,119,87,0.3);font-size:11.5px}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -794,6 +893,9 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
     <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
     <symbol id="i-employee" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
     <symbol id="i-excel" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="11" y2="17"/><line x1="11" y1="13" x2="8" y2="17"/><line x1="14" y1="13" x2="17" y2="13"/><line x1="14" y1="17" x2="17" y2="17"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-google" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></symbol>
   </defs>
 </svg>
 
@@ -824,7 +926,14 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
       <button class="btn sm" id="intake-open" type="button" title="Intake new counterparty (PRD B.1)" style="height:36px;padding:0 12px;gap:6px"><svg class="ic sm"><use href="#i-plus"/></svg><span class="lbl">Intake</span></button>
       <button class="icon-btn" id="theme-btn" type="button" title="Switch theme" aria-label="Switch theme"><svg class="ic"><use href="#i-moon"/></svg></button>
       <button class="icon-btn" id="bell" type="button" title="Alerts" aria-label="Alerts"><svg class="ic"><use href="#i-bell"/></svg><span class="dot" id="bell-count">7</span></button>
-      <div class="avatar" title="Grace Teo · Head of Compliance">GT</div>
+      <!-- Persistent Persona Badge & Switcher -->
+      <div class="persona-badge-wrap" id="top-persona-btn" title="Click to Switch Persona or Log Out">
+        <div class="p-mini-avatar" id="top-user-avatar">JD</div>
+        <div class="p-mini-text">
+          <b id="top-user-name">John Doe</b>
+          <small id="top-user-role">Employee (Procurement)</small>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -832,6 +941,7 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
     <button class="on" data-view="globe" type="button"><svg class="ic"><use href="#i-globe"/></svg>Globe</button>
     <button data-view="reviews" type="button"><svg class="ic"><use href="#i-review"/></svg>Reviews<span class="count" id="rail-count">6</span></button>
     <button data-view="employee" type="button"><svg class="ic"><use href="#i-employee"/></svg>Employee<span class="count" id="rail-emp-count" style="background:var(--accent);color:#fff">5</span></button>
+    <button data-view="compliance" type="button"><svg class="ic"><use href="#i-shield"/></svg>Compliance<span class="count" id="rail-comp-count" style="background:var(--high);color:#fff">3</span></button>
     <button data-view="sources" type="button"><svg class="ic"><use href="#i-plug"/></svg>Sources</button>
     <button data-view="policies" type="button"><svg class="ic"><use href="#i-policy"/></svg>Policies</button>
     <div class="spacer"></div>
@@ -1066,7 +1176,7 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
             <p>Submit counterparty onboardings, run real-time automated policy evaluations, track screening & DDQ status, and export compliance audit reports.</p>
           </div>
           <div class="emp-head-actions">
-            <button class="btn" id="emp-export-btn" type="button" title="Export all records to Excel (.xlsx / CSV)"><svg class="ic sm"><use href="#i-excel"/></svg>Export to Excel (.xlsx)</button>
+            <button class="btn" id="emp-export-btn" type="button" title="Export your requests to Excel (.xlsx) with hidden audit metadata"><svg class="ic sm"><use href="#i-excel"/></svg>Export to Excel (.xlsx)</button>
             <button class="btn primary" id="emp-new-request-btn" type="button" style="gap:6px"><svg class="ic sm"><use href="#i-plus"/></svg>+ New KYC Request</button>
           </div>
         </div>
@@ -1125,6 +1235,182 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
           <span>Click any row to inspect audit drawer & hidden metadata · Export includes policy trace logs</span>
         </div>
       </div></div>
+    </section>
+
+    <!-- COMPLIANCE OFFICER WORKSPACE (TRIAGE QUEUE & AUDIT) -->
+    <section class="view" id="view-compliance" aria-label="Compliance Workspace">
+      <div class="page"><div class="page-in" style="max-width:1440px">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Compliance Officer Workspace · Global Oversight</div>
+            <h1>Risk Triage & Policy Governance Queue</h1>
+            <p>Global triage across all employee onboardings, Gemini policy checks, and counterparty DDQ disclosures.</p>
+          </div>
+          <div class="emp-head-actions">
+            <button class="btn" id="comp-export-btn" type="button" title="Export global audit log to Excel (.xlsx)"><svg class="ic sm"><use href="#i-excel"/></svg>Export Audit (.xlsx)</button>
+            <button class="icon-btn" id="comp-refresh-btn" type="button" title="Refresh queue" style="width:36px;height:36px;border:1px solid var(--line)"><svg class="ic sm"><use href="#i-refresh"/></svg></button>
+          </div>
+        </div>
+
+        <!-- Global Metrics Cards -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+          <div class="card" style="padding:16px">
+            <small class="faint" style="font-size:11px;text-transform:uppercase">Total Submissions</small>
+            <b id="comp-metric-total" style="font-size:22px;display:block;margin-top:4px">0</b>
+            <span class="faint" style="font-size:11.5px">Across all departments</span>
+          </div>
+          <div class="card" style="padding:16px">
+            <small style="font-size:11px;text-transform:uppercase;color:var(--high)">Escalations / Watchlists</small>
+            <b id="comp-metric-escalations" style="font-size:22px;display:block;margin-top:4px;color:var(--high)">0</b>
+            <span class="faint" style="font-size:11.5px">Sanctions & High Risk</span>
+          </div>
+          <div class="card" style="padding:16px">
+            <small style="font-size:11px;text-transform:uppercase;color:var(--mid)">DDQ Under Review / Sent</small>
+            <b id="comp-metric-ddq" style="font-size:22px;display:block;margin-top:4px;color:var(--mid)">0</b>
+            <span class="faint" style="font-size:11.5px">Vendor disclosures pending</span>
+          </div>
+          <div class="card" style="padding:16px">
+            <small style="font-size:11px;text-transform:uppercase;color:var(--low)">Approved / Auto-Cleared</small>
+            <b id="comp-metric-approved" style="font-size:22px;display:block;margin-top:4px;color:var(--low)">0</b>
+            <span class="faint" style="font-size:11.5px">Policy compliant</span>
+          </div>
+        </div>
+
+        <!-- Triage Filter Bar -->
+        <div class="emp-filter-bar">
+          <div class="emp-chips" id="comp-quick-filters">
+            <button class="emp-chip on" data-filter="all" type="button">All Requests</button>
+            <button class="emp-chip" data-filter="triage" type="button">Triage Required (Flagged / DDQ)</button>
+            <button class="emp-chip" data-filter="under-review" type="button">DDQ Under Review</button>
+            <button class="emp-chip" data-filter="approved" type="button">Approved</button>
+            <button class="emp-chip" data-filter="rejected" type="button">Rejected</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="emp-search-wrap">
+              <svg class="ic sm"><use href="#i-search"/></svg>
+              <input type="text" id="comp-search-input" placeholder="Search ID, counterparty, employee..." autocomplete="off">
+            </div>
+          </div>
+        </div>
+
+        <!-- Triage Data Table -->
+        <div class="kyc-table-wrap">
+          <table class="kyc-table" id="comp-kyc-table">
+            <thead>
+              <tr>
+                <th>KYC ID</th>
+                <th>Submission Date</th>
+                <th>Submitted By</th>
+                <th>Counterparty</th>
+                <th>Type</th>
+                <th>Country</th>
+                <th>Contract Value</th>
+                <th>Screening Result</th>
+                <th>AI Risk Chip</th>
+                <th>DDQ Status</th>
+                <th>Request Status</th>
+                <th>Triage Action</th>
+              </tr>
+            </thead>
+            <tbody id="comp-table-body">
+              <tr><td colspan="12" style="text-align:center;padding:30px;color:var(--fg-3)">Loading compliance triage queue...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--fg-3);padding:4px 2px">
+          <span id="comp-count-summary">Showing 0 requests</span>
+          <span>Click any row to open side-by-side compliance review & triage drawer</span>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- GUEST COUNTERPARTY DDQ PORTAL (/ddq/portal?token=...) -->
+    <section class="view" id="view-ddq" aria-label="Guest DDQ Portal">
+      <div class="ddq-portal-stage">
+        <div class="ddq-hero-banner">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <div>
+              <div class="eyebrow" style="color:var(--accent)">SafeGlobe Compliance · Guest Portal</div>
+              <h1 id="ddq-guest-title" style="margin:4px 0 8px;font-family:var(--f-display);font-size:26px">Due Diligence Questionnaire</h1>
+              <p class="faint" id="ddq-guest-desc" style="margin:0;font-size:13px">Mandatory statutory disclosures required for onboarding verification.</p>
+            </div>
+            <div style="text-align:right">
+              <span id="ddq-guest-token-badge" class="badge-bool enabled" style="font-size:11px;padding:4px 10px">✓ Cryptographic Token Valid</span>
+              <div id="ddq-guest-id-label" class="mono" style="font-size:11px;color:var(--fg-3);margin-top:4px">KYC-2026-0001</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="ddq-guest-locked-banner" class="ddq-lock-notice" style="display:none">
+          <svg class="ic sm" style="color:#f59e0b"><use href="#i-lock"/></svg>
+          <div>
+            <b>Questionnaire Locked (Read-Only)</b>
+            <span style="display:block;font-size:11.5px;color:inherit;opacity:0.9">This form has been submitted and is currently locked under compliance review. Any further changes must be requested through your SafeGlobe representative.</span>
+          </div>
+        </div>
+
+        <form id="ddq-guest-form">
+          <!-- Card 1: Ultimate Beneficial Owners -->
+          <div class="ddq-card">
+            <div class="ddq-card-head">
+              <h3>1. Beneficial Ownership Disclosures (UBO &gt; 25%)</h3>
+              <p>Identify all natural persons who ultimately own or control 25% or more of shares or voting rights.</p>
+            </div>
+            <div id="ddq-ubo-container" style="display:flex;flex-direction:column;gap:8px"></div>
+            <button class="btn sm" id="ddq-add-ubo-btn" type="button" style="align-self:flex-start;gap:6px"><svg class="ic sm"><use href="#i-plus"/></svg>+ Add Beneficial Owner</button>
+          </div>
+
+          <!-- Card 2: Regulatory & Legal Declarations -->
+          <div class="ddq-card">
+            <div class="ddq-card-head">
+              <h3>2. Compliance, PEP & Litigation Declarations</h3>
+              <p>Mandatory declarations regarding political connections and legal proceedings.</p>
+            </div>
+            <div class="field">
+              <label style="font-weight:600">Politically Exposed Person (PEP) Ties</label>
+              <div class="check-row" style="margin:0 0 6px">
+                <label style="display:flex;align-items:center;gap:8px">
+                  <input type="checkbox" id="ddq-pep-declaration">
+                  <span>Any director, officer, or &gt;10% shareholder is currently or has been a Politically Exposed Person (or immediate family member/associate).</span>
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label style="font-weight:600">Material Litigation & Sanctions Exposure</label>
+              <div class="check-row" style="margin:0 0 6px">
+                <label style="display:flex;align-items:center;gap:8px">
+                  <input type="checkbox" id="ddq-litigation-declaration">
+                  <span>Entity or any key principal has been subject to regulatory reprimands, asset freezes, or material litigation within the past 5 years.</span>
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label for="ddq-decl-notes">Declaration Remarks / Explanation</label>
+              <textarea id="ddq-decl-notes" rows="2" placeholder="If applicable, provide details of PEP roles or litigation context."></textarea>
+            </div>
+          </div>
+
+          <!-- Card 3: Financial & Corporate Attachments -->
+          <div class="ddq-card">
+            <div class="ddq-card-head">
+              <h3>3. Verified Financial Statements & Documentation</h3>
+              <p>Upload latest audited annual financial reports, corporate registry extracts, or tax clearance certificates.</p>
+            </div>
+            <div class="field">
+              <label for="ddq-financial-upload">Audited Financial Statements (PDF)</label>
+              <input type="file" id="ddq-financial-upload" accept=".pdf, application/pdf">
+              <small class="faint">Upload audited P&L, balance sheet, or free-zone trade licence.</small>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:10px">
+            <button class="btn primary" id="ddq-submit-answers-btn" type="button" style="padding:0 24px;height:42px;font-size:13.5px;gap:8px">
+              <svg class="ic sm"><use href="#i-check"/></svg>Submit Questionnaire & Lock
+            </button>
+          </div>
+        </form>
+      </div>
     </section>
   </main>
 </div>
@@ -1432,6 +1718,11 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
         </div>
       </div>
 
+      <div class="field">
+        <label for="kyc-cp-email">Counterparty Contact Email (receives the secure DDQ link if a questionnaire is triggered)</label>
+        <input id="kyc-cp-email" type="email" placeholder="e.g. compliance@counterparty.com">
+      </div>
+
       <!-- Dynamic Fields by Entity Type: Organisation -->
       <div id="kyc-dyn-org" class="dynamic-group">
         <div class="eyebrow" style="margin-bottom:8px">Organisation Attributes</div>
@@ -1520,6 +1811,23 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
         </div>
         <div class="addr-dropdown" id="kyc-addr-dropdown" hidden></div>
         <div class="addr-feedback" id="kyc-addr-feedback"></div>
+        <!-- Mock Landmark Fallback Chips -->
+        <div style="margin-top:6px">
+          <small class="faint" style="font-size:11px">Mock Landmark Pin Fallbacks (One-Click Singapore Maritime & Financial Hubs):</small>
+          <div class="landmark-chips" id="kyc-landmark-chips">
+            <span class="landmark-chip" data-addr="Marina Bay Financial Centre, 10 Marina Boulevard, Singapore 018983" data-lat="1.2798" data-lng="103.8536" data-id="sg_mbfc">Marina Bay Financial Centre</span>
+            <span class="landmark-chip" data-addr="Jurong Port Terminal, 37 Jurong Port Road, Singapore 619110" data-lat="1.3060" data-lng="103.7140" data-id="sg_jurong">Jurong Port</span>
+            <span class="landmark-chip" data-addr="Tuas Mega Port Terminal, Tuas South Avenue 14, Singapore" data-lat="1.2580" data-lng="103.6350" data-id="sg_tuas">Tuas Terminal</span>
+            <span class="landmark-chip" data-addr="One Raffles Place, Tower 1, Singapore 048616" data-lat="1.2844" data-lng="103.8510" data-id="sg_raffles">Raffles Place</span>
+          </div>
+        </div>
+        <!-- Interactive Map Pin Container -->
+        <div class="map-preview-box" id="kyc-map-preview">
+          <canvas id="kyc-map-canvas" width="660" height="130" style="width:100%;height:100%;display:block"></canvas>
+          <div class="map-pin-marker" id="kyc-map-pin" style="display:none">
+            <svg class="ic" style="width:26px;height:26px;color:var(--accent)"><use href="#i-pin"/></svg>
+          </div>
+        </div>
       </div>
 
       <!-- Remarks & Attachments -->
@@ -1644,11 +1952,207 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
       </div>
     </div>
     <div class="sheet-foot">
-      <div style="display:flex;gap:6px;margin-right:auto">
+      <div id="aud-ddq-actions" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <div id="aud-officer-actions" style="display:flex;gap:6px;margin-right:auto">
         <button class="btn sm" id="aud-btn-approve" type="button" style="color:var(--low);border-color:var(--low)"><svg class="ic sm"><use href="#i-check"/></svg>Approve</button>
         <button class="btn sm" id="aud-btn-reject" type="button" style="color:var(--high);border-color:var(--high)"><svg class="ic sm"><use href="#i-close"/></svg>Reject</button>
       </div>
       <button class="btn ghost" data-close type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Compliance Officer Side-by-Side Review Drawer Modal -->
+<div class="modal" id="comp-triage-modal" hidden>
+  <div class="sheet" style="max-width:1180px;max-height:92vh;display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="Compliance Triage & Review">
+    <div class="sheet-head">
+      <div style="flex:1">
+        <div class="agent" style="color:var(--cov-1)">Compliance Officer Workspace · Triage Review</div>
+        <h2 id="triage-title" style="margin:2px 0">Side-by-Side Review & Policy Audit</h2>
+        <p id="triage-sub" class="faint" style="margin:0;font-size:12px"></p>
+      </div>
+      <button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body" style="overflow-y:auto;gap:14px;padding:16px 20px">
+      <!-- Top Overview Banner -->
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;flex-wrap:wrap;gap:10px">
+        <div>
+          <span class="eyebrow">Target Counterparty</span>
+          <b id="triage-cparty-name" style="font-size:16px;display:block">Apex Commodities Pte Ltd</b>
+          <small id="triage-cparty-meta" class="faint">Organisation · SGP · Anticipated SGD 250,000</small>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="triage-screen-badge" class="badge-screen clear">Clear</span>
+          <span id="triage-ai-badge" class="badge-ai low-risk">Low Risk (94%)</span>
+          <span id="triage-ddq-status-badge" class="badge-ddq-status na">DDQ N/A</span>
+        </div>
+      </div>
+
+      <!-- 3-Column Side-by-Side Comparison -->
+      <div class="triage-drawer-grid">
+        <!-- Col 1: Employee Submission -->
+        <div class="triage-col">
+          <div class="triage-col-head">1. Employee Submission</div>
+          <div style="font-size:12px;display:flex;flex-direction:column;gap:6px">
+            <div><span class="faint">Submitted By:</span> <b id="triage-emp-name">Sarah Tan</b></div>
+            <div><span class="faint">Department:</span> <span id="triage-emp-dept">Procurement</span></div>
+            <div><span class="faint">Date:</span> <span id="triage-emp-date" class="mono">2026-10-09</span></div>
+            <div><span class="faint">Contract Value:</span> <b id="triage-emp-val" class="mono">SGD 250,000</b></div>
+            <div><span class="faint">Relationship:</span> <span id="triage-emp-rel">Vendor/Supplier</span></div>
+            <div><span class="faint">Ongoing Monitoring:</span> <span id="triage-emp-mon">Enabled</span></div>
+          </div>
+          <div class="eyebrow" style="margin-top:6px">Declared Attributes</div>
+          <div id="triage-emp-attrs" style="font-size:11.5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px"></div>
+          <div class="eyebrow" style="margin-top:6px">Physical Address</div>
+          <div id="triage-emp-addr" style="font-size:11.5px;color:var(--fg-2)"></div>
+        </div>
+
+        <!-- Col 2: Counterparty DDQ Answers -->
+        <div class="triage-col">
+          <div class="triage-col-head">2. Counterparty DDQ Answers</div>
+          <div id="triage-ddq-empty-notice" class="faint" style="font-size:12px;padding:12px 0">
+            No questionnaire submitted yet (or not required).
+          </div>
+          <div id="triage-ddq-content" style="display:none;flex-direction:column;gap:10px">
+            <div class="eyebrow">Beneficial Ownership (UBO &gt; 25%)</div>
+            <div id="triage-ddq-ubos" style="font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px"></div>
+            <div class="eyebrow">Regulatory & PEP Declarations</div>
+            <div id="triage-ddq-decls" style="font-size:12px;display:flex;flex-direction:column;gap:4px"></div>
+            <div class="eyebrow">Uploaded Financials</div>
+            <div id="triage-ddq-files" style="font-size:12px;color:var(--fg-2)"></div>
+          </div>
+        </div>
+
+        <!-- Col 3: Gemini Policy Audit & Citations -->
+        <div class="triage-col">
+          <div class="triage-col-head" style="color:var(--accent)">3. Gemini Policy RAG Audit</div>
+          <div id="triage-policy-citations" style="display:flex;flex-direction:column;gap:8px"></div>
+          <div class="eyebrow" style="margin-top:8px">AI Risk Rationale</div>
+          <div id="triage-ai-rationale" style="font-size:11.5px;line-height:1.45;color:var(--fg-2);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px"></div>
+          <div class="eyebrow" style="margin-top:8px">Re-Screen Summary</div>
+          <div id="triage-rescreen-summary" style="font-size:11.5px;color:var(--accent);background:var(--accent-soft);border:1px solid var(--line);border-radius:8px;padding:8px"></div>
+        </div>
+      </div>
+
+      <!-- Officer Decision Action Section -->
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:4px">
+        <label for="triage-officer-notes" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Compliance Triage Memo & Rationale Notes</label>
+        <textarea id="triage-officer-notes" rows="2" placeholder="Record compliance sign-off rationale, policy override justification, or specific escalation requirements."></textarea>
+      </div>
+    </div>
+    <div class="sheet-foot" style="gap:10px">
+      <div style="display:flex;gap:8px;margin-right:auto">
+        <button class="btn primary" id="triage-act-approve" type="button" style="background:var(--low);color:#fff;border-color:var(--low)"><svg class="ic sm"><use href="#i-check"/></svg>Approve</button>
+        <button class="btn" id="triage-act-moreinfo" type="button" style="color:var(--mid);border-color:var(--mid)"><svg class="ic sm"><use href="#i-send"/></svg>Request More Info</button>
+        <button class="btn" id="triage-act-reject" type="button" style="color:var(--high);border-color:var(--high)"><svg class="ic sm"><use href="#i-close"/></svg>Reject</button>
+      </div>
+      <button class="btn ghost" data-close type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Persona Switcher / Logout Modal -->
+<div class="modal" id="persona-modal" hidden>
+  <div class="sheet" style="max-width:480px" role="dialog" aria-modal="true" aria-label="Switch User Persona">
+    <div class="sheet-head">
+      <div style="flex:1">
+        <div class="eyebrow">Authentication & RBAC</div>
+        <h2>Dual Hackathon Persona Switcher</h2>
+        <p class="faint">Switch between employee submission view and compliance triage workspace.</p>
+      </div>
+      <button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body" style="gap:12px">
+      <div class="persona-cards">
+        <div class="persona-card" id="persona-opt-employee" data-persona="employee">
+          <div class="p-avatar">JD</div>
+          <div class="p-meta">
+            <b>The Company Employee</b>
+            <small>john.doe@safeglobe.com · Procurement & Logistics</small>
+          </div>
+          <span class="p-badge">Scoped View</span>
+        </div>
+        <div class="persona-card" id="persona-opt-compliance" data-persona="compliance">
+          <div class="p-avatar comp">GT</div>
+          <div class="p-meta">
+            <b>The Compliance Officer</b>
+            <small>compliance@safeglobe.com · Compliance Admin</small>
+          </div>
+          <span class="p-badge" style="color:var(--high)">Global Triage</span>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-foot" style="justify-content:space-between">
+      <button class="btn sm" id="persona-logout-btn" type="button" style="color:var(--high);gap:6px"><svg class="ic sm"><use href="#i-lock"/></svg>Log Out</button>
+      <button class="btn ghost sm" data-close type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Enterprise Fintech Login Screen Overlay with 3D Rotating Canvas Globe -->
+<div class="login-overlay" id="view-login" hidden>
+  <div class="login-container">
+    <!-- Left Hero: Interactive 3D Canvas Globe -->
+    <div class="login-hero">
+      <div class="wordmark" style="margin-bottom:8px">
+        <b style="font-size:24px">Safe Globe</b>
+        <span style="font-size:13px;color:var(--accent);font-weight:600">KYC Platform</span>
+      </div>
+      <p class="faint" style="font-size:12.5px;max-width:320px;margin:0 auto">AI-native tri-party compliance gateway for global counterparty onboarding, policy RAG screening, and vendor due diligence.</p>
+      
+      <!-- Interactive Rotatable 3D Globe -->
+      <div class="hero-canvas-wrap">
+        <canvas id="hero-globe-canvas" width="520" height="520"></canvas>
+        <div class="hero-emblem">
+          <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="1.6"/><ellipse cx="16" cy="16" rx="4.8" ry="11" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".55"/><path d="M5.5 13h21M5.5 19h21" stroke="currentColor" stroke-width="1.1" opacity=".4"/><path d="M5 22.5c5-1.5 13-8 21.5-14" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/><circle cx="26.2" cy="8.7" r="2.6" fill="var(--accent)"/></svg>
+        </div>
+      </div>
+      <small class="faint" style="font-size:11px">Drag to rotate · live screening lattice across global trade hubs</small>
+    </div>
+
+    <!-- Right: Authentication Card -->
+    <div class="login-card">
+      <div class="login-header">
+        <div class="eyebrow" style="color:var(--accent)">Enterprise Security · Approach A</div>
+        <h1>SafeGlobe KYC Login</h1>
+        <p>Select your persona to enter the workspace, or authenticate via Google One-Tap.</p>
+      </div>
+
+      <!-- Dual Hackathon Persona Switcher -->
+      <div class="persona-cards">
+        <div class="persona-card" id="login-persona-emp" data-persona="employee">
+          <div class="p-avatar">JD</div>
+          <div class="p-meta">
+            <b>The Company Employee</b>
+            <small>john.doe@safeglobe.com · Procurement & Logistics</small>
+          </div>
+          <span class="p-badge">/portal/employee</span>
+        </div>
+        <div class="persona-card" id="login-persona-comp" data-persona="compliance">
+          <div class="p-avatar comp">GT</div>
+          <div class="p-meta">
+            <b>The Compliance Officer</b>
+            <small>compliance@safeglobe.com · Compliance Admin</small>
+          </div>
+          <span class="p-badge" style="color:var(--high)">/portal/compliance</span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:2px 0">
+        <hr style="flex:1;border:0;border-top:1px solid var(--line)">
+        <span class="faint" style="font-size:11px;text-transform:uppercase">Or corporate login</span>
+        <hr style="flex:1;border:0;border-top:1px solid var(--line)">
+      </div>
+
+      <!-- Google Sign In Button -->
+      <button class="btn-google" id="login-google-btn" type="button">
+        <svg class="ic"><use href="#i-google"/></svg>
+        <span>Sign in with Google</span>
+      </button>
+
+      <div style="text-align:center">
+        <small class="faint" style="font-size:11px">Protected by SafeGlobe Zero-Trust Token Engine & Google Identity Services</small>
+      </div>
     </div>
   </div>
 </div>
@@ -1660,6 +2164,7 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
 /* =====================================================================
@@ -3447,13 +3952,23 @@ $('#upload-pol-file').addEventListener('change',e=>{
 });
 
 /* ===================== views & global keys ===================== */
-function showView(v){
+function showView(v, updateUrl = true){
+  if(v==='compliance'&&!isCompliance())v='employee';
+  else if(v==='employee'&&isCompliance())v='compliance';
   S.view=v;$$('.rail button[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   $$('.view').forEach(s=>s.classList.toggle('on',s.id==='view-'+v));
   if(v==='globe'){requestAnimationFrame(()=>{relayout(false);dirty=true;});}
   if(v==='reviews')renderReviews();
   if(v==='employee')renderEmployeeWorkspace();
+  if(v==='compliance')renderComplianceWorkspace();
+  if(v==='ddq')renderDdqGuestView();
   $('#alerts-pop').hidden=true;hideTip();
+
+  if(updateUrl && window.history && window.history.pushState){
+    if(v==='employee') history.pushState({}, '', '/portal/employee');
+    else if(v==='compliance') history.pushState({}, '', '/portal/compliance');
+    else if(v==='globe') history.pushState({}, '', '/');
+  }
 }
 $$('.rail button[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
 document.addEventListener('keydown',e=>{
@@ -4849,14 +5364,14 @@ function getAiRiskClass(aiResult) {
 
 async function renderEmployeeWorkspace() {
   const tbody = $('#kyc-table-body');
-  if (!tbody) return;
+  if (!tbody || !session || isCompliance()) return;
 
   try {
     const q = new URLSearchParams();
     if (kycFilterState.search) q.set('search', kycFilterState.search);
     if (kycFilterState.entityType !== 'all') q.set('entity_type', kycFilterState.entityType);
 
-    const res = await fetch(`/api/kyc?${q.toString()}`);
+    const res = await apiFetch(`/api/kyc/my-requests?${q.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch KYC requests');
     const data = await res.json();
     kycRequestsCache = data.requests || [];
@@ -4884,14 +5399,13 @@ async function renderEmployeeWorkspace() {
 
     // Render table rows matching the 13 columns in exact order
     tbody.innerHTML = filtered.map(r => {
-      const formattedVal = `SGD ${Number(r.contract_value || 0).toLocaleString('en-US')}`;
+      const formattedVal = fmtSgd(r.contract_value);
       const statusSlug = kycSlug(r.request_status);
       const screenSlug = kycSlug(r.screening_result);
       const ddqStatusSlug = kycSlug(r.ddq_status);
-      const aiClass = getAiRiskClass(r.ai_result);
 
       return `
-        <tr data-kyc-id="${r.id}" title="Click to inspect audit trail & hidden metadata">
+        <tr data-kyc-id="${esc(r.id)}">
           <td class="mono" style="font-weight:600;color:var(--accent)">${esc(r.id)}</td>
           <td class="mono" style="font-size:11.5px;color:var(--fg-2)">${esc(r.submission_date)}</td>
           <td><b style="font-weight:500;font-size:12.5px">${esc(r.counterparty_name)}</b></td>
@@ -4902,11 +5416,7 @@ async function renderEmployeeWorkspace() {
           <td><span class="badge-bool ${r.ongoing_monitoring ? 'enabled' : 'disabled'}">${r.ongoing_monitoring ? 'Enabled' : 'Disabled'}</span></td>
           <td><span class="badge-status ${statusSlug}">${esc(r.request_status)}</span></td>
           <td><span class="badge-screen ${screenSlug}">${esc(r.screening_result)}</span></td>
-          <td>
-            <span class="badge-ai ${aiClass}" title="${esc(r.ai_rationale || '')}">
-              <svg class="ic spark sm"><use href="#i-spark"/></svg>${esc(r.ai_result)}
-            </span>
-          </td>
+          <td>${aiBadgeHtml(r)}</td>
           <td><span class="badge-bool ${r.ddq_required ? 'yes' : 'no'}">${r.ddq_required ? 'Yes' : 'No'}</span></td>
           <td><span class="badge-ddq-status ${ddqStatusSlug}">${esc(r.ddq_status)}</span></td>
         </tr>
@@ -4997,13 +5507,15 @@ function openKycAuditModal(r) {
     `).join('');
   }
 
+  renderAuditDdqActions(r);
+
   // Wire Action buttons in Audit Modal
   $('#aud-btn-approve').onclick = async () => {
     try {
-      const res = await fetch(`/api/kyc/${r.id}/status`, {
+      const res = await apiFetch(`/api/kyc/${r.id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Approved', last_modified_by: 'Compliance Reviewer (Grace Teo)' })
+        body: JSON.stringify({ status: 'Approved' })
       });
       if (res.ok) {
         toast(`KYC Request ${r.id} approved`);
@@ -5015,10 +5527,10 @@ function openKycAuditModal(r) {
 
   $('#aud-btn-reject').onclick = async () => {
     try {
-      const res = await fetch(`/api/kyc/${r.id}/status`, {
+      const res = await apiFetch(`/api/kyc/${r.id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Rejected', last_modified_by: 'Compliance Reviewer (Grace Teo)' })
+        body: JSON.stringify({ status: 'Rejected' })
       });
       if (res.ok) {
         toast(`KYC Request ${r.id} rejected`);
@@ -5072,10 +5584,7 @@ function initKycPortalControls() {
   // Export to Excel Button
   const exportBtn = $('#emp-export-btn');
   if (exportBtn) {
-    exportBtn.addEventListener('click', () => {
-      window.location.href = '/api/kyc/export';
-      toast('Exporting KYC requests to Excel (.xlsx / CSV)...');
-    });
+    exportBtn.addEventListener('click', downloadKycExcel);
   }
 
   // Open New KYC Request Modal
@@ -5128,6 +5637,7 @@ function initKycPortalControls() {
 
   // Google Maps Places Autocomplete for KYC Address
   initKycPlacesAutocomplete();
+  initKycLandmarks();
 
   // Form Submit Button
   const submitBtn = $('#kyc-submit-btn');
@@ -5175,6 +5685,9 @@ function resetKycForm() {
   delete $('#kyc-address').dataset.lng;
   delete $('#kyc-address').dataset.placeId;
   $('#kyc-addr-feedback').textContent = '';
+  $('#kyc-cp-email').value = '';
+  $('#kyc-attachments').value = '';
+  drawKycMap(NaN, NaN);
 
   // Clear Dynamic
   $('#kyc-org-reg').value = '';
@@ -5340,12 +5853,13 @@ function initKycPlacesAutocomplete() {
               const gRes = await fetch(`/api/places/geocode?address=${encodeURIComponent(inputEl.value)}`);
               if (gRes.ok) {
                 const gData = await gRes.json();
-                inputEl.dataset.lat = gData.lat;
-                inputEl.dataset.lng = gData.lng;
-                inputEl.dataset.placeId = gData.id || p.id;
-                if (feedbackEl) {
-                  feedbackEl.innerHTML = `<span style="color:var(--low);font-size:11.5px">✓ Coordinates: ${gData.lat.toFixed(4)}, ${gData.lng.toFixed(4)} (Verified by Google Places)</span>`;
-                }
+                setKycLocation({
+                  address: inputEl.value,
+                  lat: gData.lat,
+                  lng: gData.lng,
+                  placeId: gData.id || p.id,
+                  source: publicConfig.mapsEnabled ? 'Google Places' : 'curated place index'
+                });
               }
             } catch (ge) {}
           });
@@ -5362,6 +5876,8 @@ function initKycPlacesAutocomplete() {
       if (feedbackEl) feedbackEl.textContent = '';
       delete inputEl.dataset.lat;
       delete inputEl.dataset.lng;
+      delete inputEl.dataset.placeId;
+      drawKycMap(NaN, NaN);
     });
   }
 }
@@ -5370,7 +5886,7 @@ function initKycPlacesAutocomplete() {
 async function handleKycFormSubmit() {
   const name = $('#kyc-name')?.value?.trim();
   if (!name) {
-    alert('Please enter Counterparty Name');
+    toast('Please enter Counterparty Name');
     $('#kyc-name')?.focus();
     return;
   }
@@ -5420,18 +5936,14 @@ async function handleKycFormSubmit() {
     remarks: remarks,
     attributes: attributes,
     location: location,
-    attachments: ['onboarding_declaration.pdf']
+    counterparty_email: $('#kyc-cp-email')?.value?.trim() || '',
+    attachments: Array.from($('#kyc-attachments')?.files || []).map(f => f.name)
   };
 
   try {
-    const res = await fetch('/api/kyc', {
+    const res = await apiFetch('/api/kyc/submit', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': 'EMP-1042',
-        'x-user-email': 'sarah.tan@safeglobe.internal',
-        'x-user-department': 'Procurement & Supply Chain'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
@@ -5445,18 +5957,898 @@ async function handleKycFormSubmit() {
 
     toast(`KYC Request ${created.id} submitted! Policy RAG: ${created.ddq_required ? 'DDQ Triggered' : 'Clear'}`);
     $('#kyc-modal').hidden = true;
-    renderEmployeeWorkspace();
+    await renderEmployeeWorkspace();
+    if (created.ddq_required) openKycAuditModal(created);
   } catch (err) {
     console.error('Error submitting KYC request:', err);
-    alert(`Submission error: ${err.message}`);
+    toast(`Submission error: ${err.message}`);
   }
+}
+
+/* =====================================================================
+   SESSION, PERSONAS & ROUTING
+   - Hackathon persona switcher + Google Identity Services sign-in
+   - Role-aware navigation (/portal/employee, /portal/compliance, /ddq/portal)
+===================================================================== */
+const PERSONAS = {
+  employee: { email: 'john.doe@safeglobe.com', name: 'John Doe', role: 'employee', userId: 'EMP-1042', department: 'Procurement & Logistics' },
+  compliance: { email: 'compliance@safeglobe.com', name: 'Grace Teo', role: 'compliance_officer', userId: 'COMP-901', department: 'Compliance & Risk Governance' }
+};
+const SESSION_KEY = 'safeglobe.session';
+const IS_GUEST = location.pathname.startsWith('/ddq/portal');
+let session = null;
+let publicConfig = { googleClientId: '', googleMapsApiKey: '', mapsEnabled: false };
+let googleReady = false;
+
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; }
+}
+function saveSession(s) {
+  session = s;
+  try {
+    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    else localStorage.removeItem(SESSION_KEY);
+  } catch (e) {}
+}
+function isCompliance() { return Boolean(session && session.role === 'compliance_officer'); }
+
+// All KYC API calls carry the signed-in identity so the backend can row-scope and audit
+function apiFetch(url, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {});
+  if (session) {
+    if (session.idToken) {
+      headers['Authorization'] = `Bearer ${session.idToken}`;
+    } else {
+      headers['x-user-email'] = session.email;
+      headers['x-user-name'] = session.name;
+      headers['x-user-id'] = session.userId;
+      headers['x-user-department'] = session.department;
+      headers['x-user-role'] = session.role;
+    }
+  }
+  headers['x-client-timestamp'] = new Date().toISOString();
+  return fetch(url, Object.assign({}, opts, { headers }));
+}
+
+function applySession() {
+  if (!session) return;
+  const comp = isCompliance();
+  const initials = String(session.name || session.email).split(/[\s.@]+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+  $('#top-user-avatar').textContent = initials;
+  $('#top-user-avatar').classList.toggle('comp', comp);
+  $('#top-user-name').textContent = session.name;
+  $('#top-user-role').textContent = comp ? 'Compliance Officer' : `Employee · ${session.department}`;
+  $('.rail button[data-view="employee"]').style.display = comp ? 'none' : '';
+  $('.rail button[data-view="compliance"]').style.display = comp ? '' : 'none';
+  $('#persona-opt-employee').classList.toggle('active', !comp && session.email === PERSONAS.employee.email);
+  $('#persona-opt-compliance').classList.toggle('active', comp);
+}
+
+function showLogin() {
+  $('#view-login').hidden = false;
+  if (location.pathname !== '/login') history.replaceState({}, '', '/login');
+  startHeroGlobe();
+}
+function hideLogin() {
+  $('#view-login').hidden = true;
+  stopHeroGlobe();
+}
+function signIn(user) {
+  saveSession(user);
+  applySession();
+  hideLogin();
+  $('#persona-modal').hidden = true;
+  kycRequestsCache = [];
+  compRequestsCache = [];
+  showView(isCompliance() ? 'compliance' : 'employee');
+  toast(`Signed in as ${user.name} · ${isCompliance() ? 'Compliance Officer' : 'Employee'}`);
+}
+function signOut() {
+  saveSession(null);
+  $$('.modal').forEach(m => { m.hidden = true; });
+  showLogin();
+}
+
+async function onGoogleCredential(resp) {
+  try {
+    const res = await fetch('/api/auth/session', { headers: { Authorization: `Bearer ${resp.credential}` } });
+    const data = await res.json();
+    if (!res.ok || !data.user || data.user.anonymous) throw new Error('Google token was not accepted');
+    signIn(Object.assign({}, data.user, { idToken: resp.credential }));
+  } catch (err) {
+    toast(`Google Sign-In failed: ${err.message}`);
+  }
+}
+
+function initGoogleSignIn() {
+  const clientId = publicConfig.googleClientId;
+  if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(clientId) || /^YOUR_/.test(clientId)) return;
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.async = true;
+  s.onload = () => {
+    google.accounts.id.initialize({ client_id: clientId, callback: onGoogleCredential, auto_select: false });
+    googleReady = true;
+    if (!session && !IS_GUEST) google.accounts.id.prompt(); // One-Tap
+  };
+  document.head.appendChild(s);
+}
+
+function initSessionControls() {
+  $$('.persona-card[data-persona]').forEach(card => {
+    card.addEventListener('click', () => signIn(Object.assign({}, PERSONAS[card.dataset.persona])));
+  });
+  $('#top-persona-btn').addEventListener('click', () => { $('#persona-modal').hidden = false; });
+  $('#persona-logout-btn').addEventListener('click', signOut);
+  $('#login-google-btn').addEventListener('click', () => {
+    if (googleReady) google.accounts.id.prompt();
+    else toast('Google Sign-In is not configured (set GOOGLE_CLIENT_ID) — pick a demo persona');
+  });
+  window.addEventListener('popstate', routeFromLocation);
+}
+
+function routeFromLocation() {
+  if (IS_GUEST) { showView('ddq', false); return; }
+  if (!session) { showLogin(); return; }
+  hideLogin();
+  const p = location.pathname;
+  if (p === '/portal/compliance' || p === '/portal/employee' || p === '/login') {
+    // Rewrite the URL whenever the role is not allowed on the requested portal
+    const home = isCompliance() ? 'compliance' : 'employee';
+    showView(home, p !== `/portal/${home}`);
+  } else if (S.view === 'employee' || S.view === 'compliance') {
+    showView('globe', false);
+  }
+}
+
+async function bootSession() {
+  initSessionControls();
+  initAiPopover();
+  initComplianceControls();
+  initDdqGuestControls();
+  if (IS_GUEST) {
+    document.body.classList.add('guest-mode');
+  } else {
+    session = loadSession();
+    applySession();
+  }
+  routeFromLocation();
+  try {
+    const res = await fetch('/api/config/public');
+    if (res.ok) publicConfig = await res.json();
+  } catch (e) {}
+  initGoogleSignIn();
+}
+
+/* =====================================================================
+   LOGIN HERO · INTERACTIVE 3D GLOBE (Three.js, 2D canvas fallback)
+===================================================================== */
+let heroGlobe = null;
+
+function resolveColor(value, fallback) {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.fillStyle = fallback;
+  ctx.fillStyle = value || fallback;
+  return ctx.fillStyle;
+}
+function cssColor(name, fallback) {
+  return resolveColor(getComputedStyle(document.documentElement).getPropertyValue(name).trim(), fallback);
+}
+
+// Evenly distributed points on a unit sphere
+function fibonacciSphere(n) {
+  const pts = [];
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < n; i++) {
+    const y = 1 - (i / (n - 1)) * 2;
+    const r = Math.sqrt(1 - y * y);
+    const t = golden * i;
+    pts.push([Math.cos(t) * r, y, Math.sin(t) * r]);
+  }
+  return pts;
+}
+function llToVec(lat, lng, radius = 1) {
+  const phi = (90 - lat) * Math.PI / 180;
+  const theta = (lng + 180) * Math.PI / 180;
+  return [-radius * Math.sin(phi) * Math.cos(theta), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)];
+}
+
+// Shared drag-to-rotate with inertia; auto-orbit resumes when released
+function attachHeroDrag(canvas) {
+  const rot = { x: 0.32, y: 0, vx: 0, vy: 0, dragging: false, auto: REDUCED ? 0 : 0.0028 };
+  let px = 0, py = 0;
+  canvas.addEventListener('pointerdown', e => {
+    rot.dragging = true; px = e.clientX; py = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!rot.dragging) return;
+    rot.vy = (e.clientX - px) * 0.006;
+    rot.vx = (e.clientY - py) * 0.006;
+    rot.y += rot.vy; rot.x += rot.vx;
+    px = e.clientX; py = e.clientY;
+  });
+  const release = () => { rot.dragging = false; };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  rot.step = () => {
+    if (!rot.dragging) {
+      rot.vy += (rot.auto - rot.vy) * 0.04;
+      rot.vx *= 0.92;
+      rot.y += rot.vy; rot.x += rot.vx;
+    }
+    rot.x = Math.max(-1.1, Math.min(1.1, rot.x));
+  };
+  return rot;
+}
+
+const HERO_HUBS = [[1.29, 103.85], [51.5, -0.12], [40.71, -74], [25.2, 55.27], [31.23, 121.47], [51.92, 4.48], [8.98, -79.52], [-33.87, 151.2], [35.68, 139.69]];
+
+function createThreeHero(canvas) {
+  const T = window.THREE;
+  const renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const size = canvas.clientWidth || 300;
+  renderer.setSize(size, size, false);
+
+  const scene = new T.Scene();
+  const camera = new T.PerspectiveCamera(42, 1, 0.1, 100);
+  camera.position.z = 3.5;
+  const globe = new T.Group();
+  scene.add(globe);
+
+  // Latitude / longitude mesh
+  const grid = [];
+  const ring = (fn) => { for (let i = 0; i < 72; i++) { grid.push(...fn(i * 5), ...fn((i + 1) * 5)); } };
+  for (let lat = -60; lat <= 60; lat += 20) ring(a => llToVec(lat, a - 180));
+  for (let lng = -180; lng < 180; lng += 20) ring(a => llToVec(a / 2 - 90, lng));
+  const gridGeo = new T.BufferGeometry();
+  gridGeo.setAttribute('position', new T.Float32BufferAttribute(grid, 3));
+  const gridMat = new T.LineBasicMaterial({ transparent: true, opacity: 0.2 });
+  globe.add(new T.LineSegments(gridGeo, gridMat));
+
+  // Particle lattice on the surface
+  const dotGeo = new T.BufferGeometry();
+  dotGeo.setAttribute('position', new T.Float32BufferAttribute(fibonacciSphere(1600).flat(), 3));
+  const dotMat = new T.PointsMaterial({ size: 0.02, transparent: true, opacity: 0.85, sizeAttenuation: true });
+  globe.add(new T.Points(dotGeo, dotMat));
+
+  // Trade-hub markers and screening arcs out of Singapore
+  const hubGeo = new T.BufferGeometry();
+  hubGeo.setAttribute('position', new T.Float32BufferAttribute(HERO_HUBS.flatMap(h => llToVec(h[0], h[1], 1.01)), 3));
+  const hubMat = new T.PointsMaterial({ size: 0.075, transparent: true, opacity: 1 });
+  globe.add(new T.Points(hubGeo, hubMat));
+  const arcMat = new T.LineBasicMaterial({ transparent: true, opacity: 0.6 });
+  const origin = new T.Vector3(...llToVec(HERO_HUBS[0][0], HERO_HUBS[0][1]));
+  HERO_HUBS.slice(1).forEach(h => {
+    const end = new T.Vector3(...llToVec(h[0], h[1]));
+    const mid = origin.clone().add(end).normalize().multiplyScalar(1 + origin.distanceTo(end) * 0.28);
+    const curve = new T.QuadraticBezierCurve3(origin, mid, end);
+    globe.add(new T.Line(new T.BufferGeometry().setFromPoints(curve.getPoints(40)), arcMat));
+  });
+
+  // Drifting outer particle halo
+  const halo = [];
+  for (let i = 0; i < 420; i++) {
+    const r = 1.22 + Math.random() * 0.75;
+    const u = Math.random() * 2 - 1, t = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+    halo.push(r * s * Math.cos(t), r * u, r * s * Math.sin(t));
+  }
+  const haloGeo = new T.BufferGeometry();
+  haloGeo.setAttribute('position', new T.Float32BufferAttribute(halo, 3));
+  const haloMat = new T.PointsMaterial({ size: 0.014, transparent: true, opacity: 0.45 });
+  const haloPts = new T.Points(haloGeo, haloMat);
+  scene.add(haloPts);
+
+  // Atmospheric glow
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = glowCanvas.height = 128;
+  const glowTex = new T.CanvasTexture(glowCanvas);
+  const glowMat = new T.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending });
+  const glow = new T.Sprite(glowMat);
+  glow.scale.set(2.6, 2.6, 1);
+  scene.add(glow);
+
+  const rot = attachHeroDrag(canvas);
+  const hero = { running: false };
+  hero.recolor = () => {
+    const accent = cssColor('--accent', '#C15F3C');
+    const ink = cssColor('--fg-3', '#8A8579');
+    gridMat.color.set(ink); haloMat.color.set(ink);
+    dotMat.color.set(accent); hubMat.color.set(cssColor('--accent-hi', '#D97757')); arcMat.color.set(accent);
+    const g = glowCanvas.getContext('2d');
+    g.clearRect(0, 0, 128, 128);
+    // Ring peaks at the globe's limb and fades to nothing before the canvas edge
+    const clear = accent + '00';
+    const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, clear);
+    grad.addColorStop(0.55, clear);
+    grad.addColorStop(0.76, accent);
+    grad.addColorStop(1, clear);
+    g.globalAlpha = isDark() ? 0.35 : 0.2;
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 128, 128);
+    glowMat.blending = isDark() ? T.AdditiveBlending : T.NormalBlending;
+    glowTex.needsUpdate = true;
+  };
+  hero.tick = () => {
+    if (!hero.running) return;
+    rot.step();
+    globe.rotation.set(rot.x, rot.y, 0);
+    haloPts.rotation.set(rot.x * 0.4, -rot.y * 0.35, 0);
+    renderer.render(scene, camera);
+    requestAnimationFrame(hero.tick);
+  };
+  hero.recolor();
+  return hero;
+}
+
+// Used when the Three.js CDN is unreachable (offline demo)
+function createCanvasHero(canvas) {
+  const ctx = canvas.getContext('2d');
+  const pts = fibonacciSphere(700);
+  const rot = attachHeroDrag(canvas);
+  const hero = { running: false };
+  let accent = '#C15F3C';
+  hero.recolor = () => { accent = cssColor('--accent', '#C15F3C'); };
+  hero.tick = () => {
+    if (!hero.running) return;
+    rot.step();
+    const W = canvas.width, R = W * 0.36;
+    const cy = Math.cos(rot.y), sy = Math.sin(rot.y), cx = Math.cos(rot.x), sx = Math.sin(rot.x);
+    ctx.clearRect(0, 0, W, W);
+    ctx.fillStyle = accent;
+    for (const [x, y, z] of pts) {
+      const x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
+      const y1 = y * cx - z1 * sx, z2 = y * sx + z1 * cx;
+      ctx.globalAlpha = 0.25 + 0.65 * ((z2 + 1) / 2);
+      ctx.beginPath();
+      ctx.arc(W / 2 + x1 * R, W / 2 - y1 * R, 1.2 + (z2 + 1) * 1.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(hero.tick);
+  };
+  return hero;
+}
+
+function startHeroGlobe() {
+  const canvas = $('#hero-globe-canvas');
+  if (!canvas) return;
+  if (!heroGlobe) {
+    try {
+      heroGlobe = window.THREE ? createThreeHero(canvas) : createCanvasHero(canvas);
+    } catch (err) {
+      console.warn('WebGL hero globe unavailable:', err);
+      return;
+    }
+    new MutationObserver(() => heroGlobe.recolor()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  }
+  if (heroGlobe.running) return;
+  heroGlobe.running = true;
+  heroGlobe.tick();
+}
+function stopHeroGlobe() {
+  if (heroGlobe) heroGlobe.running = false;
+}
+
+/* =====================================================================
+   SHARED KYC HELPERS · AI popover, policy citations, Excel, map pin
+===================================================================== */
+function fmtSgd(v) { return `SGD ${Number(v || 0).toLocaleString('en-US')}`; }
+function findKycRecord(id) {
+  return kycRequestsCache.find(r => r.id === id) || compRequestsCache.find(r => r.id === id) || null;
+}
+
+// "Policy §2.1 (Contract Value > SGD 100k threshold) & Policy §5.2 (...)" -> [{rule, text}]
+function policyCitations(r) {
+  return String(r.ddq_clause || '')
+    .split(/\s*(?:&|;)\s*(?=(?:Policy\s*)?§)/)
+    .map(c => c.trim())
+    .filter(Boolean)
+    .map(c => {
+      const m = c.match(/^(?:Policy\s*)?(§[\d.]+)\s*\(?(.*?)\)?$/);
+      return m ? { rule: m[1], text: m[2] || c } : { rule: '', text: c };
+    });
+}
+function citationLabel(c) {
+  return c.rule ? `Rule ${c.rule} triggered: ${c.text}` : c.text;
+}
+
+function aiBadgeHtml(r) {
+  return `<span class="badge-ai ${getAiRiskClass(r.ai_result)}" data-ai-pop="${esc(r.id)}"><svg class="ic spark sm"><use href="#i-spark"/></svg>${esc(r.ai_result)}</span>`;
+}
+
+function initAiPopover() {
+  const pop = document.createElement('div');
+  pop.className = 'ai-pop';
+  pop.hidden = true;
+  document.body.appendChild(pop);
+  document.addEventListener('mouseover', e => {
+    const badge = e.target.closest && e.target.closest('[data-ai-pop]');
+    if (!badge) { pop.hidden = true; return; }
+    const r = findKycRecord(badge.dataset.aiPop);
+    if (!r) return;
+    const level = String(r.ai_result || '').replace(/\s*\(.*\)\s*$/, '');
+    pop.innerHTML = `<b>Confidence ${esc(String(r.ai_confidence))}% - ${esc(level)}</b>
+      <span class="mono">Risk score ${esc(String(r.ai_score))}/100 · ${esc(r.screening_result)}</span>
+      <p>${esc(r.ai_rationale || 'Risk profile evaluated against watchlists, jurisdiction risk and policy rules.')}</p>`;
+    pop.hidden = false;
+    const b = badge.getBoundingClientRect();
+    const left = Math.min(Math.max(8, b.left), innerWidth - pop.offsetWidth - 8);
+    const below = b.bottom + 6 + pop.offsetHeight < innerHeight;
+    pop.style.left = `${left}px`;
+    pop.style.top = `${below ? b.bottom + 6 : b.top - pop.offsetHeight - 6}px`;
+  });
+}
+
+async function downloadKycExcel() {
+  try {
+    toast('Preparing Excel workbook (.xlsx)...');
+    const res = await apiFetch('/api/kyc/export-excel');
+    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    const blob = await res.blob();
+    const name = (res.headers.get('Content-Disposition') || '').match(/filename="?([^"]+)"?/);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name ? name[1] : 'SafeGlobe_KYC_Requests.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+// Pin map: live Google Maps embed when GOOGLE_MAPS_API_KEY is set, otherwise a labelled mock tile
+function drawKycMap(lat, lng, label) {
+  const box = $('#kyc-map-preview');
+  const canvas = $('#kyc-map-canvas');
+  const pin = $('#kyc-map-pin');
+  if (!box || !canvas) return;
+  let frame = box.querySelector('iframe');
+  const hasPoint = Number.isFinite(lat) && Number.isFinite(lng);
+
+  if (publicConfig.mapsEnabled && hasPoint) {
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0';
+      frame.loading = 'lazy';
+      frame.referrerPolicy = 'no-referrer-when-downgrade';
+      box.appendChild(frame);
+    }
+    frame.src = `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(publicConfig.googleMapsApiKey)}&q=${lat},${lng}&zoom=15`;
+    pin.style.display = 'none';
+    return;
+  }
+  if (frame) frame.remove();
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = cssColor('--surface-3', '#E6E2D8');
+  ctx.fillRect(0, 0, W, H);
+  if (!hasPoint) {
+    pin.style.display = 'none';
+    ctx.fillStyle = cssColor('--fg-3', '#8A8579');
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Search an address or pick a landmark to drop a pin', W / 2, H / 2 + 4);
+    return;
+  }
+  // Deterministic street grid derived from the coordinates so each place looks distinct
+  let seed = Math.abs(Math.round(lat * 1e4) * 31 + Math.round(lng * 1e4));
+  const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  ctx.fillStyle = cssColor('--ocean', '#E5E1D6');
+  ctx.beginPath();
+  ctx.moveTo(0, H); ctx.lineTo(0, H * (0.55 + rand() * 0.3));
+  ctx.bezierCurveTo(W * 0.3, H * (0.5 + rand() * 0.4), W * 0.6, H * (0.7 + rand() * 0.3), W, H * (0.6 + rand() * 0.3));
+  ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = cssColor('--surface', '#FBFAF6');
+  for (let i = 0; i < 9; i++) {
+    ctx.lineWidth = i % 3 === 0 ? 5 : 2;
+    const x = W * (0.05 + rand() * 0.9), skew = (rand() - 0.5) * 80;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + skew, H); ctx.stroke();
+  }
+  for (let i = 0; i < 4; i++) {
+    ctx.lineWidth = i % 2 === 0 ? 5 : 2;
+    const y = H * (0.1 + rand() * 0.8);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y + (rand() - 0.5) * 30); ctx.stroke();
+  }
+  ctx.fillStyle = cssColor('--fg-2', '#5C584F');
+  ctx.font = '600 11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(String(label || '').slice(0, 70), 10, 16);
+  ctx.font = '10px monospace';
+  ctx.fillText(`${lat.toFixed(4)}, ${lng.toFixed(4)}`, 10, 30);
+  ctx.textAlign = 'right';
+  ctx.fillText('Mock map · set GOOGLE_MAPS_API_KEY for live Google Maps', W - 10, H - 8);
+  pin.style.left = '50%';
+  pin.style.top = '62%';
+  pin.style.display = 'block';
+  pin.style.animation = 'none';
+  void pin.offsetWidth;
+  pin.style.animation = '';
+}
+
+function setKycLocation({ address, lat, lng, placeId, source }) {
+  const input = $('#kyc-address');
+  input.value = address;
+  input.dataset.lat = lat;
+  input.dataset.lng = lng;
+  input.dataset.placeId = placeId || '';
+  $('#kyc-addr-clear').hidden = false;
+  $('#kyc-addr-dropdown').hidden = true;
+  $('#kyc-addr-feedback').innerHTML = `<span style="color:var(--low);font-size:11.5px">✓ Pinned ${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)} (${esc(source)})</span>`;
+  drawKycMap(Number(lat), Number(lng), address);
+}
+
+function initKycLandmarks() {
+  $$('#kyc-landmark-chips .landmark-chip').forEach(chip => {
+    chip.addEventListener('click', () => setKycLocation({
+      address: chip.dataset.addr,
+      lat: Number(chip.dataset.lat),
+      lng: Number(chip.dataset.lng),
+      placeId: chip.dataset.id,
+      source: 'Singapore landmark'
+    }));
+  });
+}
+
+/* =====================================================================
+   COMPLIANCE OFFICER WORKSPACE · GLOBAL TRIAGE QUEUE & REVIEW DRAWER
+===================================================================== */
+let compRequestsCache = [];
+let compFilterState = { chip: 'all', search: '' };
+let triageTargetId = null;
+
+function isDecided(r) { return ['Approved', 'Rejected'].includes(r.request_status); }
+function needsTriage(r) {
+  if (isDecided(r)) return false;
+  return r.request_status === 'DDQ Under Review' || Boolean(r.ddq_required) || r.screening_result !== 'Clear' || /high|medium|anomal/i.test(r.ai_result || '');
+}
+function triagePriority(r) {
+  if (isDecided(r)) return 4;
+  if (r.request_status === 'DDQ Under Review') return 0;
+  if (/sanction|high/i.test(r.screening_result || '') || /high/i.test(r.ai_result || '')) return 1;
+  if (needsTriage(r)) return 2;
+  return 3;
+}
+function submitterName(r) {
+  return String(r.created_by_email || '').split('@')[0].split(/[._]/).filter(Boolean).map(p => p[0].toUpperCase() + p.slice(1)).join(' ') || 'Unknown';
+}
+
+async function renderComplianceWorkspace() {
+  const tbody = $('#comp-table-body');
+  if (!tbody || !isCompliance()) return;
+  try {
+    const res = await apiFetch('/api/kyc?scope=all');
+    if (!res.ok) throw new Error('Failed to fetch triage queue');
+    const data = await res.json();
+    compRequestsCache = (data.requests || []).slice().sort((a, b) =>
+      triagePriority(a) - triagePriority(b) || String(b.submission_date).localeCompare(String(a.submission_date)));
+
+    const all = compRequestsCache;
+    $('#comp-metric-total').textContent = all.length;
+    $('#comp-metric-escalations').textContent = all.filter(r => r.screening_result !== 'Clear').length;
+    $('#comp-metric-ddq').textContent = all.filter(r => !isDecided(r) && ['Triggered', 'Sent to Counterparty', 'Under Review'].includes(r.ddq_status)).length;
+    $('#comp-metric-approved').textContent = all.filter(r => r.request_status === 'Approved').length;
+    $('#rail-comp-count').textContent = all.filter(needsTriage).length;
+
+    let rows = all;
+    const chip = compFilterState.chip;
+    if (chip === 'triage') rows = rows.filter(needsTriage);
+    else if (chip === 'under-review') rows = rows.filter(r => r.request_status === 'DDQ Under Review');
+    else if (chip === 'approved') rows = rows.filter(r => r.request_status === 'Approved');
+    else if (chip === 'rejected') rows = rows.filter(r => r.request_status === 'Rejected');
+    const q = compFilterState.search.toLowerCase();
+    if (q) rows = rows.filter(r => [r.id, r.counterparty_name, r.created_by_email, r.country, r.ddq_clause].some(v => String(v || '').toLowerCase().includes(q)));
+
+    $('#comp-count-summary').textContent = `Showing ${rows.length} of ${all.length} requests · sorted by triage priority`;
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:36px;color:var(--fg-3)">No requests match this filter.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      const cites = policyCitations(r);
+      const citeHtml = cites.length
+        ? cites.map(c => `<span class="policy-cite" title="${esc(citationLabel(c))}">${esc(citationLabel(c))}</span>`).join('')
+        : `<span class="policy-cite none">No policy rule triggered</span>`;
+      const actions = isDecided(r)
+        ? `<button class="btn sm" data-triage="review" type="button">Review</button>`
+        : `<button class="btn sm" data-triage="Approve" type="button" title="Approve" style="color:var(--low);border-color:var(--low)"><svg class="ic sm"><use href="#i-check"/></svg></button>
+           <button class="btn sm" data-triage="Reject" type="button" title="Reject" style="color:var(--high);border-color:var(--high)"><svg class="ic sm"><use href="#i-close"/></svg></button>
+           <button class="btn sm" data-triage="review" type="button">Review</button>`;
+      return `
+        <tr data-kyc-id="${esc(r.id)}">
+          <td class="mono" style="font-weight:600;color:var(--accent)">${esc(r.id)}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--fg-2)">${esc(r.submission_date)}</td>
+          <td><b style="font-weight:500">${esc(submitterName(r))}</b><small class="faint" style="display:block;font-size:10.5px">${esc(r.created_by_department || '')}</small></td>
+          <td style="white-space:normal;min-width:260px"><b style="font-weight:500;font-size:12.5px">${esc(r.counterparty_name)}</b><div class="policy-cites">${citeHtml}</div></td>
+          <td>${esc(r.entity_type)}</td>
+          <td class="mono" style="font-weight:600">${esc(r.country)}</td>
+          <td class="mono" style="font-weight:600">${fmtSgd(r.contract_value)}</td>
+          <td><span class="badge-screen ${kycSlug(r.screening_result)}">${esc(r.screening_result)}</span></td>
+          <td>${aiBadgeHtml(r)}</td>
+          <td><span class="badge-ddq-status ${kycSlug(r.ddq_status)}">${esc(r.ddq_status)}</span></td>
+          <td><span class="badge-status ${kycSlug(r.request_status)}">${esc(r.request_status)}</span></td>
+          <td><div style="display:flex;gap:5px">${actions}</div></td>
+        </tr>`;
+    }).join('');
+  } catch (err) {
+    console.error('Error rendering compliance queue:', err);
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--high)">Error loading triage queue: ${esc(err.message)}</td></tr>`;
+  }
+}
+
+async function submitTriage(id, action, notes = '') {
+  try {
+    const res = await apiFetch(`/api/kyc/${encodeURIComponent(id)}/triage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, notes })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || 'Triage failed');
+    toast(`${id}: ${data.request.request_status}`);
+    $('#comp-triage-modal').hidden = true;
+    renderComplianceWorkspace();
+  } catch (err) {
+    toast(`Triage error: ${err.message}`);
+  }
+}
+
+function openTriageModal(r) {
+  triageTargetId = r.id;
+  $('#triage-sub').textContent = `${r.id} · ${r.request_status} · last modified by ${r.last_modified_by || 'System'}`;
+  $('#triage-cparty-name').textContent = r.counterparty_name;
+  $('#triage-cparty-meta').textContent = `${r.entity_type} · ${r.country} · Anticipated ${fmtSgd(r.contract_value)}`;
+  const screen = $('#triage-screen-badge');
+  screen.textContent = r.screening_result;
+  screen.className = `badge-screen ${kycSlug(r.screening_result)}`;
+  const ai = $('#triage-ai-badge');
+  ai.textContent = r.ai_result;
+  ai.className = `badge-ai ${getAiRiskClass(r.ai_result)}`;
+  const ddq = $('#triage-ddq-status-badge');
+  ddq.textContent = `DDQ ${r.ddq_status}`;
+  ddq.className = `badge-ddq-status ${kycSlug(r.ddq_status)}`;
+
+  // Column 1: employee submission
+  $('#triage-emp-name').textContent = `${submitterName(r)} (${r.created_by_email || 'n/a'})`;
+  $('#triage-emp-dept').textContent = r.created_by_department || 'n/a';
+  $('#triage-emp-date').textContent = r.submission_date;
+  $('#triage-emp-val').textContent = fmtSgd(r.contract_value);
+  $('#triage-emp-rel').textContent = r.relationship_type;
+  $('#triage-emp-mon').textContent = r.ongoing_monitoring ? 'Enabled' : 'Disabled';
+  const attrs = Object.entries(r.attributes || {}).filter(([, v]) => v !== '' && v !== null && v !== undefined);
+  $('#triage-emp-attrs').innerHTML = (attrs.length
+    ? attrs.map(([k, v]) => `<div><span class="faint" style="text-transform:capitalize">${esc(k.replace(/_/g, ' '))}:</span> <b>${esc(String(v))}</b></div>`).join('')
+    : `<span class="faint">No entity attributes declared.</span>`)
+    + (r.remarks ? `<div style="margin-top:6px"><span class="faint">Remarks:</span> ${esc(r.remarks)}</div>` : '');
+  const loc = r.location || {};
+  $('#triage-emp-addr').textContent = loc.address
+    ? `${loc.address}${Number.isFinite(loc.lat) ? ` (${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)})` : ''}`
+    : 'No physical address registered.';
+
+  // Column 2: counterparty DDQ answers
+  const d = r.ddq_responses || {};
+  const hasDdq = Object.keys(d).length > 0;
+  $('#triage-ddq-empty-notice').style.display = hasDdq ? 'none' : 'block';
+  $('#triage-ddq-empty-notice').textContent = r.ddq_required
+    ? `Questionnaire not yet submitted — DDQ status: ${r.ddq_status}${r.counterparty_email ? ` · ${r.counterparty_email}` : ''}.`
+    : 'No questionnaire required for this request.';
+  $('#triage-ddq-content').style.display = hasDdq ? 'flex' : 'none';
+  if (hasDdq) {
+    const ubos = Array.isArray(d.ubo_list) ? d.ubo_list : [];
+    $('#triage-ddq-ubos').innerHTML = ubos.length
+      ? ubos.map(u => `<div><b>${esc(u.name || String(u))}</b>${u.ownership ? ` · ${esc(String(u.ownership))}%` : ''}${u.nationality ? ` · ${esc(u.nationality)}` : ''}</div>`).join('')
+      : `<span class="faint">No beneficial owner above 25% declared.</span>`;
+    const flag = (on, yes, no) => `<div style="color:${on ? 'var(--high)' : 'var(--low)'}">${on ? '⚠' : '✓'} ${on ? yes : no}</div>`;
+    $('#triage-ddq-decls').innerHTML =
+      flag(d.pep_declared, 'PEP ties declared', 'No PEP ties declared') +
+      flag(d.litigation_declared, 'Litigation / sanctions exposure declared', 'No litigation or sanctions exposure declared') +
+      (d.declaration_notes ? `<div class="faint" style="margin-top:4px">“${esc(d.declaration_notes)}”</div>` : '');
+    $('#triage-ddq-files').textContent = d.audited_financials_filename
+      ? `${d.audited_financials_filename}${d.audited_financials_size ? ` (${Math.round(d.audited_financials_size / 1024)} KB)` : ''}`
+      : 'No financial statements uploaded.';
+  }
+
+  // Column 3: Gemini policy audit
+  const cites = policyCitations(r);
+  $('#triage-policy-citations').innerHTML = cites.length
+    ? cites.map(c => `<div class="policy-cite-card"><b>${c.rule ? `Rule ${esc(c.rule)} triggered` : 'Policy trigger'}</b><span>${esc(c.text)}</span></div>`).join('')
+    : `<div class="policy-cite-card ok"><b>No policy rule triggered</b><span>Request is within auto-clearance thresholds.</span></div>`;
+  $('#triage-ai-rationale').textContent = r.ai_rationale || 'No AI rationale recorded.';
+  $('#triage-rescreen-summary').textContent = r.compliance_notes
+    ? `${r.re_screening_result ? `${r.re_screening_result} · ` : ''}${r.compliance_notes}`
+    : 'Re-screen runs automatically once the counterparty submits its questionnaire.';
+
+  $('#triage-officer-notes').value = '';
+  $('#comp-triage-modal').hidden = false;
+}
+
+function initComplianceControls() {
+  $$('#comp-quick-filters button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#comp-quick-filters button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      compFilterState.chip = btn.dataset.filter;
+      renderComplianceWorkspace();
+    });
+  });
+  let timer = null;
+  $('#comp-search-input').addEventListener('input', e => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { compFilterState.search = e.target.value.trim(); renderComplianceWorkspace(); }, 200);
+  });
+  $('#comp-refresh-btn').addEventListener('click', renderComplianceWorkspace);
+  $('#comp-export-btn').addEventListener('click', downloadKycExcel);
+
+  $('#comp-table-body').addEventListener('click', e => {
+    const row = e.target.closest('tr[data-kyc-id]');
+    if (!row) return;
+    const rec = compRequestsCache.find(r => r.id === row.dataset.kycId);
+    if (!rec) return;
+    const btn = e.target.closest('[data-triage]');
+    if (btn && btn.dataset.triage !== 'review') submitTriage(rec.id, btn.dataset.triage, 'One-click triage from queue');
+    else openTriageModal(rec);
+  });
+
+  const act = action => () => { if (triageTargetId) submitTriage(triageTargetId, action, $('#triage-officer-notes').value.trim()); };
+  $('#triage-act-approve').addEventListener('click', act('Approve'));
+  $('#triage-act-reject').addEventListener('click', act('Reject'));
+  $('#triage-act-moreinfo').addEventListener('click', act('Request More Info'));
+}
+
+/* =====================================================================
+   EXTERNAL COUNTERPARTY DDQ GUEST PORTAL (/ddq/portal?token=<JWT>)
+===================================================================== */
+let ddqGuestToken = null;
+
+function addDdqUboRow(u = {}) {
+  const row = document.createElement('div');
+  row.className = 'ubo-entry';
+  row.innerHTML = `
+    <input type="text" data-ubo="name" placeholder="Full legal name" value="${esc(u.name || '')}">
+    <input type="number" data-ubo="ownership" min="25" max="100" placeholder="% owned" value="${esc(String(u.ownership || ''))}">
+    <input type="text" data-ubo="nationality" placeholder="Nationality" value="${esc(u.nationality || '')}">
+    <button class="icon-btn" type="button" data-ubo-remove title="Remove"><svg class="ic sm"><use href="#i-close"/></svg></button>`;
+  row.querySelector('[data-ubo-remove]').addEventListener('click', () => row.remove());
+  $('#ddq-ubo-container').appendChild(row);
+}
+
+function lockDdqGuestForm(message) {
+  $$('#ddq-guest-form input, #ddq-guest-form textarea').forEach(el => { el.disabled = true; });
+  $$('#ddq-guest-form [data-ubo-remove]').forEach(el => { el.style.display = 'none'; });
+  $('#ddq-add-ubo-btn').style.display = 'none';
+  $('#ddq-submit-answers-btn').style.display = 'none';
+  $('#ddq-guest-locked-banner').style.display = 'flex';
+  if (message) $('#ddq-guest-locked-banner span').textContent = message;
+  const badge = $('#ddq-guest-token-badge');
+  badge.textContent = 'Submitted · Read-only';
+  badge.className = 'badge-bool disabled';
+}
+
+function ddqGuestError(message) {
+  $('#ddq-guest-form').style.display = 'none';
+  const badge = $('#ddq-guest-token-badge');
+  badge.textContent = '✕ Link invalid or expired';
+  badge.className = 'badge-screen sanctions-alert';
+  $('#ddq-guest-id-label').textContent = '';
+  $('#ddq-guest-desc').textContent = `${message} Please ask your SafeGlobe contact to issue a new secure link.`;
+}
+
+async function renderDdqGuestView() {
+  ddqGuestToken = new URLSearchParams(location.search).get('token');
+  if (!ddqGuestToken) { ddqGuestError('No access token was supplied.'); return; }
+  try {
+    const res = await fetch(`/api/ddq/verify-token?token=${encodeURIComponent(ddqGuestToken)}`);
+    const d = await res.json();
+    if (!d.valid) { ddqGuestError(d.error || 'This link could not be verified.'); return; }
+
+    $('#ddq-guest-title').textContent = `Due Diligence Questionnaire · ${d.counterparty_name}`;
+    $('#ddq-guest-desc').textContent = `Requested by SafeGlobe Compliance under ${d.triggered_clause || 'onboarding policy'}. Addressed to ${d.counterparty_email || 'the counterparty'}.`;
+    $('#ddq-guest-id-label').textContent = `${d.kyc_id} · ${d.entity_type} · ${d.country}`;
+
+    const prev = d.existing_responses || {};
+    $('#ddq-ubo-container').innerHTML = '';
+    const ubos = Array.isArray(prev.ubo_list) && prev.ubo_list.length ? prev.ubo_list : [{}];
+    ubos.forEach(addDdqUboRow);
+    $('#ddq-pep-declaration').checked = Boolean(prev.pep_declared);
+    $('#ddq-litigation-declaration').checked = Boolean(prev.litigation_declared);
+    $('#ddq-decl-notes').value = prev.declaration_notes || '';
+    if (prev.audited_financials_filename) {
+      $('#ddq-financial-upload').insertAdjacentHTML('afterend', `<small class="faint">Previously uploaded: ${esc(prev.audited_financials_filename)}</small>`);
+    }
+    if (d.readOnly) lockDdqGuestForm();
+  } catch (err) {
+    ddqGuestError('The questionnaire service is unavailable.');
+  }
+}
+
+async function submitDdqGuestForm() {
+  const ubo_list = $$('#ddq-ubo-container .ubo-entry').map(row => ({
+    name: row.querySelector('[data-ubo="name"]').value.trim(),
+    ownership: Number(row.querySelector('[data-ubo="ownership"]').value || 0),
+    nationality: row.querySelector('[data-ubo="nationality"]').value.trim()
+  })).filter(u => u.name);
+  if (ubo_list.length === 0) { toast('Please declare at least one beneficial owner'); return; }
+  if (ubo_list.some(u => u.ownership < 25 || u.ownership > 100)) { toast('Each beneficial owner must hold between 25% and 100%'); return; }
+
+  const file = $('#ddq-financial-upload').files[0];
+  const responses = {
+    ubo_list,
+    pep_declared: $('#ddq-pep-declaration').checked,
+    litigation_declared: $('#ddq-litigation-declaration').checked,
+    declaration_notes: $('#ddq-decl-notes').value.trim(),
+    audited_financials_filename: file ? file.name : '',
+    audited_financials_size: file ? file.size : 0,
+    submitted_at: new Date().toISOString()
+  };
+
+  const btn = $('#ddq-submit-answers-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/ddq/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: ddqGuestToken, responses })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || 'Submission failed');
+    lockDdqGuestForm('Thank you. Your questionnaire has been submitted and is locked under compliance review (status: DDQ Under Review).');
+    toast('Questionnaire submitted and locked');
+  } catch (err) {
+    toast(`Submission error: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function initDdqGuestControls() {
+  $('#ddq-add-ubo-btn').addEventListener('click', () => addDdqUboRow());
+  $('#ddq-submit-answers-btn').addEventListener('click', submitDdqGuestForm);
+}
+
+// Employee-side DDQ actions inside the audit drawer (dispatch / open / copy the signed link)
+function renderAuditDdqActions(r) {
+  const box = $('#aud-ddq-actions');
+  const comp = isCompliance();
+  $('#aud-officer-actions').style.display = comp ? 'flex' : 'none';
+  box.innerHTML = '';
+  if (!r.ddq_required || !r.ddq_link) return;
+  const link = location.origin + r.ddq_link;
+  const canSend = r.ddq_status === 'Triggered';
+  box.innerHTML = `
+    ${canSend ? `<button class="btn sm primary" data-ddq-act="send" type="button"><svg class="ic sm"><use href="#i-send"/></svg>Send DDQ to Counterparty</button>` : ''}
+    <a class="btn sm" href="${esc(r.ddq_link)}" target="_blank" rel="noopener"><svg class="ic sm"><use href="#i-link"/></svg>Open Guest Portal</a>
+    <button class="btn sm" data-ddq-act="copy" type="button">Copy Link</button>`;
+  const copyBtn = box.querySelector('[data-ddq-act="copy"]');
+  copyBtn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(link); toast('Signed DDQ link copied'); }
+    catch (e) { toast(link); }
+  });
+  const sendBtn = box.querySelector('[data-ddq-act="send"]');
+  if (sendBtn) sendBtn.addEventListener('click', async () => {
+    try {
+      const res = await apiFetch(`/api/kyc/${encodeURIComponent(r.id)}/send-ddq`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error);
+      toast(data.message);
+      renderEmployeeWorkspace();
+      openKycAuditModal(data.request);
+    } catch (err) {
+      toast(`Could not send DDQ: ${err.message}`);
+    }
+  });
 }
 
 function boot(){
   if(innerWidth<=1180)view.classList.add('watch-closed');
   readColors();renderLegend();renderWatch();renderAlerts();renderReviews();renderCalib();renderSources();renderPolicies();
   initKycPortalControls();
-  renderEmployeeWorkspace();
+  bootSession();
   computeLayout();
   cSel.each(function(){this.style.fill=C['land-none'];});
   refreshStatus();

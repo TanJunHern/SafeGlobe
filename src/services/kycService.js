@@ -12,6 +12,9 @@
 const config = require('../config');
 const { getDb } = require('../db');
 const { screenCounterparty } = require('./screening');
+const jwt = require('jsonwebtoken');
+const { evaluatePolicyRAG } = require('./policyRagService');
+const { generateKycExcelWorkbook } = require('./excelService');
 
 // High risk jurisdictions list (FATF / OFAC / Low CPI)
 const HIGH_RISK_JURISDICTIONS = new Set([
@@ -189,7 +192,7 @@ async function extractDocumentData({ filename = '', fileContent = '', mimeType =
   // 1. Try Gemini Multimodal / Text Extraction if API Key is configured
   if (isRealKey) {
     try {
-      const model = config.geminiModel || 'gemini-3.5-flash';
+      const model = config.geminiModel || 'gemini-2.5-flash';
       const prompt = `You are the SafeGlobe Compliance Document Extraction AI.
 Analyze the following onboarding document (${filename || 'document'}).
 Extract counterparty KYC fields and respond strictly in valid JSON matching this schema:
@@ -215,10 +218,10 @@ Extract counterparty KYC fields and respond strictly in valid JSON matching this
       const contents = [];
       const parts = [{ text: prompt }];
 
-      if (base64Data && mimeType && mimeType.startsWith('image/')) {
+      if (base64Data && (mimeType.startsWith('image/') || mimeType === 'application/pdf')) {
         parts.push({
           inlineData: {
-            mimeType: mimeType,
+            mimeType: mimeType || 'application/pdf',
             data: base64Data
           }
         });
@@ -509,15 +512,36 @@ function createKycRequest(input, userContext = {}) {
     remarks: input.remarks
   }, screeningHit);
 
-  // Determine initial Request Status
-  let requestStatus = input.request_status || 'Submitted';
-  if (!input.request_status) {
+  // Counterparty Contact Email
+  const counterpartyEmail = (input.counterparty_email || input.email || `${counterpartyName.toLowerCase().replace(/[^a-z0-9]+/g, '')}@vendor.domain`).trim();
+
+  // Cryptographic Guest Token for Counterparty DDQ Portal
+  let ddqToken = input.ddq_token || null;
+  let ddqExpiresAt = input.ddq_token_expires_at || null;
+  let ddqStatus = input.ddq_status || policyEval.ddq_status;
+
+  if (policyEval.ddq_required && !ddqToken) {
+    const payload = {
+      kyc_id: id,
+      counterparty_name: counterpartyName,
+      counterparty_email: counterpartyEmail,
+      entity_type: entityType,
+      clause: policyEval.ddq_clause,
+      exp: Math.floor(Date.now() / 1000) + (14 * 86400) // 14-day validity
+    };
+    ddqToken = jwt.sign(payload, config.jwtSecret);
+    ddqExpiresAt = new Date(Date.now() + 14 * 86400 * 1000).toISOString();
+  }
+
+  // Determine initial Request Status (Branch A vs Branch B)
+  let requestStatus = input.request_status;
+  if (!requestStatus) {
     if (aiRisk.screening_result === 'Sanctions Alert') {
       requestStatus = 'Rejected';
     } else if (policyEval.ddq_required) {
-      requestStatus = 'Pending DDQ';
+      requestStatus = 'Pending DDQ'; // Branch B
     } else {
-      requestStatus = 'Submitted';
+      requestStatus = 'Approved'; // Branch A (Low Risk auto-approved)
     }
   }
 
@@ -541,21 +565,31 @@ function createKycRequest(input, userContext = {}) {
     ai_confidence: aiRisk.ai_confidence,
     ai_rationale: aiRisk.ai_rationale,
     ddq_required: policyEval.ddq_required ? 1 : 0,
-    ddq_status: policyEval.ddq_status,
+    ddq_status: ddqStatus,
     ddq_clause: policyEval.ddq_clause,
     remarks: input.remarks || '',
     attributes_json: JSON.stringify(attributes),
     location_json: JSON.stringify(location),
     attachments_json: JSON.stringify(attachments),
     created_by_user_id: userContext.userId || input.created_by_user_id || 'EMP-1042',
-    created_by_email: userContext.email || input.created_by_email || 'sarah.tan@safeglobe.internal',
-    created_by_department: userContext.department || input.created_by_department || 'Procurement & Supply Chain',
+    created_by_email: userContext.email || input.created_by_email || 'john.doe@safeglobe.com',
+    created_by_department: userContext.department || input.created_by_department || 'Procurement & Logistics',
     ip_address: userContext.ip || input.ip_address || '127.0.0.1',
     client_timestamp: userContext.clientTimestamp || input.client_timestamp || now.toISOString(),
-    last_modified_by: input.last_modified_by || 'Employee Portal'
+    last_modified_by: input.last_modified_by || 'Employee Portal',
+    counterparty_email: counterpartyEmail,
+    ddq_token: ddqToken,
+    ddq_token_expires_at: ddqExpiresAt,
+    ddq_responses_json: JSON.stringify(input.ddq_responses || {}),
+    compliance_notes: input.compliance_notes || '',
+    re_screening_result: input.re_screening_result || ''
   };
 
-  return db.addKycRequest(record);
+  const saved = db.addKycRequest(record);
+  return {
+    ...saved,
+    ddq_link: ddqToken ? `/ddq/portal?token=${ddqToken}` : null
+  };
 }
 
 /**
@@ -638,11 +672,61 @@ function exportKycCsv(records) {
   return '\uFEFF' + [headers.map(h => `"${h}"`).join(','), ...rows].join('\r\n');
 }
 
+/**
+ * Seeds demo requests owned by the hackathon employee persona so the row-scoped
+ * employee portal is not empty on first login. No-op once that persona has any row.
+ */
+function ensurePersonaSeed() {
+  const db = getDb();
+  const persona = { userId: 'EMP-1042', email: 'john.doe@safeglobe.com', department: 'Procurement & Logistics' };
+  if (db.getAllKycRequests({ created_by_email: persona.email }).length > 0) return;
+
+  const samples = [
+    {
+      counterparty_name: 'Apex Commodities Pte Ltd',
+      entity_type: 'Organisation',
+      country: 'SGP',
+      relationship_type: 'Vendor/Supplier',
+      contract_value: 85000,
+      ongoing_monitoring: false,
+      remarks: 'Office consumables and packaging supply for FY2026.',
+      attributes: { reg_no: '202419822K', directors_ubo: 'Tan Wei Liang (60%), Chua Mei Ling (40%)' }
+    },
+    {
+      counterparty_name: 'Straits Marine Brokers Pte Ltd',
+      entity_type: 'Organisation',
+      country: 'SGP',
+      relationship_type: '3rd Party Reps & Brokers',
+      contract_value: 250000,
+      ongoing_monitoring: true,
+      counterparty_email: 'compliance@straitsmarine.example',
+      remarks: 'Chartering broker for Q4 bulk shipments.',
+      attributes: { reg_no: '201733410D', directors_ubo: 'Lim Hock Seng (70%)' },
+      location: { address: 'Jurong Port Terminal, 37 Jurong Port Road, Singapore 619110', lat: 1.306, lng: 103.714, place_id: 'sg_jurong' }
+    },
+    {
+      counterparty_name: 'MV Aurora Tide',
+      entity_type: 'Vessel',
+      country: 'PAN',
+      relationship_type: 'Customer/Trading Partner',
+      contract_value: 420000,
+      ongoing_monitoring: true,
+      counterparty_email: 'ops@auroraocean.example',
+      remarks: 'Time-charter for crude lifting, Tuas to Fujairah.',
+      attributes: { imo: 'IMO 9823411', vessel_type: 'Crude Oil Tanker', registered_owner: 'Aurora Ocean Marine Ltd', commercial_operator: 'Straits Tankers Chartering' },
+      location: { address: 'Tuas Mega Port Terminal, Tuas South Avenue 14, Singapore', lat: 1.258, lng: 103.635, place_id: 'sg_tuas' }
+    }
+  ];
+  for (const sample of samples) createKycRequest(sample, persona);
+}
+
 module.exports = {
+  ensurePersonaSeed,
   evaluatePolicyRules,
   calculateAiRisk,
   extractDocumentData,
   createKycRequest,
   exportKycCsv,
+  generateKycExcelWorkbook,
   getNextKycId
 };
