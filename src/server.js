@@ -49,6 +49,11 @@ app.use('/api/claim', claimsRouter);
 app.use('/api/statements', statementsRouter);
 app.use('/api/ddq', ddqRouter);
 app.use('/api/ddq-templates', require('./routes/ddqTemplates'));
+
+// Compliance Agent: what it is, which mode it is in, and the tools it can call
+app.get('/api/agent/compliance', (req, res) => {
+  res.json(require('./agents/complianceAgent').describe());
+});
 app.use('/api/alerts', alertsRouter);
 app.use('/api/sources', sourcesRouter);
 app.use('/api/policies', policiesRouter);
@@ -136,7 +141,12 @@ app.get('/saf-globe.html', (req, res) => {
 });
 
 // Serve static directory for any static assets (PDFs, images, etc.)
-app.use(express.static(config.staticDir));
+// Only these files are public. The repo root is NOT served: it holds the database, uploaded
+// counterparty documents, source code and config, none of which may be downloadable.
+const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js'];
+for (const file of PUBLIC_ASSETS) {
+  app.get(`/${file}`, (req, res) => res.sendFile(path.join(config.staticDir, file)));
+}
 
 // Fallback 404 for unmatched API routes
 app.use('/api', (req, res) => {

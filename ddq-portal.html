@@ -35,6 +35,10 @@ body{padding-bottom:96px}
 .q-body{grid-column:2;display:flex;flex-direction:column;gap:8px;margin-top:6px}
 .q.missing .q-no{color:var(--high)}
 .q.missing .q-text::after{content:" *";color:var(--high)}
+.q.flagged{border-left:3px solid var(--mid);margin-left:-30px;padding-left:27px}
+.flag-note{display:flex;gap:8px;align-items:flex-start;padding:9px 12px;border-radius:9px;border:1px solid var(--mid);background:var(--mid-soft);font-size:12.5px;line-height:1.4}
+.flag-note b{white-space:nowrap}
+.seg.flag{box-shadow:0 0 0 2px var(--mid)}
 .yn{display:flex;gap:10px;flex-wrap:wrap}
 .yn label,.check{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:9px;border:1px solid var(--line-2);font-size:13px;cursor:pointer;background:var(--surface)}
 .yn label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
@@ -169,6 +173,7 @@ let at = 0;
 let currentQ = null;
 let readOnly = false;
 let showMissing = false;
+let FLAGS = {};           // question id -> note from compliance, when the questionnaire was bounced back
 let saveTimer = null;
 const chat = [];
 
@@ -196,7 +201,9 @@ const UI_EN = {
   askPlaceholder: 'Ask about this question…', chipExplain: 'Explain this question', chipDocs: 'Which documents do I need?', chipLeft: "What's left?",
   greeting: "Hi, I'm Aria. I can explain any question in plain language, tell you which documents to attach, and keep track of what's left. Tap “Explain” next to a question to start.",
   about: 'About', thinking: 'Aria is thinking…', englishNote: 'The English text is the authoritative version of this questionnaire.',
-  translating: 'Translating the questionnaire…'
+  translating: 'Translating the questionnaire…',
+  returnedTitle: 'Returned for clarification', returnedBody: 'Our compliance team reviewed your questionnaire and needs a few points clarified. They are highlighted on the questions below. Update them and submit again.',
+  complianceAsked: 'Compliance asked:', goToFirst: 'Go to the first one', round: 'Round', pointsToClarify: 'points to clarify'
 };
 const UI_KEYS = Object.keys(UI_EN);
 let UI = Object.assign({}, UI_EN);
@@ -307,11 +314,12 @@ function questionHtml(q) {
     ? `<div class="ai-note">${icon('spark', 'sm')}<b>${esc(t('aiSuggested'))}</b>${a.source ? `<span class="src">“${esc(a.source)}”</span>` : ''}<button class="btn sm" type="button" data-confirm>${icon('check', 'sm')}${esc(t('confirm'))}</button></div>`
     : '';
   const missing = showMissing && q.required !== false && !isAnswered(q);
-  return `<div class="q ${missing ? 'missing' : ''} ${currentQ === q.id ? 'current' : ''}" data-q="${esc(q.id)}">
+  const flag = FLAGS[q.id] ? `<div class="flag-note">${icon('alert', 'sm')}<span><b>${esc(t('complianceAsked'))}</b> ${esc(FLAGS[q.id])}</span></div>` : '';
+  return `<div class="q ${missing ? 'missing' : ''} ${FLAGS[q.id] ? 'flagged' : ''} ${currentQ === q.id ? 'current' : ''}" data-q="${esc(q.id)}">
       <div class="q-no">${esc(q.id)}</div>
       <div class="q-head"><div class="q-text">${esc(q.text)}</div>
         <button class="q-explain" type="button" data-explain>${icon('spark', 'sm')}${esc(t('explain'))}</button></div>
-      <div class="q-body">${body}${ai}</div>
+      <div class="q-body">${flag}${body}${ai}</div>
     </div>`;
 }
 
@@ -341,6 +349,7 @@ function renderSlide() {
       ${sec.questions.map(questionHtml).join('')}`;
   } else if (s.kind === 'documents') {
     html = `<div class="eyebrow">${esc(t('documents'))}</div><h1>${esc(t('documents'))}</h1><p class="sub">${esc(t('documentsSub'))}</p>
+      ${FLAGS.documents ? `<div class="flag-note" style="margin-bottom:10px">${icon('alert', 'sm')}<span><b>${esc(t('complianceAsked'))}</b> ${esc(FLAGS.documents)}</span></div>` : ''}
       ${T.documents.map((d, i) => {
         const doc = R.documents[i] || {};
         return `<div class="doc-row" data-doc="${i}">
@@ -397,7 +406,8 @@ function renderDock() {
   $('#slider-count').textContent = `${tot.done} / ${tot.total} ${t('answered')}`;
   $('#track').innerHTML = SLIDES.map((s, i) => {
     const f = slideFill(s);
-    return `<div class="seg ${i === at ? 'on' : ''} ${f >= 1 ? 'done' : ''}" data-goto="${i}" title="${esc(slideTitle(s))}"><i style="width:${Math.round(f * 100)}%"></i></div>`;
+    const flagged = (s.kind === 'section' && T.sections[s.index].questions.some(q => FLAGS[q.id])) || (s.kind === 'documents' && FLAGS.documents);
+    return `<div class="seg ${i === at ? 'on' : ''} ${f >= 1 ? 'done' : ''} ${flagged ? 'flag' : ''}" data-goto="${i}" title="${esc(slideTitle(s))}"><i style="width:${Math.round(f * 100)}%"></i></div>`;
   }).join('');
   $('#back-btn').disabled = at === 0;
   $('#next-btn').hidden = at === SLIDES.length - 1;
@@ -693,7 +703,7 @@ async function applyLanguage(language) {
     R.language = data.translated ? data.language : 'English';
     $('#lang-input').value = R.language === 'English' ? '' : R.language;
     document.documentElement.lang = R.language === 'English' ? 'en' : '';
-    renderChrome(); renderSlide();
+    renderChrome(); renderSlide(); renderBounceBanner();
     if (data.message) pushBot(data.message);
     else if (data.translated) pushBot(`${t('language')}: ${data.language}. ${t('englishNote')}`);
     touch();
@@ -739,6 +749,21 @@ function lock(justSubmitted) {
   $('#banner').innerHTML = `<div class="banner">${icon('lock')}<div><b>${esc(t('lockedTitle'))}</b>${esc(justSubmitted ? t('submitted') + ' ' : '')}${esc(t('lockedBody'))}</div></div>`;
 }
 
+function firstFlaggedSlide() {
+  return SLIDES.findIndex(s => (s.kind === 'section' && T.sections[s.index].questions.some(q => FLAGS[q.id])) || (s.kind === 'documents' && FLAGS.documents));
+}
+function renderBounceBanner() {
+  const b = META.bounce;
+  if (!b || readOnly) return;
+  const count = Object.keys(FLAGS).length;
+  $('#banner').innerHTML = `<div class="banner">${icon('alert')}<div style="flex:1">
+      <b>${esc(t('returnedTitle'))} · ${esc(t('round'))} ${esc(String(b.round || 1))}${count ? ` · ${count} ${esc(t('pointsToClarify'))}` : ''}</b>
+      ${esc(t('returnedBody'))}${b.note ? `<div style="margin-top:6px;font-style:italic">“${esc(b.note)}”</div>` : ''}</div>
+      ${count ? `<button class="btn sm" type="button" id="bounce-first">${esc(t('goToFirst'))}</button>` : ''}</div>`;
+  const btn = $('#bounce-first');
+  if (btn) btn.addEventListener('click', () => { const i = firstFlaggedSlide(); if (i >= 0) go(i); });
+}
+
 function fail(message) {
   $('#slide').innerHTML = `<div class="eyebrow">Safe Globe</div><h1>This link can't be opened</h1><p class="sub">${esc(message)} Please ask your SafeGlobe contact to issue a new secure link.</p>`;
   $('#banner').innerHTML = `<div class="banner bad">${icon('alert')}<div><b>Link invalid or expired</b>The questionnaire could not be loaded.</div></div>`;
@@ -764,8 +789,10 @@ async function boot() {
   if (!R.declaration.company) R.declaration.company = d.counterparty_name;
   if (!R.declaration.date) R.declaration.date = new Date().toISOString().slice(0, 10);
 
+  ((d.bounce && d.bounce.issues) || []).forEach(i => { FLAGS[i.question_id] = i.note; });
   buildSlides();
   if (d.readOnly) lock(false);
+  renderBounceBanner();
   $('#dock').hidden = false;
   renderChrome();
   if (R.language && R.language !== 'English') await applyLanguage(R.language);

@@ -744,6 +744,28 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
 .badge-ddq-status{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
 .badge-ddq-status.triggered{background:rgba(245,158,11,0.16);color:#fbbf24;font-weight:600}
 .badge-ddq-status.sent-to-counterparty{background:rgba(59,130,246,0.14);color:#60a5fa}
+.badge-ddq-status.returned-to-counterparty{background:rgba(245,158,11,0.16);color:#fbbf24;font-weight:600}
+/* Compliance Agent panel */
+.agent-card{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:10px;border:1px solid var(--accent);background:var(--surface)}
+.agent-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px}
+.agent-head b{color:var(--accent)}
+.agent-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:600;background:var(--surface-3);color:var(--fg-2);white-space:nowrap}
+.agent-pill.rec-auto_clear,.agent-pill.rec-approve{background:rgba(34,197,94,0.14);color:var(--low)}
+.agent-pill.rec-require_ddq,.agent-pill.rec-bounce_back{background:rgba(245,158,11,0.16);color:var(--mid)}
+.agent-pill.rec-escalate{background:rgba(239,68,68,0.16);color:var(--high)}
+.agent-score{font-family:var(--f-display);font-size:22px;line-height:1}
+.agent-score small{font-family:var(--f-body);font-size:11px;color:var(--fg-3)}
+.agent-text{font-size:11.5px;line-height:1.45;color:var(--fg-2)}
+.agent-sub{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-3);margin-top:4px}
+.agent-trace{font-size:11px;color:var(--fg-2)}
+.agent-trace summary{cursor:pointer;font-weight:600}
+.agent-trace li{margin:4px 0}
+.agent-trace code{font-family:var(--f-mono);font-size:10.5px;color:var(--accent)}
+.agent-issue{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;padding:6px 0;border-top:1px solid var(--line);font-size:11.5px}
+.agent-issue input[type=text]{width:100%;height:26px;border-radius:7px;border:1px solid var(--line-2);background:var(--surface-2);padding:0 8px;font-size:11.5px;margin-top:3px}
+.agent-bar{height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.agent-bar i{display:block;height:100%;background:var(--low)}
+
 .badge-ddq-status.under-review{background:rgba(245,158,11,0.14);color:#fbbf24}
 .badge-ddq-status.completed{background:rgba(34,197,94,0.14);color:#4ade80}
 .badge-ddq-status.na{color:var(--fg-3)}
@@ -792,6 +814,7 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
 .btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:42px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font-size:13px;font-weight:500;transition:all .15s}
 .btn-google:hover{background:var(--surface-2);border-color:var(--fg-3)}
 .btn-google svg{width:18px;height:18px}
+.location-required{padding:12px;border-radius:12px;border:1px solid var(--accent);background:var(--accent-soft)}
 a.btn{text-decoration:none;color:inherit}
 a.btn.primary{color:var(--on-accent)}
 
@@ -1067,11 +1090,44 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           <div class="check-row" style="margin:0">
             <label style="width:100%;display:flex;align-items:center;gap:8px">
               <input type="checkbox" id="kyc-ongoing-mon" checked>
-              <span>Enable continuous adverse media & watchlist radar</span>
+              <span>Enable continuous monitoring and pin on the globe once approved</span>
             </label>
           </div>
         </div>
       </div>
+
+      <!-- Location Search via Google Maps Places API -->
+      <div class="field" id="kyc-location-field" style="position:relative">
+        <label for="kyc-address" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Monitored Location · Registered Office / Port / Asset Address <b id="kyc-location-req" style="color:var(--high)">* required for Ongoing Monitoring</b></span>
+          <span class="g-powered"><span class="g-g">G</span><span class="g-o1">o</span><span class="g-o2">o</span><span class="g-g2">g</span><span class="g-l">l</span><span class="g-e">e</span> Places API</span>
+        </label>
+        <div class="addr-input-wrap">
+          <svg class="ic sm addr-pin-ico"><use href="#i-pin"/></svg>
+          <input id="kyc-address" type="text" autocomplete="off" placeholder="Search address with Google Maps (e.g. 10 Marina Boulevard, Singapore...)">
+          <button type="button" class="addr-clear-btn" id="kyc-addr-clear" title="Clear address" hidden>&times;</button>
+        </div>
+        <div class="addr-dropdown" id="kyc-addr-dropdown" hidden></div>
+        <div class="addr-feedback" id="kyc-addr-feedback"></div>
+        <!-- Mock Landmark Fallback Chips -->
+        <div style="margin-top:6px">
+          <small class="faint" style="font-size:11px">Mock Landmark Pin Fallbacks (One-Click Singapore Maritime & Financial Hubs):</small>
+          <div class="landmark-chips" id="kyc-landmark-chips">
+            <span class="landmark-chip" data-addr="Marina Bay Financial Centre, 10 Marina Boulevard, Singapore 018983" data-lat="1.2798" data-lng="103.8536" data-id="sg_mbfc">Marina Bay Financial Centre</span>
+            <span class="landmark-chip" data-addr="Jurong Port Terminal, 37 Jurong Port Road, Singapore 619110" data-lat="1.3060" data-lng="103.7140" data-id="sg_jurong">Jurong Port</span>
+            <span class="landmark-chip" data-addr="Tuas Mega Port Terminal, Tuas South Avenue 14, Singapore" data-lat="1.2580" data-lng="103.6350" data-id="sg_tuas">Tuas Terminal</span>
+            <span class="landmark-chip" data-addr="One Raffles Place, Tower 1, Singapore 048616" data-lat="1.2844" data-lng="103.8510" data-id="sg_raffles">Raffles Place</span>
+          </div>
+        </div>
+        <!-- Interactive Map Pin Container -->
+        <div class="map-preview-box" id="kyc-map-preview">
+          <canvas id="kyc-map-canvas" width="660" height="130" style="width:100%;height:100%;display:block"></canvas>
+          <div class="map-pin-marker" id="kyc-map-pin" style="display:none">
+            <svg class="ic" style="width:26px;height:26px;color:var(--accent)"><use href="#i-pin"/></svg>
+          </div>
+        </div>
+      </div>
+
 
       <div class="field">
         <label for="kyc-cp-email">Counterparty Contact Email (receives the secure DDQ link if a questionnaire is triggered)</label>
@@ -1153,38 +1209,6 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         </div>
       </div>
 
-      <!-- Location Search via Google Maps Places API -->
-      <div class="field" style="position:relative">
-        <label for="kyc-address" style="display:flex;justify-content:space-between;align-items:center">
-          <span>Physical Asset / Registered Corporate Headquarters Address</span>
-          <span class="g-powered"><span class="g-g">G</span><span class="g-o1">o</span><span class="g-o2">o</span><span class="g-g2">g</span><span class="g-l">l</span><span class="g-e">e</span> Places API</span>
-        </label>
-        <div class="addr-input-wrap">
-          <svg class="ic sm addr-pin-ico"><use href="#i-pin"/></svg>
-          <input id="kyc-address" type="text" autocomplete="off" placeholder="Search address with Google Maps (e.g. 10 Marina Boulevard, Singapore...)">
-          <button type="button" class="addr-clear-btn" id="kyc-addr-clear" title="Clear address" hidden>&times;</button>
-        </div>
-        <div class="addr-dropdown" id="kyc-addr-dropdown" hidden></div>
-        <div class="addr-feedback" id="kyc-addr-feedback"></div>
-        <!-- Mock Landmark Fallback Chips -->
-        <div style="margin-top:6px">
-          <small class="faint" style="font-size:11px">Mock Landmark Pin Fallbacks (One-Click Singapore Maritime & Financial Hubs):</small>
-          <div class="landmark-chips" id="kyc-landmark-chips">
-            <span class="landmark-chip" data-addr="Marina Bay Financial Centre, 10 Marina Boulevard, Singapore 018983" data-lat="1.2798" data-lng="103.8536" data-id="sg_mbfc">Marina Bay Financial Centre</span>
-            <span class="landmark-chip" data-addr="Jurong Port Terminal, 37 Jurong Port Road, Singapore 619110" data-lat="1.3060" data-lng="103.7140" data-id="sg_jurong">Jurong Port</span>
-            <span class="landmark-chip" data-addr="Tuas Mega Port Terminal, Tuas South Avenue 14, Singapore" data-lat="1.2580" data-lng="103.6350" data-id="sg_tuas">Tuas Terminal</span>
-            <span class="landmark-chip" data-addr="One Raffles Place, Tower 1, Singapore 048616" data-lat="1.2844" data-lng="103.8510" data-id="sg_raffles">Raffles Place</span>
-          </div>
-        </div>
-        <!-- Interactive Map Pin Container -->
-        <div class="map-preview-box" id="kyc-map-preview">
-          <canvas id="kyc-map-canvas" width="660" height="130" style="width:100%;height:100%;display:block"></canvas>
-          <div class="map-pin-marker" id="kyc-map-pin" style="display:none">
-            <svg class="ic" style="width:26px;height:26px;color:var(--accent)"><use href="#i-pin"/></svg>
-          </div>
-        </div>
-      </div>
-
       <!-- Remarks & Attachments -->
       <div class="field">
         <label for="kyc-remarks">Remarks & Commercial Context</label>
@@ -1247,7 +1271,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg class="ic spark" style="color:var(--accent)"><use href="#i-spark"/></svg>
-            <b style="font-size:13px">Point B · AI Risk Scoring & Anomaly Detection</b>
+            <b style="font-size:13px">Compliance Agent · Intake Assessment</b>
           </div>
           <span class="badge-ai" id="aud-ai-badge">High Risk (Confidence 96%)</span>
         </div>
@@ -1259,7 +1283,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg class="ic sm" style="color:var(--mid)"><use href="#i-policy"/></svg>
-            <b style="font-size:13px">Point C · Policy RAG & Automated DDQ Trigger</b>
+            <b style="font-size:13px">Compliance Agent · Policy & DDQ</b>
           </div>
           <div style="display:flex;gap:6px">
             <span class="badge-bool" id="aud-ddq-req">DDQ: Yes</span>
@@ -1566,7 +1590,14 @@ function openKycAuditModal(r) {
   const aiBadge = $('#aud-ai-badge');
   aiBadge.textContent = r.ai_result;
   aiBadge.className = `badge-ai ${getAiRiskClass(r.ai_result)}`;
-  $('#aud-ai-rationale').textContent = r.ai_rationale || 'Risk profile evaluated via automated knowledge base cross-referencing and adverse media screening.';
+  // The Compliance Agent's assessment, plus where the questionnaire stands
+  const agentIntake = r.agent && r.agent.intake;
+  const agentDdq = r.agent && r.agent.ddq;
+  $('#aud-ai-rationale').textContent = [
+    agentIntake ? `${agentIntake.rationale} Recommendation: ${agentIntake.recommendation_label}.` : (r.ai_rationale || 'Awaiting Compliance Agent assessment.'),
+    agentDdq ? `DDQ review: ${agentDdq.score}/100 (${agentDdq.level}).` : '',
+    r.ddq_bounce ? `The questionnaire was returned to the counterparty for clarification (round ${r.ddq_bounce.round}, ${r.ddq_bounce.issues.length} point${r.ddq_bounce.issues.length === 1 ? '' : 's'}).` : ''
+  ].filter(Boolean).join(' ');
 
   // Section 3 Point C Policy
   const ddqReq = $('#aud-ddq-req');
@@ -1705,6 +1736,10 @@ function initKycPortalControls() {
     });
   }
 
+  // Ongoing Monitoring needs a pinned location (it is what places the counterparty on the globe)
+  const monitorToggle = $('#kyc-ongoing-mon');
+  if (monitorToggle) monitorToggle.addEventListener('change', syncKycLocationRequirement);
+
   // Toggle dynamic entity fields
   const entityTypeSelect = $('#kyc-entity-type');
   if (entityTypeSelect) {
@@ -1779,6 +1814,13 @@ function populateKycCountries() {
   sel.innerHTML = list.map(c => `<option value="${c.code}">${c.name}</option>`).join('');
 }
 
+function syncKycLocationRequirement() {
+  const on = $('#kyc-ongoing-mon').checked;
+  $('#kyc-location-req').textContent = on ? '* required for Ongoing Monitoring' : '(optional)';
+  $('#kyc-location-req').style.color = on ? 'var(--high)' : 'var(--fg-3)';
+  $('#kyc-location-field').classList.toggle('location-required', on);
+}
+
 // Reset KYC Modal Form
 function resetKycForm() {
   $('#kyc-name').value = '';
@@ -1796,6 +1838,7 @@ function resetKycForm() {
   $('#kyc-cp-email').value = '';
   $('#kyc-attachments').value = '';
   drawKycMap(NaN, NaN);
+  syncKycLocationRequirement();
 
   // Clear Dynamic
   $('#kyc-org-reg').value = '';
@@ -2033,6 +2076,13 @@ async function handleKycFormSubmit() {
     lng: addrInp?.dataset?.lng ? Number(addrInp.dataset.lng) : null,
     place_id: addrInp?.dataset?.placeId || null
   };
+
+  if (monitoring && !(location.address.trim() && Number.isFinite(location.lat) && Number.isFinite(location.lng))) {
+    toast('Ongoing Monitoring needs a pinned location: choose an address suggestion or a landmark');
+    $('#kyc-location-field').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('#kyc-address')?.focus();
+    return;
+  }
 
   const payload = {
     counterparty_name: name,

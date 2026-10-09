@@ -23,6 +23,8 @@ module.exports = {
     location: process.env.DOCUMENT_AI_LOCATION || '',
     processorId: process.env.DOCUMENT_AI_PROCESSOR_ID || ''
   },
+  // Compliance Agent runtime: 'builtin' today; 'adk' and 'langchain' are reserved (agents/framework.js)
+  agentRuntime: process.env.AGENT_RUNTIME || 'builtin',
   jwtSecret: process.env.JWT_SECRET || 'safeglobe-ddq-secure-hmac-key-2026',
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',

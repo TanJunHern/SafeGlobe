@@ -137,7 +137,7 @@ function render({ template: T, responses, request, draft }) {
       <div><span>Job title</span>${esc(d.job_title || '')}</div>
       <div><span>Company name</span>${esc(d.company || '')}</div>
       <div><span>Date</span>${esc(d.date || '')}</div>
-      <div class="sig"><span>Signature${d.signed_at ? ` (signed digitally ${esc(new Date(d.signed_at).toLocaleString())})` : ''}</span>${d.signature && /^data:image\/png;base64,/.test(d.signature) ? `<img alt="Signature" src="${d.signature}">` : ''}</div>
+      <div class="sig"><span>Signature${d.signed_at ? ` (signed digitally ${esc(new Date(d.signed_at).toLocaleString())})` : ''}</span>${d.signature && /^data:image\/(png|svg\+xml);base64,/.test(d.signature) ? `<img alt="Signature" src="${d.signature}">` : ''}</div>
     </div>
     <div class="foot"><span>${esc(request.id)} · ${esc(request.counterparty_name)}</span><span>Generated ${esc(new Date().toLocaleString())} · Safe Globe KYC</span></div>`;
 }
