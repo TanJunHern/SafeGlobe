@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "test": "node --test --test-concurrency=1 tests/screening.test.js tests/api.test.js tests/source-handlers.test.js tests/ai-kycp.test.js"
+    "test": "node --test --test-concurrency=1 tests/screening.test.js tests/api.test.js tests/source-handlers.test.js tests/kyc.test.js tests/ai-kycp.test.js"
   },
   "keywords": [
     "compliance",

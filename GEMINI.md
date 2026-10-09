@@ -4,3 +4,4 @@
 - Zero pleasantries ("Sure!", "I have updated...", "Here is the code:").
 - Code must remain complete, production-ready, and functionally exact.
 - Only explain if explicitly asked. Otherwise: code, tool execution, or fragments only.
+
