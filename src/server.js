@@ -36,7 +36,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    service: 'Safe Globe Compliance Platform',
+    service: 'DueDilly Compliance Platform',
     version: '1.0.0',
     dbType: config.dbType
   });
@@ -90,7 +90,7 @@ app.get('/api/config/public', (req, res) => {
 
 app.post('/api/auth/switch-persona', (req, res) => {
   const { email, role, name, department } = req.body;
-  const targetEmail = (email || 'john.doe@safeglobe.com').toLowerCase().trim();
+  const targetEmail = (email || 'john.doe@duedilly.com').toLowerCase().trim();
   const targetRole = role || getRoleForEmail(targetEmail);
   res.json({
     success: true,
@@ -143,10 +143,13 @@ app.get('/saf-globe.html', (req, res) => {
 // Serve static directory for any static assets (PDFs, images, etc.)
 // Only these files are public. The repo root is NOT served: it holds the database, uploaded
 // counterparty documents, source code and config, none of which may be downloadable.
-const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js'];
+const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js', 'ddq-section-status.js', 'duck-tour.js'];
 for (const file of PUBLIC_ASSETS) {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(config.staticDir, file)));
 }
+
+// UI assets (images, icons, fonts). Only this folder is mounted, never the repo root.
+app.use('/assets', express.static(path.join(config.staticDir, 'assets')));
 
 // Fallback 404 for unmatched API routes
 app.use('/api', (req, res) => {
@@ -169,21 +172,21 @@ function startServer(port = config.port) {
     require('./services/ddqTemplateService').ensureDefaultTemplate();
     require('./services/kycService').ensurePersonaSeed();
   } catch (err) {
-    console.error('[Safe Globe] Persona seed skipped:', err.message);
+    console.error('[DueDilly] Persona seed skipped:', err.message);
   }
   return new Promise((resolve) => {
     server = app.listen(port, config.host, () => {
-      console.log(`[Safe Globe] Server running on http://${config.host}:${port}`);
-      console.log(`[Safe Globe] Serving UI: http://localhost:${port}/safe-globe.html`);
-      console.log(`[Safe Globe] Ready for local testing and Google Cloud Run deployment.`);
+      console.log(`[DueDilly] Server running on http://${config.host}:${port}`);
+      console.log(`[DueDilly] Serving UI: http://localhost:${port}/safe-globe.html`);
+      console.log(`[DueDilly] Ready for local testing and Google Cloud Run deployment.`);
       resolve(server);
     });
 
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
-        console.error(`[Safe Globe] Error: Port ${port} is already in use by another running instance of the server.`);
+        console.error(`[DueDilly] Error: Port ${port} is already in use by another running instance of the server.`);
       } else {
-        console.error('[Safe Globe] Server startup error:', err);
+        console.error('[DueDilly] Server startup error:', err);
       }
     });
   });
@@ -208,13 +211,13 @@ if (require.main === module) {
 
   // Cloud Run SIGTERM graceful shutdown
   process.on('SIGTERM', async () => {
-    console.log('[Safe Globe] Received SIGTERM signal, shutting down gracefully...');
+    console.log('[DueDilly] Received SIGTERM signal, shutting down gracefully...');
     await stopServer();
     process.exit(0);
   });
 
   process.on('SIGINT', async () => {
-    console.log('[Safe Globe] Received SIGINT signal, shutting down gracefully...');
+    console.log('[DueDilly] Received SIGINT signal, shutting down gracefully...');
     await stopServer();
     process.exit(0);
   });

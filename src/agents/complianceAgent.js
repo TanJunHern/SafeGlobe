@@ -20,7 +20,7 @@ const { screenCounterparty } = require('../services/screening');
 const templateService = require('../services/ddqTemplateService');
 
 const AGENT_NAME = 'Compliance Agent';
-const INSTRUCTION = `You are the SafeGlobe Compliance Agent. You assist compliance officers with counterparty due diligence.
+const INSTRUCTION = `You are the DueDilly Compliance Agent. You assist compliance officers with counterparty due diligence.
 Base every statement on the tool results you are given; never invent facts, list hits or documents.
 You do not approve or reject: you score, explain and recommend. Write for a busy compliance officer: short, specific, plain English.
 Respond with JSON only, in the exact shape requested.`;
@@ -73,7 +73,7 @@ const countryRisk = new Tool({
 
 const policyRules = new Tool({
   name: 'policy_rules',
-  description: 'Evaluate the request against SafeGlobe policy clauses (the decision floor)',
+  description: 'Evaluate the request against DueDilly policy clauses (the decision floor)',
   parameters: { request: 'KYC request' },
   run: ({ request }) => {
     const out = require('../services/kycService').evaluatePolicyRules(request);
@@ -232,7 +232,7 @@ const intakeAgent = new Agent({
   async plan(request, ctx) {
     const screening = await ctx.call('screen_watchlists', { name: request.counterparty_name, entity_type: request.entity_type, country: request.country }, 'Screening the counterparty');
     const country = await ctx.call('country_risk', { country: request.country }, 'Checking jurisdiction risk');
-    const policy = await ctx.call('policy_rules', { request }, 'Applying SafeGlobe policy clauses');
+    const policy = await ctx.call('policy_rules', { request }, 'Applying DueDilly policy clauses');
     const risk = await ctx.call('risk_model', { request }, 'Scoring overall risk');
     const kb = await ctx.call('knowledge_base_search', { name: request.counterparty_name }, 'Digging: knowledge base');
     const ownership = await ctx.call('ownership_trace', { name: request.counterparty_name }, 'Digging: ownership graph');
@@ -278,7 +278,7 @@ REQUEST: ${JSON.stringify({ name: request.counterparty_name, type: request.entit
 TOOL RESULTS: ${JSON.stringify({ score: draft.score, screening_result: draft.screening_result, clauses: draft.clauses.map(c => c.text), findings: draft.findings, evidence: draft.evidence })}
 CURRENT RECOMMENDATION: ${draft.recommendation}
 
-SAFEGLOBE POLICY (the only clauses that exist):
+DUEDILLY POLICY (the only clauses that exist):
 ${policyClauses().text}
 
 Return JSON:

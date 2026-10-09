@@ -12,9 +12,9 @@ const templateService = require('../src/services/ddqTemplateService');
 
 const TEST_PORT = 8094;
 const BASE_URL = `http://localhost:${TEST_PORT}`;
-const EMPLOYEE = { 'x-user-email': 'john.doe@safeglobe.com', 'x-user-role': 'employee' };
-const OTHER_EMPLOYEE = { 'x-user-email': 'someone.else@safeglobe.com', 'x-user-role': 'employee' };
-const COMPLIANCE = { 'x-user-email': 'compliance@safeglobe.com', 'x-user-role': 'compliance_officer' };
+const EMPLOYEE = { 'x-user-email': 'john.doe@duedilly.com', 'x-user-role': 'employee' };
+const OTHER_EMPLOYEE = { 'x-user-email': 'someone.else@duedilly.com', 'x-user-role': 'employee' };
+const COMPLIANCE = { 'x-user-email': 'compliance@duedilly.com', 'x-user-role': 'compliance_officer' };
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 const call = async (method, url, body, headers = {}) => {
@@ -78,7 +78,7 @@ test('DDQ template parser reads the Supplier CDDQ policy template', () => {
   const everything = JSON.stringify(t);
   assert.ok(!everything.includes('[Issuing Company'));
   assert.ok(!everything.includes('&#91;'));
-  assert.ok(t.intro.startsWith('SafeGlobe requires every new supplier'));
+  assert.ok(t.intro.startsWith('DueDilly requires every new supplier'));
 });
 
 test('deriveScreeningFields maps template answers onto the re-screen inputs', () => {

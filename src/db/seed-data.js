@@ -158,7 +158,7 @@ const ORGS = [
         src: "Russian registry extract, Aug 2026"
       },
       {
-        agent: "Radar",
+        agent: "Ripples",
         title: "Country sanctions exposure",
         detail: "Extensive EU, UK and US sanctions measures apply to Russia.",
         risk: "High",

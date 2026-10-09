@@ -1,13 +1,13 @@
 {
   "name": "safe-globe",
   "version": "1.0.0",
-  "description": "Safe Globe - AI-native global screening platform for counterparties, vessels, and country risk",
+  "description": "DueDilly - AI-native global screening platform for counterparties, vessels, and country risk",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
     "demo:reset": "node scripts/demo-reset.js",
-    "test": "rm -f data/test_safe_globe.db* && DATABASE_PATH=./data/test_safe_globe.db GEMINI_API_KEY= GOOGLE_API_KEY= GOOGLE_GENAI_API_KEY= node --test --test-concurrency=1 tests/screening.test.js tests/api.test.js tests/source-handlers.test.js tests/kyc.test.js tests/ai-kycp.test.js tests/portal.test.js tests/ddq-template.test.js tests/compliance-agent.test.js"
+    "test": "rm -f data/test_safe_globe.db* && DATABASE_PATH=./data/test_safe_globe.db GEMINI_API_KEY= GOOGLE_API_KEY= GOOGLE_GENAI_API_KEY= node --test --test-concurrency=1 tests/screening.test.js tests/api.test.js tests/source-handlers.test.js tests/kyc.test.js tests/ai-kycp.test.js tests/portal.test.js tests/ddq-template.test.js tests/ddq-status.test.js tests/compliance-agent.test.js"
   },
   "keywords": [
     "compliance",
@@ -18,7 +18,7 @@
     "vessels",
     "ai-agents"
   ],
-  "author": "Safe Globe Team",
+  "author": "DueDilly Team",
   "license": "UNLICENSED",
   "type": "commonjs",
   "dependencies": {

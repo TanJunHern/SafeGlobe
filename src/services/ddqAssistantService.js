@@ -112,7 +112,7 @@ async function assistantReply({ template, request, questionId, sectionId, messag
   if (!gemini.isConfigured()) return fallback();
 
   const glossary = glossaryMatches(template, `${question ? question.text : ''} ${section ? section.title : ''} ${message || ''}`);
-  const prompt = `You are Aria, the SafeGlobe DDQ Guide. You are talking to a staff member of ${request.counterparty_name} (the counterparty). They are completing a compliance due diligence questionnaire that SafeGlobe sent them; SafeGlobe's compliance team will review the answers.
+  const prompt = `You are Dilly, the DueDilly DDQ Guide. You are talking to a staff member of ${request.counterparty_name} (the counterparty). They are completing a compliance due diligence questionnaire that DueDilly sent them; DueDilly's compliance team will review the answers.
 
 RULES
 - Reply in ${isEnglish(language) ? 'English' : language}. Use short, plain sentences a non-lawyer understands. Maximum 120 words.

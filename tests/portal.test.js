@@ -6,8 +6,8 @@ const { startServer, stopServer } = require('../src/server');
 const TEST_PORT = 8093;
 const BASE_URL = `http://localhost:${TEST_PORT}`;
 
-const EMPLOYEE = { 'x-user-email': 'john.doe@safeglobe.com', 'x-user-role': 'employee' };
-const COMPLIANCE = { 'x-user-email': 'compliance@safeglobe.com', 'x-user-role': 'compliance_officer' };
+const EMPLOYEE = { 'x-user-email': 'john.doe@duedilly.com', 'x-user-role': 'employee' };
+const COMPLIANCE = { 'x-user-email': 'compliance@duedilly.com', 'x-user-role': 'compliance_officer' };
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 test('Tri-Party Portal Tests', async (t) => {
@@ -58,10 +58,10 @@ test('Tri-Party Portal Tests', async (t) => {
   await t.test('employee persona is seeded and only sees own rows, even with scope=all', async () => {
     const mine = await (await fetch(`${BASE_URL}/api/kyc/my-requests`, { headers: EMPLOYEE })).json();
     assert.ok(mine.count >= 3);
-    mine.requests.forEach(r => assert.equal(r.created_by_email, 'john.doe@safeglobe.com'));
+    mine.requests.forEach(r => assert.equal(r.created_by_email, 'john.doe@duedilly.com'));
 
     const all = await (await fetch(`${BASE_URL}/api/kyc?scope=all`, { headers: EMPLOYEE })).json();
-    all.requests.forEach(r => assert.equal(r.created_by_email, 'john.doe@safeglobe.com'));
+    all.requests.forEach(r => assert.equal(r.created_by_email, 'john.doe@duedilly.com'));
 
     const other = await fetch(`${BASE_URL}/api/kyc/KYC-2026-0001`, { headers: EMPLOYEE });
     assert.equal(other.status, 403);
@@ -89,7 +89,7 @@ test('Tri-Party Portal Tests', async (t) => {
     assert.equal(res.status, 201);
     const { request } = await res.json();
     kycId = request.id;
-    assert.equal(request.created_by_email, 'john.doe@safeglobe.com');
+    assert.equal(request.created_by_email, 'john.doe@duedilly.com');
     assert.equal(request.request_status, 'Pending DDQ');
     assert.equal(request.ddq_status, 'Triggered');
     assert.ok(request.ddq_link.startsWith('/ddq/portal?token='));
@@ -188,7 +188,7 @@ test('Tri-Party Portal Tests', async (t) => {
     // Row scoping applies to the export as well
     const emailCol = headers.indexOf('Created By Email') + 1;
     for (let i = 2; i <= main.rowCount; i++) {
-      assert.equal(main.getRow(i).getCell(emailCol).value, 'john.doe@safeglobe.com');
+      assert.equal(main.getRow(i).getCell(emailCol).value, 'john.doe@duedilly.com');
     }
   });
 

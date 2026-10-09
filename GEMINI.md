@@ -7,7 +7,7 @@
 
 ---
 
-# SafeGlobe KYC: Tri-Party Architecture & Lifecycle Specification
+# DueDilly KYC: Tri-Party Architecture & Lifecycle Specification
 
 ## 1. Identity & Security Architecture (Approach A)
 

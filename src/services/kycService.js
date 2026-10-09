@@ -194,7 +194,7 @@ async function extractDocumentData({ filename = '', fileContent = '', mimeType =
   if (isRealKey) {
     try {
       let model = config.geminiModel;
-      const prompt = `You are the SafeGlobe Compliance Document Extraction AI.
+      const prompt = `You are the DueDilly Compliance Document Extraction AI.
 Analyze the following onboarding document (${filename || 'document'}).
 Extract counterparty KYC fields and respond strictly in valid JSON matching this schema:
 {
@@ -247,7 +247,7 @@ Extract counterparty KYC fields and respond strictly in valid JSON matching this
         }
       }
     } catch (err) {
-      console.warn('[KYC Extraction] Gemini API call skipped or timed out, using fallback:', err.message);
+      console.warn('[Duck-Scanner] Gemini API call skipped or timed out, using fallback:', err.message);
     }
   }
 
@@ -558,7 +558,7 @@ function createKycRequest(input, userContext = {}) {
     location_json: JSON.stringify(location),
     attachments_json: JSON.stringify(attachments),
     created_by_user_id: userContext.userId || input.created_by_user_id || 'EMP-1042',
-    created_by_email: userContext.email || input.created_by_email || 'john.doe@safeglobe.com',
+    created_by_email: userContext.email || input.created_by_email || 'john.doe@duedilly.com',
     created_by_department: userContext.department || input.created_by_department || 'Procurement & Logistics',
     ip_address: userContext.ip || input.ip_address || '127.0.0.1',
     client_timestamp: userContext.clientTimestamp || input.client_timestamp || now.toISOString(),
@@ -731,7 +731,7 @@ function ensurePersonaSeed() {
   // The demo kit (scripts/demo-reset.js) seeds its own, fuller story for this persona
   if (process.env.SAFEGLOBE_SKIP_PERSONA_SEED) return;
   const db = getDb();
-  const persona = { userId: 'EMP-1042', email: 'john.doe@safeglobe.com', department: 'Procurement & Logistics' };
+  const persona = { userId: 'EMP-1042', email: 'john.doe@duedilly.com', department: 'Procurement & Logistics' };
   if (db.getAllKycRequests({ created_by_email: persona.email }).length > 0) return;
 
   const samples = [

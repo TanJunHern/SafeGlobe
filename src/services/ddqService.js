@@ -135,6 +135,7 @@ function verifyDdqGuestToken(token) {
       submitted_at: isSubmitted ? (kycRequest.ddq_submitted_at || kycRequest.updated_at) : null,
       expires_at: kycRequest.ddq_token_expires_at || null,
       template: bundle.template || null,
+      issuing_company: templateService.DEFAULT_SETTINGS.issuingCompany,
       draft: bundle.draft || null,
       // Set when compliance has bounced the questionnaire back with points to clarify
       bounce: kycRequest.ddq_bounce || null
@@ -181,6 +182,13 @@ async function submitKycDdqAnswers(token, answers = {}) {
     }
     if (progress.answered < progress.total) {
       throw new Error(`${progress.total - progress.answered} required questions are still unanswered`);
+    }
+    // Same deterministic section check the portal runs live: every section must be done
+    const check = require('../../ddq-section-status').evaluate(template, answers);
+    if (!check.ready) {
+      const notDone = check.sections.filter(s => s.status !== 'done').map(s => s.index + 1);
+      const first = check.failed[0] || check.declaration.failed[0];
+      throw new Error(`${notDone.length ? `Section${notDone.length > 1 ? 's' : ''} ${notDone.join(', ')} not complete. ` : ''}${first ? first.message : ''}`.trim());
     }
     const derived = templateService.deriveScreeningFields(template, answers);
     answers.ubo_list = derived.ubo_list;

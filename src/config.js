@@ -28,7 +28,7 @@ module.exports = {
   jwtSecret: process.env.JWT_SECRET || 'safeglobe-ddq-secure-hmac-key-2026',
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
-  complianceEmails: (process.env.COMPLIANCE_OFFICER_EMAILS || 'compliance@safeglobe.com,grace.teo@safeglobe.internal').split(',').map(s => s.trim().toLowerCase()),
+  complianceEmails: (process.env.COMPLIANCE_OFFICER_EMAILS || 'compliance@duedilly.com,grace.teo@duedilly.internal').split(',').map(s => s.trim().toLowerCase()),
   staticDir: path.join(__dirname, '..')
 };
 

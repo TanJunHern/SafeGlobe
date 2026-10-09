@@ -90,7 +90,7 @@ test('KYC Employee Portal Tests', async (t) => {
       headers: {
         'Content-Type': 'application/json',
         'x-user-id': 'EMP-7721',
-        'x-user-email': 'marcus.lee@safeglobe.internal',
+        'x-user-email': 'marcus.lee@duedilly.internal',
         'x-user-department': 'Energy & Marine Trading'
       },
       body: JSON.stringify({
@@ -124,7 +124,7 @@ test('KYC Employee Portal Tests', async (t) => {
     assert.ok(created.ddq_clause.includes('§2.1'));
     // Audit trace fields
     assert.equal(created.created_by_user_id, 'EMP-7721');
-    assert.equal(created.created_by_email, 'marcus.lee@safeglobe.internal');
+    assert.equal(created.created_by_email, 'marcus.lee@duedilly.internal');
     assert.equal(created.created_by_department, 'Energy & Marine Trading');
   });
 

@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Due Diligence Questionnaire</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/portal-shared.css">
 <style>
 /* Printable copy of a DDQ. Always renders as ink on white paper regardless of theme;
    the browser's Print dialog saves it as a PDF. */
 /* data-theme="light" on <html> keeps the shared dark palette from applying to paper */
-:root[data-theme]{--bg:#ECE9E1;--surface:#fff;--fg:#1d1c1a;--fg-2:#4a473f;--fg-3:#77736a;--line:#d9d5cb;--line-2:#bdb7aa;--accent:#788C5D;color-scheme:light}
+:root[data-theme]{--bg:#ECE9E1;--surface:#fff;--fg:#1d1c1a;--fg-2:#4a473f;--fg-3:#77736a;--line:#d9d5cb;--line-2:#bdb7aa;--accent:#1F6F6B;color-scheme:light}
 body{background:var(--bg)}
 .bar{position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;padding:10px 20px;background:#22211e;color:#f3f1eb;font-size:13px}
 .bar .grow{flex:1}
@@ -43,7 +43,7 @@ ol{margin:4px 0 10px;padding-left:18px;font-size:10pt}
 .sign .sig{grid-column:1/-1;min-height:90px}
 .sign img{max-height:80px;max-width:60%;display:block}
 .foot{margin-top:18px;padding-top:8px;border-top:1px solid var(--line-2);font-size:8.5pt;color:var(--fg-3);display:flex;justify-content:space-between;gap:16px}
-.draft-mark{position:absolute;top:38%;left:0;right:0;text-align:center;font-size:90pt;font-weight:700;color:rgba(120,140,93,.09);transform:rotate(-24deg);pointer-events:none;letter-spacing:.1em}
+.draft-mark{position:absolute;top:38%;left:0;right:0;text-align:center;font-size:90pt;font-weight:700;color:rgba(31,111,107,.09);transform:rotate(-24deg);pointer-events:none;letter-spacing:.1em}
 .error{padding:40px;text-align:center}
 @page{size:A4;margin:14mm}
 @media print{
@@ -113,7 +113,7 @@ function render({ template: T, responses, request, draft }) {
   $('#bar-note').textContent = draft ? ' · DRAFT — not yet submitted' : ` · ${request.id}`;
   $('#paper').innerHTML = `
     ${draft ? '<div class="draft-mark">DRAFT</div>' : ''}
-    <div class="doc-head"><h1>${esc(T.title)}</h1><div class="brand">Safe Globe</div></div>
+    <div class="doc-head"><h1>${esc(T.title)}</h1><div class="brand">DueDilly</div></div>
     <div class="meta">
       <div><span>Counterparty: </span><b>${esc(request.counterparty_name)}</b></div>
       <div><span>KYC reference: </span><b>${esc(request.id)}</b></div>
@@ -139,7 +139,7 @@ function render({ template: T, responses, request, draft }) {
       <div><span>Date</span>${esc(d.date || '')}</div>
       <div class="sig"><span>Signature${d.signed_at ? ` (signed digitally ${esc(new Date(d.signed_at).toLocaleString())})` : ''}</span>${d.signature && /^data:image\/(png|svg\+xml);base64,/.test(d.signature) ? `<img alt="Signature" src="${d.signature}">` : ''}</div>
     </div>
-    <div class="foot"><span>${esc(request.id)} · ${esc(request.counterparty_name)}</span><span>Generated ${esc(new Date().toLocaleString())} · Safe Globe KYC</span></div>`;
+    <div class="foot"><span>${esc(request.id)} · ${esc(request.counterparty_name)}</span><span>Generated ${esc(new Date().toLocaleString())} · DueDilly KYC</span></div>`;
 }
 
 function fail(message) {
