@@ -302,6 +302,12 @@ function computeProgress(template, responses = {}) {
   return { sections, answered, total, declarationDone, complete: answered === total && declarationDone };
 }
 
+// "Yes, we have an anti-bribery policy" is a control, not a disclosure: a Yes there is good news
+function isControlQuestion(sectionTitle = '', text = '') {
+  return /procedure|polic(y|ies) and control/i.test(sectionTitle)
+    || /^(a|an)\s|^does the supplier (have|screen)|^relevant certifications|^accurate books|^internal or external audit|^compliance training|^due diligence on/i.test(text);
+}
+
 /**
  * Derives the fields the re-screening engine and triage drawer rely on, whatever the template
  * wording is. Matching is by question / section text because officers can edit both.
@@ -328,14 +334,13 @@ function deriveScreeningFields(template, responses = {}) {
     }
   }
 
-  // "Yes, we have an anti-bribery policy" is a control, not a disclosure: it must never raise a flag
-  const isControl = y => /procedure|polic(y|ies) and control/i.test(y.section)
-    || /^(a|an)\s|^does the supplier (have|screen)|^relevant certifications|^accurate books|^internal or external audit|^compliance training|^due diligence on/i.test(y.text);
+  const isControl = y => isControlQuestion(y.section, y.text);
   const disclosures = yes.filter(y => !isControl(y));
   const hit = re => disclosures.filter(y => re.test(`${y.section} ${y.text}`));
   return {
     ubo_list: ubo,
-    pep_declared: hit(/\bPEP\b|politically exposed|government official/i).length > 0,
+    // Being a PEP / state-linked, not merely dealing with officials (permits, customs) in the course of work
+    pep_declared: hit(/\bPEP\b|politically exposed|public office|government position|owned or controlled by a government/i).length > 0,
     litigation_declared: hit(/violation|investigat|convict|litigation|enforcement|insolvency|adverse media|bribery|fraud|laundering|debar/i).length > 0,
     sanctions_declared: hit(/sanction/i).length > 0,
     conflict_declared: hit(/conflict of interest|family member or close associate of a director or employee/i).length > 0,
@@ -353,5 +358,6 @@ module.exports = {
   isAnswered,
   computeProgress,
   deriveScreeningFields,
+  isControlQuestion,
   QUESTION_TYPES
 };

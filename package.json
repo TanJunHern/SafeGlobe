@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "test": "rm -f data/test_safe_globe.db* && DATABASE_PATH=./data/test_safe_globe.db GEMINI_API_KEY= GOOGLE_API_KEY= GOOGLE_GENAI_API_KEY= node --test --test-concurrency=1 tests/screening.test.js tests/api.test.js tests/source-handlers.test.js tests/kyc.test.js tests/ai-kycp.test.js tests/portal.test.js tests/ddq-template.test.js"
+    "demo:reset": "node scripts/demo-reset.js",
+    "test": "rm -f data/test_safe_globe.db* && DATABASE_PATH=./data/test_safe_globe.db GEMINI_API_KEY= GOOGLE_API_KEY= GOOGLE_GENAI_API_KEY= node --test --test-concurrency=1 tests/screening.test.js tests/api.test.js tests/source-handlers.test.js tests/kyc.test.js tests/ai-kycp.test.js tests/portal.test.js tests/ddq-template.test.js tests/compliance-agent.test.js"
   },
   "keywords": [
     "compliance",

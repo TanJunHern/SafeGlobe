@@ -739,6 +739,28 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
 .badge-ddq-status{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
 .badge-ddq-status.triggered{background:rgba(245,158,11,0.16);color:#fbbf24;font-weight:600}
 .badge-ddq-status.sent-to-counterparty{background:rgba(59,130,246,0.14);color:#60a5fa}
+.badge-ddq-status.returned-to-counterparty{background:rgba(245,158,11,0.16);color:#fbbf24;font-weight:600}
+/* Compliance Agent panel */
+.agent-card{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:10px;border:1px solid var(--accent);background:var(--surface)}
+.agent-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px}
+.agent-head b{color:var(--accent)}
+.agent-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:600;background:var(--surface-3);color:var(--fg-2);white-space:nowrap}
+.agent-pill.rec-auto_clear,.agent-pill.rec-approve{background:rgba(34,197,94,0.14);color:var(--low)}
+.agent-pill.rec-require_ddq,.agent-pill.rec-bounce_back{background:rgba(245,158,11,0.16);color:var(--mid)}
+.agent-pill.rec-escalate{background:rgba(239,68,68,0.16);color:var(--high)}
+.agent-score{font-family:var(--f-display);font-size:22px;line-height:1}
+.agent-score small{font-family:var(--f-body);font-size:11px;color:var(--fg-3)}
+.agent-text{font-size:11.5px;line-height:1.45;color:var(--fg-2)}
+.agent-sub{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-3);margin-top:4px}
+.agent-trace{font-size:11px;color:var(--fg-2)}
+.agent-trace summary{cursor:pointer;font-weight:600}
+.agent-trace li{margin:4px 0}
+.agent-trace code{font-family:var(--f-mono);font-size:10.5px;color:var(--accent)}
+.agent-issue{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;padding:6px 0;border-top:1px solid var(--line);font-size:11.5px}
+.agent-issue input[type=text]{width:100%;height:26px;border-radius:7px;border:1px solid var(--line-2);background:var(--surface-2);padding:0 8px;font-size:11.5px;margin-top:3px}
+.agent-bar{height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.agent-bar i{display:block;height:100%;background:var(--low)}
+
 .badge-ddq-status.under-review{background:rgba(245,158,11,0.14);color:#fbbf24}
 .badge-ddq-status.completed{background:rgba(34,197,94,0.14);color:#4ade80}
 .badge-ddq-status.na{color:var(--fg-3)}
@@ -1896,7 +1918,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg class="ic spark" style="color:var(--accent)"><use href="#i-spark"/></svg>
-            <b style="font-size:13px">Point B · AI Risk Scoring & Anomaly Detection</b>
+            <b style="font-size:13px">Compliance Agent · Intake Assessment</b>
           </div>
           <span class="badge-ai" id="aud-ai-badge">High Risk (Confidence 96%)</span>
         </div>
@@ -1908,7 +1930,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg class="ic sm" style="color:var(--mid)"><use href="#i-policy"/></svg>
-            <b style="font-size:13px">Point C · Policy RAG & Automated DDQ Trigger</b>
+            <b style="font-size:13px">Compliance Agent · Policy & DDQ</b>
           </div>
           <div style="display:flex;gap:6px">
             <span class="badge-bool" id="aud-ddq-req">DDQ: Yes</span>
@@ -2031,7 +2053,8 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
 
         <!-- Col 3: Gemini Policy Audit & Citations -->
         <div class="triage-col">
-          <div class="triage-col-head" style="color:var(--accent)">3. Gemini Policy RAG Audit</div>
+          <div class="triage-col-head" style="color:var(--accent)">3. Compliance Agent</div>
+          <div id="triage-agent"></div>
           <div id="triage-policy-citations" style="display:flex;flex-direction:column;gap:8px"></div>
           <div class="eyebrow" style="margin-top:8px">AI Risk Rationale</div>
           <div id="triage-ai-rationale" style="font-size:11.5px;line-height:1.45;color:var(--fg-2);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px"></div>
@@ -2049,7 +2072,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
     <div class="sheet-foot" style="gap:10px">
       <div style="display:flex;gap:8px;margin-right:auto">
         <button class="btn primary" id="triage-act-approve" type="button" style="background:var(--low);color:#fff;border-color:var(--low)"><svg class="ic sm"><use href="#i-check"/></svg>Approve</button>
-        <button class="btn" id="triage-act-moreinfo" type="button" style="color:var(--mid);border-color:var(--mid)"><svg class="ic sm"><use href="#i-send"/></svg>Request More Info</button>
+        <button class="btn" id="triage-act-moreinfo" type="button" style="color:var(--mid);border-color:var(--mid)"><svg class="ic sm"><use href="#i-send"/></svg>Bounce back to counterparty</button>
         <button class="btn" id="triage-act-reject" type="button" style="color:var(--high);border-color:var(--high)"><svg class="ic sm"><use href="#i-close"/></svg>Reject</button>
       </div>
       <a class="btn" id="triage-ddq-download" href="#" target="_blank" rel="noopener" hidden><svg class="ic sm"><use href="#i-doc"/></svg>Download DDQ (PDF)</a>
@@ -5287,7 +5310,8 @@ async function syncFromBackend(){
           item.imo = item.reg;
           item.mmsi = '563000000';
           item.flag = cname(item.a3) || 'Singapore';
-          item.route = [[103.8, 1.3], [104.2, 1.4]];
+          const at = Array.isArray(e.ll) && isFinite(e.ll[0]) && isFinite(e.ll[1]) ? [Number(e.ll[0]), Number(e.ll[1])] : [103.8, 1.3];
+          item.route = [at, [at[0] + 0.4, at[1] + 0.1]];
           item.R = prepRoute(item.route);
           item.frac = 0.1;
           item.dir = 1;
@@ -5465,7 +5489,14 @@ function openKycAuditModal(r) {
   const aiBadge = $('#aud-ai-badge');
   aiBadge.textContent = r.ai_result;
   aiBadge.className = `badge-ai ${getAiRiskClass(r.ai_result)}`;
-  $('#aud-ai-rationale').textContent = r.ai_rationale || 'Risk profile evaluated via automated knowledge base cross-referencing and adverse media screening.';
+  // The Compliance Agent's assessment, plus where the questionnaire stands
+  const agentIntake = r.agent && r.agent.intake;
+  const agentDdq = r.agent && r.agent.ddq;
+  $('#aud-ai-rationale').textContent = [
+    agentIntake ? `${agentIntake.rationale} Recommendation: ${agentIntake.recommendation_label}.` : (r.ai_rationale || 'Awaiting Compliance Agent assessment.'),
+    agentDdq ? `DDQ review: ${agentDdq.score}/100 (${agentDdq.level}).` : '',
+    r.ddq_bounce ? `The questionnaire was returned to the counterparty for clarification (round ${r.ddq_bounce.round}, ${r.ddq_bounce.issues.length} point${r.ddq_bounce.issues.length === 1 ? '' : 's'}).` : ''
+  ].filter(Boolean).join(' ');
 
   // Section 3 Point C Policy
   const ddqReq = $('#aud-ddq-req');
@@ -6581,7 +6612,7 @@ async function renderComplianceWorkspace() {
           <td class="mono" style="font-weight:600">${esc(r.country)}</td>
           <td class="mono" style="font-weight:600">${fmtSgd(r.contract_value)}</td>
           <td><span class="badge-screen ${kycSlug(r.screening_result)}">${esc(r.screening_result)}</span></td>
-          <td>${aiBadgeHtml(r)}</td>
+          <td>${aiBadgeHtml(r)}${agentChipHtml(r)}</td>
           <td><span class="badge-ddq-status ${kycSlug(r.ddq_status)}">${esc(r.ddq_status)}</span></td>
           <td><span class="badge-status ${kycSlug(r.request_status)}">${esc(r.request_status)}</span></td>
           <td><div style="display:flex;gap:5px">${actions}</div></td>
@@ -6598,13 +6629,15 @@ async function submitTriage(id, action, notes = '') {
     const res = await apiFetch(`/api/kyc/${encodeURIComponent(id)}/triage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, notes })
+      body: JSON.stringify(action === 'Bounce Back' ? collectBounce(id, notes) : { action, notes })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || data.error || 'Triage failed');
-    toast(`${id}: ${data.request.request_status}`);
+    const monitored = data.request.request_status === 'Approved' && data.request.ongoing_monitoring;
+    toast(`${id}: ${data.request.request_status}${monitored ? ' · now monitored on the globe' : ''}`);
     $('#comp-triage-modal').hidden = true;
     renderComplianceWorkspace();
+    if (monitored) syncFromBackend();
   } catch (err) {
     toast(`Triage error: ${err.message}`);
   }
@@ -6676,6 +6709,9 @@ function openTriageModal(r) {
     ? `${r.re_screening_result ? `${r.re_screening_result} · ` : ''}${r.compliance_notes}`
     : 'Re-screen runs automatically once the counterparty submits its questionnaire.';
 
+  renderTriageAgent(r);
+  if (!(r.agent && r.agent.intake) || (hasDdq && d.format === 'template-v1' && !(r.agent && r.agent.ddq))) runTriageAgent(r);
+
   const download = $('#triage-ddq-download');
   download.hidden = !hasDdq;
   download.href = `/ddq/print?id=${encodeURIComponent(r.id)}`;
@@ -6684,6 +6720,93 @@ function openTriageModal(r) {
 
   $('#triage-officer-notes').value = '';
   $('#comp-triage-modal').hidden = false;
+}
+
+/* ---------------- Compliance Agent panel ---------------- */
+function agentChipHtml(r) {
+  const a = r.agent && (isDecided(r) ? null : (r.agent.ddq && r.request_status === 'DDQ Under Review' ? r.agent.ddq : r.agent.intake));
+  if (!a) return '';
+  return `<div style="margin-top:4px"><span class="agent-pill rec-${esc(a.recommendation)}" title="Compliance Agent recommendation">Agent: ${esc(a.recommendation_label)}</span></div>`;
+}
+
+function agentTraceHtml(result, label) {
+  const steps = (result.trace || []);
+  if (!steps.length) return '';
+  return `<details class="agent-trace"><summary>${esc(label)} · ${steps.length} steps</summary><ol style="margin:6px 0 0;padding-left:18px">
+    ${steps.map(s => `<li><code>${esc(s.tool)}</code> ${esc(s.note)}<br><span class="faint">${esc(s.output || '')}</span></li>`).join('')}</ol></details>`;
+}
+
+function renderTriageAgent(r) {
+  const box = $('#triage-agent');
+  const agent = r.agent || {};
+  const intake = agent.intake;
+  const ddq = agent.ddq;
+  const mode = (ddq || intake || {}).mode;
+  const head = `<div class="agent-head"><svg class="ic spark sm" style="color:var(--accent)"><use href="#i-spark"/></svg><b>Compliance Agent</b>
+      ${mode ? `<span class="agent-pill" title="${esc((ddq || intake).model || '')}">${mode === 'gemini' ? `Gemini · ${esc((ddq || intake).model)}` : 'Placeholder mode (no model)'}</span>` : ''}
+      <button class="btn sm" type="button" data-agent-rerun style="margin-left:auto;height:24px">Re-run</button></div>`;
+  if (!intake && !ddq) { box.innerHTML = `<div class="agent-card">${head}<div class="agent-text">Running assessment…</div></div>`; return; }
+
+  let html = `<div class="agent-card">${head}`;
+  if (intake) {
+    html += `<div class="agent-sub">Stage 1 · Intake scoring</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="agent-score">${esc(String(intake.score))}<small>/100 risk · ${esc(intake.level)}</small></span>
+        <span class="agent-pill rec-${esc(intake.recommendation)}">${esc(intake.recommendation_label)}${intake.raised_by_agent ? ' · raised by agent' : ''}</span></div>
+      <div class="agent-text">${esc(intake.rationale)}</div>
+      ${(intake.clauses || []).filter(c => c.source === 'agent').map(c => `<div class="agent-text">+ <b>Agent-identified clause:</b> ${esc(c.text)}</div>`).join('')}
+      ${(intake.observations || []).length ? `<ul class="agent-text" style="margin:0;padding-left:16px">${intake.observations.map(o => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
+      <div class="agent-sub">Stage 2 · Investigation</div>
+      ${(intake.findings || []).length ? intake.findings.map(f => `<div class="agent-text"><b style="color:var(--high)">${esc(f.source)}:</b> ${esc(f.text)}</div>`).join('') : '<div class="agent-text">Nothing adverse found in the knowledge base or ownership graph.</div>'}
+      ${agentTraceHtml(intake, 'How the agent investigated')}`;
+  }
+  if (ddq) {
+    const fixable = ddq.issues.filter(i => i.fixable);
+    const judgement = ddq.issues.filter(i => !i.fixable);
+    const sev = s => `<span class="agent-pill" style="color:var(--${s === 'high' ? 'high' : s === 'medium' ? 'mid' : 'fg-3'})">${esc(s)}</span>`;
+    html += `<div class="agent-sub">Stage 3 · DDQ review · round ${esc(String(ddq.round || 1))}</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="agent-score">${esc(String(ddq.score))}<small>/100 quality · ${esc(ddq.level)}</small></span>
+        <span class="agent-pill rec-${esc(ddq.recommendation)}">${esc(ddq.recommendation_label)}</span></div>
+      <div class="agent-text">${esc(ddq.rationale)}</div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 60px;gap:3px 8px;font-size:10.5px;color:var(--fg-3)">
+        ${ddq.sections.map(s => `<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.title)}${s.issues ? ` · ${s.issues}` : ''}</span><span class="agent-bar" style="align-self:center"><i style="width:${s.score}%;background:var(--${s.score >= 80 ? 'low' : s.score >= 50 ? 'mid' : 'high'})"></i></span>`).join('')}</div>
+      ${judgement.length ? `<div class="agent-sub">Needs your judgement</div>${judgement.map(i => `<div class="agent-issue"><span>${sev(i.severity)}</span><span><b class="mono">${esc(i.question_id)}</b> ${esc(i.reason)}</span></div>`).join('')}` : ''}
+      ${fixable.length ? `<div class="agent-sub">Can be bounced back · tick what to send</div>${fixable.map(i => {
+        const ask = (ddq.bounce.issues.find(b => b.question_id === i.question_id) || {}).note || i.ask || i.reason;
+        return `<label class="agent-issue"><input type="checkbox" data-bounce="${esc(i.question_id)}" checked>
+          <span>${sev(i.severity)} <b class="mono">${esc(i.question_id)}</b> ${esc(i.reason)}
+          <input type="text" data-bounce-note="${esc(i.question_id)}" value="${esc(ask)}" aria-label="Message to counterparty for ${esc(i.question_id)}"></span></label>`;
+      }).join('')}` : ''}
+      ${agentTraceHtml(ddq, 'How the agent reviewed the DDQ')}`;
+  }
+  if (r.ddq_bounce) {
+    html += `<div class="agent-sub">Currently with the counterparty</div><div class="agent-text">Bounced back by ${esc(r.ddq_bounce.by)} (round ${esc(String(r.ddq_bounce.round))}, ${r.ddq_bounce.issues.length} point(s)). The agent will re-score when it is resubmitted.</div>`;
+  }
+  const rounds = ((r.ddq_responses || {}).bounce_history || []).length;
+  if (rounds) html += `<div class="agent-text faint">${rounds} earlier bounce round${rounds > 1 ? 's' : ''} resolved.</div>`;
+  box.innerHTML = html + '</div>';
+}
+
+async function runTriageAgent(r) {
+  try {
+    const res = await apiFetch(`/api/kyc/${encodeURIComponent(r.id)}/agent/run`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error);
+    r.agent = data.agent;
+    if (triageTargetId === r.id) renderTriageAgent(r);
+  } catch (err) {
+    toast(`Compliance Agent: ${err.message}`);
+  }
+}
+
+// Points the officer ticked in the agent panel, with the (editable) wording for the counterparty
+function collectBounce(id, notes) {
+  const rec = compRequestsCache.find(r => r.id === id) || {};
+  const agentMessage = rec.agent && rec.agent.ddq && rec.agent.ddq.bounce ? rec.agent.ddq.bounce.message : '';
+  const inDrawer = triageTargetId === id && !$('#comp-triage-modal').hidden;
+  const issues = inDrawer
+    ? $$('#triage-agent [data-bounce]:checked').map(cb => ({ question_id: cb.dataset.bounce, note: ($(`#triage-agent [data-bounce-note="${CSS.escape(cb.dataset.bounce)}"]`) || {}).value || '' }))
+    : (rec.agent && rec.agent.ddq ? rec.agent.ddq.bounce.issues : []);
+  return { action: 'Bounce Back', notes: notes || agentMessage, issues };
 }
 
 // Section-by-section answers from the questionnaire version the counterparty actually received
@@ -6769,7 +6892,11 @@ function initComplianceControls() {
   const act = action => () => { if (triageTargetId) submitTriage(triageTargetId, action, $('#triage-officer-notes').value.trim()); };
   $('#triage-act-approve').addEventListener('click', act('Approve'));
   $('#triage-act-reject').addEventListener('click', act('Reject'));
-  $('#triage-act-moreinfo').addEventListener('click', act('Request More Info'));
+  $('#triage-act-moreinfo').addEventListener('click', () => { if (triageTargetId) submitTriage(triageTargetId, 'Bounce Back', $('#triage-officer-notes').value.trim()); });
+  $('#triage-agent').addEventListener('click', e => {
+    const rec = compRequestsCache.find(r => r.id === triageTargetId);
+    if (e.target.closest('[data-agent-rerun]') && rec) runTriageAgent(rec);
+  });
 }
 
 /* =====================================================================

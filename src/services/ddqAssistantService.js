@@ -94,13 +94,15 @@ function offlineReply({ template, section, question, message, progress }) {
 }
 
 async function assistantReply({ template, request, questionId, sectionId, message, language, history = [], responses = {} }) {
+  const bounceNote = ((request.bounce && request.bounce.issues) || []).find(i => i.question_id === questionId);
   const located = questionId ? findQuestion(template, questionId) : null;
   const section = located ? located.section : (template.sections || []).find(s => s.id === sectionId) || null;
   const question = located ? located.question : null;
   const progress = computeProgress(template, responses);
   const docs = suggestDocuments(template, section, question);
   const fallback = () => ({
-    reply: offlineReply({ template, section, question, message, progress }),
+    reply: (bounceNote ? `Our compliance team asked for clarification on this question: "${bounceNote.note}"\n\n` : '')
+      + offlineReply({ template, section, question, message, progress }),
     suggested_documents: docs,
     progress,
     model: 'offline-guide',
@@ -127,6 +129,7 @@ CURRENT QUESTION: ${question ? `${question.id} (${question.type}) ${question.tex
 RELEVANT DEFINITIONS: ${glossary.map(g => `${g.term}: ${g.meaning}`).join(' | ') || 'none'}
 SUPPORTING DOCUMENT CHECKLIST: ${(template.documents || []).join(' | ') || 'none'}
 LIKELY RELEVANT DOCUMENTS FOR THIS QUESTION: ${docs.join(' | ') || 'none'}
+COMPLIANCE FEEDBACK ON THIS QUESTION (it was returned for clarification): ${bounceNote ? bounceNote.note : 'none'}
 PROGRESS: ${progressSummary(progress)}
 
 CONVERSATION SO FAR:

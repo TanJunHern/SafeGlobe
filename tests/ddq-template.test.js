@@ -99,7 +99,8 @@ test('having compliance controls in place is never treated as an adverse disclos
   const t = templateService.getActiveTemplate();
   const r = completeResponses(t);
   // Section 6: Yes means the supplier HAS the policy
-  for (const id of ['6.2', '6.4', '6.5', '6.7', '4.6', '7.10']) r.answers[id] = { value: 'Yes', details: 'Reviewed 2026' };
+  // 3.5: dealing with officials for permits is not a PEP declaration either
+  for (const id of ['6.2', '6.4', '6.5', '6.7', '4.6', '7.10', '3.5']) r.answers[id] = { value: 'Yes', details: 'Reviewed 2026' };
   const d = templateService.deriveScreeningFields(t, r);
   assert.equal(d.litigation_declared, false);
   assert.equal(d.sanctions_declared, false);

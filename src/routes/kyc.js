@@ -3,6 +3,7 @@ const router = express.Router();
 const { getDb } = require('../db');
 const kycService = require('../services/kycService');
 const { authenticate, requireRole } = require('../middleware/auth');
+const complianceAgent = require('../agents/complianceAgent');
 
 // Mount auth middleware across KYC routes
 router.use(authenticate);
@@ -258,7 +259,13 @@ const submitKycHandler = async (req, res) => {
       clientTimestamp: req.headers['x-client-timestamp'] || new Date().toISOString()
     };
 
-    const newRequest = kycService.createKycRequest(req.body, userContext);
+    const created = kycService.createKycRequest(req.body, userContext);
+    // Compliance Agent: intake scoring + investigation (stored now, model-written detail follows)
+    const agent = await complianceAgent.runIntake(created.id, { enrich: 'background' }).catch(err => {
+      console.error('Compliance Agent intake failed:', err.message);
+      return null;
+    });
+    const newRequest = Object.assign({}, created, { agent });
     res.status(201).json({
       success: true,
       message: 'KYC Request registered successfully',
@@ -280,6 +287,7 @@ router.post('/submit', submitKycHandler);
 const TRIAGE_STATUS = {
   'Approve': 'Approved',
   'Reject': 'Rejected',
+  'Bounce Back': 'Pending DDQ',
   'Request More Info': 'Pending DDQ',
   'Request Info': 'Pending DDQ'
 };
@@ -289,7 +297,7 @@ router.post('/:id/triage', requireRole('compliance_officer'), (req, res) => {
     const { action, notes = '' } = req.body;
     const status = TRIAGE_STATUS[action];
     if (!status) {
-      return res.status(400).json({ error: 'Action is required (Approve, Reject, Request More Info)' });
+      return res.status(400).json({ error: 'Action is required (Approve, Reject, Bounce Back)' });
     }
 
     const db = getDb();
@@ -298,20 +306,40 @@ router.post('/:id/triage', requireRole('compliance_officer'), (req, res) => {
       return res.status(404).json({ error: 'KYC request not found' });
     }
 
-    // Requesting more info re-opens the counterparty questionnaire; approval closes it out
-    let ddqStatus = null;
-    if (existing.ddq_required) {
-      if (status === 'Pending DDQ') ddqStatus = 'Sent to Counterparty';
-      else if (status === 'Approved' && existing.ddq_status === 'Under Review') ddqStatus = 'Completed';
+    const reviewer = `${req.user.name} (Compliance Officer)`;
+    const bouncing = status === 'Pending DDQ';
+    if (bouncing && !existing.ddq_link) {
+      return res.status(400).json({ error: 'This request has no questionnaire to send back' });
     }
 
-    const reviewer = `${req.user.name} (Compliance Officer)`;
+    // Bouncing re-opens the questionnaire with the points to clarify; approval closes it out
+    let ddqStatus = null;
+    if (bouncing) ddqStatus = 'Returned to Counterparty';
+    else if (existing.ddq_required && status === 'Approved' && existing.ddq_status === 'Under Review') ddqStatus = 'Completed';
+
+    if (bouncing) {
+      const bundle = db.getKycDdqBundle(existing.id) || {};
+      const validIds = new Set(((bundle.template && bundle.template.sections) || []).flatMap(s => s.questions.map(q => q.id)).concat('documents'));
+      const issues = (Array.isArray(req.body.issues) ? req.body.issues : [])
+        .map(i => ({ question_id: String((i && i.question_id) || '').slice(0, 24), note: String((i && i.note) || '').trim().slice(0, 600) }))
+        .filter(i => validIds.has(i.question_id) && i.note);
+      const round = ((existing.ddq_responses && existing.ddq_responses.bounce_history) || []).length + 1;
+      db.setKycDdqBounce(existing.id, { round, note: String(notes).trim().slice(0, 1200), issues, by: reviewer, at: new Date().toISOString() });
+      // The counterparty continues from the answers they already gave
+      if (existing.ddq_responses && existing.ddq_responses.format === 'template-v1') {
+        const { ubo_list, pep_declared, litigation_declared, sanctions_declared, conflict_declared, yes_answers, ...draft } = existing.ddq_responses;
+        db.saveKycDdqDraft(existing.id, draft);
+      }
+    }
+
     const updated = db.updateKycDecision(req.params.id, {
       status,
       notes,
       reviewer,
       ddqStatus
     });
+    // Approved + Ongoing Monitoring pins the counterparty on the globe; anything else removes it
+    kycService.syncMonitoredEntity(updated);
 
     res.json({
       success: true,
@@ -321,6 +349,26 @@ router.post('/:id/triage', requireRole('compliance_officer'), (req, res) => {
   } catch (err) {
     console.error('Error triaging KYC request:', err);
     res.status(500).json({ error: 'Failed to triage KYC request', message: err.message });
+  }
+});
+
+/**
+ * POST /api/kyc/:id/agent/run   { stage: 'intake' | 'ddq_review' }
+ * Re-runs the Compliance Agent for a request and waits for the full (model-assisted) result
+ */
+router.post('/:id/agent/run', requireRole('compliance_officer'), async (req, res) => {
+  try {
+    const db = getDb();
+    if (!db.getKycRequestById(req.params.id)) {
+      return res.status(404).json({ error: 'KYC request not found' });
+    }
+    const stage = req.body && req.body.stage;
+    if (stage !== 'ddq_review') await complianceAgent.runIntake(req.params.id);
+    if (stage !== 'intake') await complianceAgent.runDdqReview(req.params.id);
+    res.json({ success: true, agent: db.getKycRequestById(req.params.id).agent });
+  } catch (err) {
+    console.error('Error running Compliance Agent:', err);
+    res.status(500).json({ error: 'Compliance Agent failed', message: err.message });
   }
 });
 
@@ -377,6 +425,7 @@ router.patch('/:id/status', (req, res) => {
     if (!updated) {
       return res.status(404).json({ error: 'KYC request not found' });
     }
+    kycService.syncMonitoredEntity(updated);
     res.json({
       success: true,
       message: `KYC Request updated to ${status}`,

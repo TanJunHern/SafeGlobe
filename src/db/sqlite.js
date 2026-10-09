@@ -239,7 +239,9 @@ class SqliteDatabase {
       're_screening_result TEXT',
       'ddq_template_json TEXT',
       'ddq_draft_json TEXT',
-      'ddq_submitted_at TEXT'
+      'ddq_submitted_at TEXT',
+      'agent_json TEXT',
+      'ddq_bounce_json TEXT'
     ];
     for (const col of migrationCols) {
       try {
@@ -539,6 +541,10 @@ class SqliteDatabase {
       summary: row.summary,
       ...meta
     };
+  }
+
+  deleteEntity(id) {
+    return this.db.prepare('DELETE FROM entities WHERE id = ?').run(id).changes > 0;
   }
 
   // --- Graph Edges ---
@@ -1512,6 +1518,14 @@ class SqliteDatabase {
     this.db.prepare('UPDATE kyc_requests SET ddq_template_json = ? WHERE id = ?').run(JSON.stringify(template), id);
   }
 
+  setKycAgent(id, agent) {
+    this.db.prepare('UPDATE kyc_requests SET agent_json = ? WHERE id = ?').run(agent ? JSON.stringify(agent) : null, id);
+  }
+
+  setKycDdqBounce(id, bounce) {
+    this.db.prepare('UPDATE kyc_requests SET ddq_bounce_json = ? WHERE id = ?').run(bounce ? JSON.stringify(bounce) : null, id);
+  }
+
   setKycDdqResponses(id, responses) {
     this.db.prepare('UPDATE kyc_requests SET ddq_responses_json = ? WHERE id = ?').run(JSON.stringify(responses || {}), id);
   }
@@ -1552,8 +1566,12 @@ class SqliteDatabase {
     try { ddq_responses = JSON.parse(r.ddq_responses_json || '{}'); } catch(e){}
 
     // Template snapshot and draft are large; they are served by getKycDdqBundle() instead
-    const { ddq_template_json, ddq_draft_json, ...rest } = r;
+    const { ddq_template_json, ddq_draft_json, agent_json, ddq_bounce_json, ...rest } = r;
     r = rest;
+    let agent = null;
+    let ddq_bounce = null;
+    try { agent = agent_json ? JSON.parse(agent_json) : null; } catch(e){}
+    try { ddq_bounce = ddq_bounce_json ? JSON.parse(ddq_bounce_json) : null; } catch(e){}
 
     return {
       ...r,
@@ -1563,6 +1581,8 @@ class SqliteDatabase {
       location,
       attachments,
       ddq_responses,
+      agent,
+      ddq_bounce,
       ddq_link: r.ddq_token ? `/ddq/portal?token=${r.ddq_token}` : null
     };
   }
