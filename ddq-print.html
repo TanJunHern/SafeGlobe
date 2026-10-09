@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Due Diligence Questionnaire</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/portal-shared.css">
+<style>
+/* Printable copy of a DDQ. Always renders as ink on white paper regardless of theme;
+   the browser's Print dialog saves it as a PDF. */
+/* data-theme="light" on <html> keeps the shared dark palette from applying to paper */
+:root[data-theme]{--bg:#ECE9E1;--surface:#fff;--fg:#1d1c1a;--fg-2:#4a473f;--fg-3:#77736a;--line:#d9d5cb;--line-2:#bdb7aa;--accent:#788C5D;color-scheme:light}
+body{background:var(--bg)}
+.bar{position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;padding:10px 20px;background:#22211e;color:#f3f1eb;font-size:13px}
+.bar .grow{flex:1}
+.bar .btn{background:#f3f1eb;color:#22211e;border-color:#f3f1eb}
+.paper{width:210mm;max-width:calc(100% - 24px);min-height:297mm;margin:20px auto 40px;background:#fff;color:var(--fg);padding:18mm 16mm;box-shadow:0 10px 40px rgba(0,0,0,.18);font-size:11.5pt;line-height:1.45;position:relative}
+.doc-head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid var(--fg);padding-bottom:10px;margin-bottom:14px}
+.doc-head h1{margin:0;font-family:var(--f-display);font-weight:600;font-size:22pt;line-height:1.15}
+.doc-head .brand{font-family:var(--f-display);font-size:13pt;white-space:nowrap}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;font-size:10pt;margin-bottom:14px}
+.meta span{color:var(--fg-3)}
+.intro{font-size:10pt;color:var(--fg-2);margin:0 0 6px}
+h2{font-family:var(--f-display);font-weight:600;font-size:14pt;margin:20px 0 4px;padding-bottom:3px;border-bottom:1px solid var(--line-2);break-after:avoid}
+.sub{font-size:9.5pt;color:var(--fg-2);margin:0 0 6px}
+table{width:100%;border-collapse:collapse;font-size:10pt;margin:4px 0 8px}
+th,td{border:1px solid var(--line-2);padding:5px 7px;vertical-align:top;text-align:left}
+th{background:#f3f1eb;font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2)}
+td.no{width:38px;font-family:var(--f-mono);font-size:9pt;color:var(--accent);white-space:nowrap}
+td.q{width:46%}
+tr{break-inside:avoid}
+.box{display:inline-block;width:10px;height:10px;border:1.2px solid var(--fg);margin-right:4px;vertical-align:-1px;text-align:center;font-size:9px;line-height:9px;font-weight:700}
+.yn{white-space:nowrap;margin-right:12px}
+.detail{display:block;margin-top:3px;color:var(--fg-2)}
+.en{display:block;margin-top:2px;color:var(--fg-3);font-size:9pt;font-style:italic}
+.blank{color:var(--fg-3)}
+.caption{font-weight:600;font-size:10pt;margin:10px 0 2px;break-after:avoid}
+ol{margin:4px 0 10px;padding-left:18px;font-size:10pt}
+.sign{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-top:10px;break-inside:avoid;font-size:10pt}
+.sign div{border-bottom:1px solid var(--fg);padding-bottom:3px;min-height:26px}
+.sign span{display:block;color:var(--fg-3);font-size:8.5pt}
+.sign .sig{grid-column:1/-1;min-height:90px}
+.sign img{max-height:80px;max-width:60%;display:block}
+.foot{margin-top:18px;padding-top:8px;border-top:1px solid var(--line-2);font-size:8.5pt;color:var(--fg-3);display:flex;justify-content:space-between;gap:16px}
+.draft-mark{position:absolute;top:38%;left:0;right:0;text-align:center;font-size:90pt;font-weight:700;color:rgba(120,140,93,.09);transform:rotate(-24deg);pointer-events:none;letter-spacing:.1em}
+.error{padding:40px;text-align:center}
+@page{size:A4;margin:14mm}
+@media print{
+  body{background:#fff}
+  .bar{display:none}
+  .paper{width:auto;max-width:none;min-height:0;margin:0;padding:0;box-shadow:none}
+  .draft-mark{position:fixed}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>Printable copy</b><span id="bar-note"></span>
+  <span class="grow"></span>
+  <button class="btn sm" id="print-btn" type="button">Print / Save as PDF</button>
+</div>
+<article class="paper" id="paper"><p class="error">Loading questionnaire…</p></article>
+
+<script src="/portal-shared.js"></script>
+<script>
+(function(){
+'use strict';
+const { $, esc, apiFetch } = SG;
+const params = new URLSearchParams(location.search);
+const TOKEN = params.get('token');
+const KYC_ID = params.get('id');
+
+const box = on => `<span class="box">${on ? '✕' : ''}</span>`;
+const blank = '<span class="blank">—</span>';
+const same = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+const en = (v, original) => (v && !same(v, original) ? `<span class="en">EN: ${esc(v)}</span>` : '');
+
+function answerCell(q, R) {
+  const a = (R.answers && R.answers[q.id]) || {};
+  if (q.type === 'yesno') {
+    return `<span class="yn">${box(a.value === 'Yes')}Yes</span><span class="yn">${box(a.value === 'No')}No</span>`
+      + (a.value === 'Yes' && a.details ? `<span class="detail">${esc(a.details)}</span>${en(a.details_en, a.details)}` : '');
+  }
+  return a.value ? `${esc(a.value)}${en(a.value_en, a.value)}` : blank;
+}
+
+function sectionHtml(section, index, R) {
+  const simple = section.questions.filter(q => q.type !== 'table');
+  const tables = section.questions.filter(q => q.type === 'table');
+  return `<h2>${index + 1}. ${esc(section.title)}</h2>
+    ${section.subheading ? `<p class="sub">${esc(section.subheading)}</p>` : ''}
+    ${simple.length ? `<table><thead><tr><th>No.</th><th>Question</th><th>Response</th></tr></thead><tbody>
+      ${simple.map(q => `<tr><td class="no">${esc(q.id)}</td><td class="q">${esc(q.text)}${q.detailsPrompt ? `<span class="detail">${esc(q.detailsPrompt)}</span>` : ''}</td><td>${answerCell(q, R)}</td></tr>`).join('')}
+    </tbody></table>` : ''}
+    ${tables.map(q => {
+      const none = R.answers && R.answers[q.id] && R.answers[q.id].none;
+      const rows = ((R.tables && R.tables[q.id]) || []).filter(r => Object.values(r || {}).some(v => String(v || '').trim()));
+      return `<p class="caption">${esc(q.id)} ${esc(q.text)}</p>
+        <table><thead><tr>${q.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>
+        ${none ? `<tr><td colspan="${q.columns.length}">None to declare</td></tr>`
+          : (rows.length ? rows : [{}]).map(r => `<tr>${q.columns.map(c => `<td>${r[c] ? esc(r[c]) : '&nbsp;'}</td>`).join('')}</tr>`).join('')}
+        </tbody></table>`;
+    }).join('')}`;
+}
+
+function render({ template: T, responses, request, draft }) {
+  const R = responses || {};
+  const d = R.declaration || {};
+  const docs = R.documents || {};
+  const submitted = request.submitted_at ? new Date(String(request.submitted_at).replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(request.submitted_at) ? '' : 'Z')).toLocaleString() : null;
+  document.title = `${T.title} - ${request.counterparty_name} - ${request.id}`;
+  $('#bar-note').textContent = draft ? ' · DRAFT — not yet submitted' : ` · ${request.id}`;
+  $('#paper').innerHTML = `
+    ${draft ? '<div class="draft-mark">DRAFT</div>' : ''}
+    <div class="doc-head"><h1>${esc(T.title)}</h1><div class="brand">Safe Globe</div></div>
+    <div class="meta">
+      <div><span>Counterparty: </span><b>${esc(request.counterparty_name)}</b></div>
+      <div><span>KYC reference: </span><b>${esc(request.id)}</b></div>
+      <div><span>Entity type / country: </span>${esc(request.entity_type || '')} · ${esc(request.country || '')}</div>
+      <div><span>Status: </span>${draft ? 'Draft (not submitted)' : esc(request.request_status || 'Submitted')}</div>
+      <div><span>Requested under: </span>${esc(request.ddq_clause || '—')}</div>
+      <div><span>Submitted: </span>${submitted ? esc(submitted) : '—'}</div>
+      ${R.language && R.language !== 'English' ? `<div><span>Completed in: </span>${esc(R.language)}${R.translated_to_english ? ' (English translations shown in italics)' : ''}</div>` : ''}
+    </div>
+    ${T.intro ? `<p class="intro">${esc(T.intro)}</p>` : ''}
+    ${T.sections.map((s, i) => sectionHtml(s, i, R)).join('')}
+    ${T.documents.length ? `<h2>Supporting documents</h2><table><thead><tr><th>Provided</th><th>Document</th><th>File</th></tr></thead><tbody>
+      ${T.documents.map((doc, i) => { const x = docs[i] || {}; return `<tr><td class="no">${box(x.checked)}</td><td class="q">${esc(doc)}</td><td>${x.filename ? esc(x.filename) : blank}</td></tr>`; }).join('')}
+    </tbody></table>` : ''}
+    <h2>Declaration</h2>
+    ${T.declaration.intro ? `<p class="sub">${esc(T.declaration.intro)}</p>` : ''}
+    <ol>${T.declaration.statements.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
+    <p style="font-size:10pt">${box(d.agreed)} I have read and agree to the declaration above.</p>
+    <div class="sign">
+      <div><span>Full name</span>${esc(d.full_name || '')}</div>
+      <div><span>Job title</span>${esc(d.job_title || '')}</div>
+      <div><span>Company name</span>${esc(d.company || '')}</div>
+      <div><span>Date</span>${esc(d.date || '')}</div>
+      <div class="sig"><span>Signature${d.signed_at ? ` (signed digitally ${esc(new Date(d.signed_at).toLocaleString())})` : ''}</span>${d.signature && /^data:image\/(png|svg\+xml);base64,/.test(d.signature) ? `<img alt="Signature" src="${d.signature}">` : ''}</div>
+    </div>
+    <div class="foot"><span>${esc(request.id)} · ${esc(request.counterparty_name)}</span><span>Generated ${esc(new Date().toLocaleString())} · Safe Globe KYC</span></div>`;
+}
+
+function fail(message) {
+  $('#paper').innerHTML = `<p class="error"><b>This questionnaire can't be shown.</b><br>${esc(message)}</p>`;
+  $('#print-btn').disabled = true;
+}
+
+async function load() {
+  if (TOKEN) {
+    const d = await (await fetch(`/api/ddq/verify-token?token=${encodeURIComponent(TOKEN)}`)).json();
+    if (!d.valid || !d.template) return fail(d.error || 'The link is invalid or has expired.');
+    const submitted = d.readOnly && d.existing_responses && d.existing_responses.format === 'template-v1';
+    return {
+      template: d.template,
+      responses: submitted ? d.existing_responses : (d.draft || {}),
+      draft: !submitted,
+      request: { id: d.kyc_id, counterparty_name: d.counterparty_name, entity_type: d.entity_type, country: d.country, request_status: d.status, ddq_clause: d.triggered_clause, submitted_at: submitted ? d.submitted_at : null }
+    };
+  }
+  if (KYC_ID) {
+    const res = await apiFetch(`/api/kyc/${encodeURIComponent(KYC_ID)}/ddq`);
+    const d = await res.json();
+    if (!res.ok) return fail(d.message || d.error || 'You do not have access to this questionnaire.');
+    if (!d.template) return fail('No questionnaire was issued for this request.');
+    if (!d.submitted) return fail('The counterparty has not returned this questionnaire yet.');
+    return { template: d.template, responses: d.responses, draft: false, request: d.request };
+  }
+  fail('No questionnaire was specified.');
+}
+
+$('#print-btn').addEventListener('click', () => window.print());
+load().then(doc => {
+  if (!doc) return;
+  render(doc);
+  // Let the signature image and fonts settle before opening the print dialog
+  if (params.get('auto') !== '0') setTimeout(() => window.print(), 600);
+}).catch(() => fail('The questionnaire service is unavailable.'));
+})();
+</script>
+</body>
+</html>

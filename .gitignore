@@ -3,6 +3,8 @@ node_modules/
 data/safe_globe.db*
 data/test_safe_globe.db*
 data/uploads/*
+# Local demo kit: scenario, sample files, DB backups, demo links (never pushed)
+demo-data/
 !data/uploads/.gitkeep
 !data/uploads/**/.gitkeep
 npm-debug.log*

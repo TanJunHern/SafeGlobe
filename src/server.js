@@ -48,6 +48,12 @@ app.use('/api/entities', entitiesRouter);
 app.use('/api/claim', claimsRouter);
 app.use('/api/statements', statementsRouter);
 app.use('/api/ddq', ddqRouter);
+app.use('/api/ddq-templates', require('./routes/ddqTemplates'));
+
+// Compliance Agent: what it is, which mode it is in, and the tools it can call
+app.get('/api/agent/compliance', (req, res) => {
+  res.json(require('./agents/complianceAgent').describe());
+});
 app.use('/api/alerts', alertsRouter);
 app.use('/api/sources', sourcesRouter);
 app.use('/api/policies', policiesRouter);
@@ -106,8 +112,24 @@ app.post('/api/intake', (req, res, next) => {
 // Serve frontend: safe-globe.html and portal routes
 const htmlPath = path.join(config.staticDir, 'safe-globe.html');
 
-app.get(['/', '/portal/employee', '/portal/compliance', '/ddq/portal', '/login'], (req, res) => {
+app.get(['/', '/portal/compliance', '/login'], (req, res) => {
   res.sendFile(htmlPath);
+});
+
+// Standalone DDQ pages: counterparty wizard, compliance template manager, printable copy
+const pageRoutes = {
+  '/ddq/portal': 'ddq-portal.html',
+  '/portal/ddq-manager': 'ddq-manager.html',
+  '/ddq/print': 'ddq-print.html'
+};
+for (const [route, file] of Object.entries(pageRoutes)) {
+  app.get(route, (req, res) => res.sendFile(path.join(config.staticDir, file)));
+}
+
+// Employees get a standalone page: KYC table only, no globe / reviews / sources / policies
+const employeeHtmlPath = path.join(config.staticDir, 'employee-portal.html');
+app.get(['/portal/employee', '/employee-portal.html'], (req, res) => {
+  res.sendFile(employeeHtmlPath);
 });
 
 app.get('/safe-globe.html', (req, res) => {
@@ -119,7 +141,12 @@ app.get('/saf-globe.html', (req, res) => {
 });
 
 // Serve static directory for any static assets (PDFs, images, etc.)
-app.use(express.static(config.staticDir));
+// Only these files are public. The repo root is NOT served: it holds the database, uploaded
+// counterparty documents, source code and config, none of which may be downloadable.
+const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js'];
+for (const file of PUBLIC_ASSETS) {
+  app.get(`/${file}`, (req, res) => res.sendFile(path.join(config.staticDir, file)));
+}
 
 // Fallback 404 for unmatched API routes
 app.use('/api', (req, res) => {
@@ -139,6 +166,7 @@ let server = null;
 
 function startServer(port = config.port) {
   try {
+    require('./services/ddqTemplateService').ensureDefaultTemplate();
     require('./services/kycService').ensurePersonaSeed();
   } catch (err) {
     console.error('[Safe Globe] Persona seed skipped:', err.message);

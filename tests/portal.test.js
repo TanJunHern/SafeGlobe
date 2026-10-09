@@ -16,10 +16,35 @@ test('Tri-Party Portal Tests', async (t) => {
   let token;
 
   await t.test('portal routes serve the single-page app', async () => {
-    for (const route of ['/login', '/portal/employee', '/portal/compliance', '/ddq/portal?token=abc']) {
+    for (const route of ['/login', '/portal/compliance']) {
       const res = await fetch(`${BASE_URL}${route}`);
       assert.equal(res.status, 200);
       assert.ok((await res.text()).includes('id="view-login"'));
+    }
+  });
+
+  await t.test('/portal/employee serves the table-only page without globe, reviews, sources or policies', async () => {
+    const res = await fetch(`${BASE_URL}/portal/employee`);
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    assert.ok(html.includes('id="kyc-table"'));
+    for (const forbidden of ['id="view-globe"', 'id="view-reviews"', 'id="view-sources"', 'id="view-policies"', 'id="view-compliance"', 'class="rail"']) {
+      assert.ok(!html.includes(forbidden), `employee page must not contain ${forbidden}`);
+    }
+  });
+
+  await t.test('the database, uploads, source and config are not downloadable', async () => {
+    const blocked = [
+      '/data/safe_globe.db', '/data/test_safe_globe.db', '/data/uploads/.gitkeep', '/data/uploads/ddq/KYC-2026-0001/0-x.pdf',
+      '/src/server.js', '/src/config.js', '/package.json', '/.env', '/.env.example', '/GEMINI.md', '/tests/portal.test.js',
+      '/demo-data/DEMO-LINKS.md', '/scripts/demo-reset.js', '/node_modules/express/package.json', '/..%2f.env', '/data/..%2fpackage.json'
+    ];
+    for (const url of blocked) {
+      const res = await fetch(`${BASE_URL}${url}`);
+      assert.notEqual(res.status, 200, `${url} must not be served`);
+    }
+    for (const url of ['/portal-shared.css', '/portal-shared.js', '/safe-globe.html']) {
+      assert.equal((await fetch(`${BASE_URL}${url}`)).status, 200, `${url} should still be served`);
     }
   });
 
@@ -131,7 +156,7 @@ test('Tri-Party Portal Tests', async (t) => {
 
     const info = await triage('Request More Info');
     assert.equal(info.request_status, 'Pending DDQ');
-    assert.equal(info.ddq_status, 'Sent to Counterparty');
+    assert.equal(info.ddq_status, 'Returned to Counterparty');
     const reopened = await (await fetch(`${BASE_URL}/api/ddq/verify-token?token=${token}`)).json();
     assert.equal(reopened.readOnly, false);
 
@@ -165,6 +190,51 @@ test('Tri-Party Portal Tests', async (t) => {
     for (let i = 2; i <= main.rowCount; i++) {
       assert.equal(main.getRow(i).getCell(emailCol).value, 'john.doe@safeglobe.com');
     }
+  });
+
+  await t.test('Ongoing Monitoring requires a location', async () => {
+    const res = await fetch(`${BASE_URL}/api/kyc/submit`, {
+      method: 'POST',
+      headers: { ...JSON_HEADERS, ...EMPLOYEE },
+      body: JSON.stringify({ counterparty_name: 'No Pin Trading Pte Ltd', entity_type: 'Organisation', country: 'SGP', relationship_type: 'Vendor/Supplier', contract_value: 20000, ongoing_monitoring: true })
+    });
+    assert.equal(res.status, 400);
+    assert.ok((await res.json()).message.includes('location is required'));
+  });
+
+  await t.test('approved requests with Ongoing Monitoring are pinned on the globe', async () => {
+    const onGlobe = async id => (await (await fetch(`${BASE_URL}/api/entities`)).json()).entities.find(e => e.id === `kyc-${id.toLowerCase()}`);
+    const submit = async body => (await (await fetch(`${BASE_URL}/api/kyc/submit`, {
+      method: 'POST', headers: { ...JSON_HEADERS, ...EMPLOYEE }, body: JSON.stringify(body)
+    })).json()).request;
+    const triage = (id, action) => fetch(`${BASE_URL}/api/kyc/${id}/triage`, {
+      method: 'POST', headers: { ...JSON_HEADERS, ...COMPLIANCE }, body: JSON.stringify({ action })
+    });
+    const location = { address: 'Jurong Port Terminal, 37 Jurong Port Road, Singapore 619110', lat: 1.306, lng: 103.714, place_id: 'sg_jurong' };
+
+    // Green straight away: low value, no policy trigger -> auto-approved -> pinned
+    const green = await submit({ counterparty_name: 'Greenlight Supplies Pte Ltd', entity_type: 'Organisation', country: 'SGP', relationship_type: 'Vendor/Supplier', contract_value: 40000, ongoing_monitoring: true, location });
+    assert.equal(green.request_status, 'Approved');
+    const pin = await onGlobe(green.id);
+    assert.ok(pin, 'auto-approved monitored request should be on the globe');
+    assert.equal(pin.name, 'Greenlight Supplies Pte Ltd');
+    assert.equal(pin.kind, 'org');
+    assert.deepEqual(pin.ll, [103.714, 1.306]);
+    assert.ok(pin.trigger.includes(green.id));
+
+    // Monitoring off: approved but never pinned
+    const unmonitored = await submit({ counterparty_name: 'Quiet Supplies Pte Ltd', entity_type: 'Organisation', country: 'SGP', relationship_type: 'Vendor/Supplier', contract_value: 40000, ongoing_monitoring: false });
+    assert.equal(unmonitored.request_status, 'Approved');
+    assert.equal(await onGlobe(unmonitored.id), undefined);
+
+    // DDQ required: only pinned once compliance approves, removed again if rejected
+    const pending = await submit({ counterparty_name: 'Pending Marine Pte Ltd', entity_type: 'Organisation', country: 'SGP', relationship_type: 'Vendor/Supplier', contract_value: 300000, ongoing_monitoring: true, location });
+    assert.equal(pending.request_status, 'Pending DDQ');
+    assert.equal(await onGlobe(pending.id), undefined);
+    await triage(pending.id, 'Approve');
+    assert.ok(await onGlobe(pending.id), 'approved after review should be on the globe');
+    await triage(pending.id, 'Reject');
+    assert.equal(await onGlobe(pending.id), undefined);
   });
 
   await stopServer();
