@@ -7,6 +7,12 @@
       "**/node_modules/**",
       "src/**",
       "data/**",
+      "demo-data/**",
+      "scripts/**",
+      "python/**",
+      "package*.json",
+      "*.md",
+      "*.pdf",
       "tests/**",
       "Dockerfile",
       "cloudbuild.yaml"

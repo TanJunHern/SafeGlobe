@@ -9,6 +9,7 @@
  */
 
 const config = require('../config');
+const gemini = require('./geminiClient');
 
 const CORPORATE_POLICY_DOCUMENT = `
 SAFEGLOBE ENTERPRISE COMPLIANCE & COUNTERPARTY RISK POLICY (v2026.1)
@@ -48,7 +49,7 @@ async function evaluatePolicyRAG(counterpartyData) {
   // 1. Try Gemini RAG Evaluation if API key configured
   if (isRealKey) {
     try {
-      const model = config.geminiModel || 'gemini-2.5-flash';
+      let model = config.geminiModel;
       const prompt = `You are the SafeGlobe Compliance Policy Auditor.
 Evaluate the following counterparty onboarding request against the corporate policy document provided below.
 
@@ -79,29 +80,11 @@ Respond strictly in valid JSON matching this schema:
   "policy_rationale": "<thorough compliance audit explanation citing exact clauses>"
 }`;
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const resp = await fetch(url, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json'
-          }
-        })
-      });
-      clearTimeout(timeoutId);
-
-      if (resp.ok) {
-        const json = await resp.json();
-        const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          const parsed = JSON.parse(text.trim());
+      const result = await gemini.generateJsonDetailed(prompt, { timeoutMs: 15000 });
+      if (result) {
+        model = result.model;
+        {
+          const parsed = result.data;
           return {
             ddq_required: Boolean(parsed.ddq_required),
             ddq_clause: parsed.primary_clause || (parsed.triggered_clauses || []).join(' & '),

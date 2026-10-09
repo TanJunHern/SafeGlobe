@@ -13,6 +13,7 @@ const config = require('../config');
 const { getDb } = require('../db');
 const { screenCounterparty } = require('./screening');
 const jwt = require('jsonwebtoken');
+const gemini = require('./geminiClient');
 const { evaluatePolicyRAG } = require('./policyRagService');
 const { generateKycExcelWorkbook } = require('./excelService');
 
@@ -192,7 +193,7 @@ async function extractDocumentData({ filename = '', fileContent = '', mimeType =
   // 1. Try Gemini Multimodal / Text Extraction if API Key is configured
   if (isRealKey) {
     try {
-      const model = config.geminiModel || 'gemini-2.5-flash';
+      let model = config.geminiModel;
       const prompt = `You are the SafeGlobe Compliance Document Extraction AI.
 Analyze the following onboarding document (${filename || 'document'}).
 Extract counterparty KYC fields and respond strictly in valid JSON matching this schema:
@@ -215,7 +216,6 @@ Extract counterparty KYC fields and respond strictly in valid JSON matching this
   "remarks": "<Brief extraction summary>"
 }`;
 
-      const contents = [];
       const parts = [{ text: prompt }];
 
       if (base64Data && (mimeType.startsWith('image/') || mimeType === 'application/pdf')) {
@@ -229,31 +229,12 @@ Extract counterparty KYC fields and respond strictly in valid JSON matching this
         parts.push({ text: `DOCUMENT CONTENT:\n${fileContent.substring(0, 10000)}` });
       }
 
-      contents.push({ parts });
-
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-      const resp = await fetch(url, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json'
-          }
-        })
-      });
-      clearTimeout(timeoutId);
-
-      if (resp.ok) {
-        const json = await resp.json();
-        const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          const parsed = JSON.parse(rawText.trim());
+      // Shared client walks the model fallback chain (lite-latest first)
+      const result = await gemini.generateJsonDetailed(parts, { timeoutMs: 20000 });
+      if (result) {
+        model = result.model;
+        {
+          const parsed = result.data;
           const extractedKeys = Object.keys(parsed).filter(k => parsed[k] !== null && parsed[k] !== '');
           return {
             success: true,
@@ -475,6 +456,11 @@ function createKycRequest(input, userContext = {}) {
     if (input.place_id) location.place_id = input.place_id;
   }
 
+  // Ongoing monitoring places the counterparty on the globe, so it needs somewhere to be pinned
+  if (ongoingMonitoring && !String(location.address || '').trim()) {
+    throw new Error('A location is required when Ongoing Monitoring is enabled');
+  }
+
   // Attachments
   let attachments = input.attachments || [];
   if (typeof attachments === 'string') {
@@ -586,10 +572,75 @@ function createKycRequest(input, userContext = {}) {
   };
 
   const saved = db.addKycRequest(record);
+
+  // Freeze the questionnaire the counterparty will see at the moment the DDQ is issued
+  if (policyEval.ddq_required) {
+    try {
+      const template = require('./ddqTemplateService').getActiveTemplate();
+      if (template) db.setKycDdqTemplate(saved.id, template);
+    } catch (err) {
+      console.error('Could not snapshot DDQ template:', err.message);
+    }
+  }
+
+  syncMonitoredEntity(saved);
+
   return {
     ...saved,
     ddq_link: ddqToken ? `/ddq/portal?token=${ddqToken}` : null
   };
+}
+
+const monitoredEntityId = kycId => `kyc-${String(kycId).toLowerCase()}`;
+
+/**
+ * Keeps the globe in step with KYC decisions: a request with Ongoing Monitoring enabled is
+ * pinned on the globe once it is Approved (auto-cleared, or passed after DDQ review), and
+ * removed again if it stops qualifying. Call after every status change.
+ */
+function syncMonitoredEntity(request) {
+  if (!request || !request.id) return null;
+  const db = getDb();
+  const entityId = monitoredEntityId(request.id);
+  const qualifies = Boolean(request.ongoing_monitoring) && request.request_status === 'Approved';
+
+  if (!qualifies) {
+    if (db.getEntityById(entityId)) db.deleteEntity(entityId);
+    return null;
+  }
+
+  const attrs = request.attributes || {};
+  const loc = request.location || {};
+  const kind = request.entity_type === 'Vessel' ? 'vessel' : request.entity_type === 'Person' ? 'person' : 'org';
+  const hasPin = Number.isFinite(Number(loc.lat)) && Number.isFinite(Number(loc.lng)) && loc.lat !== null && loc.lng !== null;
+  const submitter = String(request.created_by_email || '').split('@')[0].split(/[._]/).filter(Boolean)
+    .map(p => p[0].toUpperCase() + p.slice(1)).join(' ') || 'Compliance';
+  const cleared = request.ddq_required ? 'Approved after DDQ review' : 'Auto-cleared by policy';
+
+  db.upsertEntity({
+    id: entityId,
+    kind,
+    name: request.counterparty_name,
+    short: request.counterparty_name.split(/\s+/).slice(0, 2).join(' '),
+    role: kind === 'vessel' ? (attrs.vessel_type || 'Vessel') : request.relationship_type,
+    a3: request.country,
+    city: String(loc.address || '').split(',')[0].trim(),
+    reg: attrs.reg_no || attrs.imo || attrs.passport || request.id,
+    risk: Number(request.ai_score) || 20,
+    conf: Number(request.ai_confidence) || 90,
+    owner: submitter,
+    trigger: `Ongoing monitoring · ${request.id} · ${cleared}`,
+    since: String(request.submission_date || '').slice(0, 4) || String(new Date().getFullYear()),
+    summary: request.ai_rationale || '',
+    // The globe expects [longitude, latitude]; without a pin it falls back to the country centroid
+    ll: hasPin ? [Number(loc.lng), Number(loc.lat)] : undefined,
+    operatingAddresses: loc.address || '',
+    residentialAddress: kind === 'person' ? (loc.address || '') : '',
+    controllers: attrs.directors_ubo || '',
+    factors: [['-', `${cleared} (${request.id})`], ['+', `Screening result: ${request.screening_result}`]],
+    findings: []
+  });
+  return db.getEntityById(entityId);
 }
 
 /**
@@ -677,6 +728,8 @@ function exportKycCsv(records) {
  * employee portal is not empty on first login. No-op once that persona has any row.
  */
 function ensurePersonaSeed() {
+  // The demo kit (scripts/demo-reset.js) seeds its own, fuller story for this persona
+  if (process.env.SAFEGLOBE_SKIP_PERSONA_SEED) return;
   const db = getDb();
   const persona = { userId: 'EMP-1042', email: 'john.doe@safeglobe.com', department: 'Procurement & Logistics' };
   if (db.getAllKycRequests({ created_by_email: persona.email }).length > 0) return;
@@ -722,6 +775,7 @@ function ensurePersonaSeed() {
 
 module.exports = {
   ensurePersonaSeed,
+  syncMonitoredEntity,
   evaluatePolicyRules,
   calculateAiRisk,
   extractDocumentData,

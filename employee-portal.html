@@ -1,0 +1,2344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safe Globe · Employee KYC Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a full-bleed chart table. The map is the ground; instrument panels float on it like
+   cards pinned to a navigator's desk. Rail + top bar frame it; drawers slide over from the right. */
+:root{
+  --bg:#F3F1EB; --surface:#FBFAF6; --surface-2:#F0EDE5; --surface-3:#E6E2D8;
+  --line:#E2DDD1; --line-2:#CFC8B9;
+  --fg:#22211E; --fg-2:#5C584F; --fg-3:#8A8579;
+  --accent:#788C5D; --accent-hi:#8A9E70; --accent-soft:rgba(120,140,93,.12); --on-accent:#FFFFFF;
+  --glass:rgba(251,250,246,.88);
+  --ocean:#E5E1D6; --ocean-hi:#F0EDE5; --land-none:#D4CEC0; --land-edge:#F5F3EE; --grat:rgba(34,33,30,.07); --atmo:rgba(120,140,93,.22);
+  --low-soft:#BFD4B7; --low:#5A8E5E; --mid-soft:#F1D2A0; --mid:#D2832C; --high-soft:#EBB3A6; --high:#AE3930;
+  --slate:#6B7D93; --slate-soft:#DCE1E7;
+  --cov-1:#5E7991; --cov-2:#9DB0C1; --cov-3:#D5DCE2;
+  --shadow:0 1px 2px rgba(48,36,24,.06),0 10px 28px rgba(48,36,24,.09);
+  --shadow-lg:0 2px 6px rgba(48,36,24,.08),0 24px 60px rgba(48,36,24,.16);
+  --f-display:"Newsreader","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --f-body:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:14px; --r-sm:9px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1A1917; --surface:#252421; --surface-2:#2D2B28; --surface-3:#36342F;
+    --line:#383632; --line-2:#4A4741;
+    --fg:#ECE9E1; --fg-2:#B4AFA4; --fg-3:#858075;
+    --accent:#788C5D; --accent-hi:#93A878; --accent-soft:rgba(120,140,93,.16); --on-accent:#1A1917;
+    --glass:rgba(37,36,33,.86);
+    --ocean:#131211; --ocean-hi:#1E1C1A; --land-none:#2E2C29; --land-edge:#131211; --grat:rgba(236,233,225,.055); --atmo:rgba(120,140,93,.26);
+    --low-soft:#304634; --low:#72A876; --mid-soft:#553D20; --mid:#DF9640; --high-soft:#512622; --high:#DA5A4E;
+    --slate:#93A6BD; --slate-soft:#2B333E;
+    --cov-1:#82A0BC; --cov-2:#4C6176; --cov-3:#2B3641;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.34);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.35),0 24px 60px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1A1917; --surface:#252421; --surface-2:#2D2B28; --surface-3:#36342F;
+  --line:#383632; --line-2:#4A4741;
+  --fg:#ECE9E1; --fg-2:#B4AFA4; --fg-3:#858075;
+  --accent:#788C5D; --accent-hi:#93A878; --accent-soft:rgba(120,140,93,.16); --on-accent:#1A1917;
+  --glass:rgba(37,36,33,.86);
+  --ocean:#131211; --ocean-hi:#1E1C1A; --land-none:#2E2C29; --land-edge:#131211; --grat:rgba(236,233,225,.055); --atmo:rgba(120,140,93,.26);
+  --low-soft:#304634; --low:#72A876; --mid-soft:#553D20; --mid:#DF9640; --high-soft:#512622; --high:#DA5A4E;
+  --slate:#93A6BD; --slate-soft:#2B333E;
+  --cov-1:#82A0BC; --cov-2:#4C6176; --cov-3:#2B3641;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.34);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35),0 24px 60px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+
+html{height:100%;box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--fg);font:14px/1.45 var(--f-body);-webkit-font-smoothing:antialiased;font-feature-settings:"ss01"}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:14px;height:14px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);font-weight:500}
+.muted{color:var(--fg-2)}
+.faint{color:var(--fg-3)}
+kbd{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px;border:1px solid var(--line-2);color:var(--fg-3);background:var(--surface)}
+
+/* ---------- app frame ---------- */
+.app{height:100%;display:grid;grid-template-columns:64px minmax(0,1fr);grid-template-rows:56px minmax(0,1fr);grid-template-areas:"brand top" "rail stage"}
+.brand{grid-area:brand;display:grid;place-items:center;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface)}
+.brand svg{width:30px;height:30px}
+.topbar{grid-area:top;display:flex;align-items:center;gap:14px;padding:0 16px 0 18px;border-bottom:1px solid var(--line);background:var(--surface);min-width:0}
+.wordmark{display:flex;align-items:baseline;gap:10px;white-space:nowrap}
+.wordmark b{font-family:var(--f-display);font-weight:500;font-size:21px;letter-spacing:-.01em}
+.wordmark span{font-size:12px;color:var(--fg-3)}
+.ws-switch{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);font-size:12.5px;color:var(--fg-2);white-space:nowrap}
+.ws-switch:hover{background:var(--surface-2)}
+.search{position:relative;flex:1 1 360px;max-width:520px;min-width:0}
+.search .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--fg-3)}
+.search input{width:100%;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);padding:0 40px 0 36px;outline:none;font-size:13.5px;transition:border-color .15s,background .15s}
+.search input::placeholder{color:var(--fg-3)}
+.search input:focus{border-color:var(--accent);background:var(--surface)}
+.search kbd{position:absolute;right:9px;top:50%;transform:translateY(-50%)}
+.results{position:absolute;left:0;right:0;top:42px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;z-index:40;max-height:60vh;overflow:auto}
+.results button{display:flex;width:100%;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;text-align:left}
+.results button:hover,.results button.on{background:var(--surface-2)}
+.results .r-sub{margin-left:auto;font-size:12px;color:var(--fg-3);white-space:nowrap}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:6px}
+.ask-btn{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px 0 11px;border-radius:10px;background:var(--fg);color:var(--bg);font-weight:500;font-size:13px;white-space:nowrap;transition:transform .15s}
+.ask-btn:hover{transform:translateY(-1px)}
+.ask-btn kbd{border-color:transparent;background:rgba(127,127,127,.25);color:inherit;opacity:.8}
+.ask-btn .spark{color:var(--accent-hi)}
+.vessel-toggle-wrap{display:flex;align-items:center;gap:7px;height:36px;padding:0 10px 0 9px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line-2);cursor:pointer;user-select:none;transition:background .15s,border-color .15s}
+.vessel-toggle-wrap:hover{background:var(--surface-3);border-color:var(--line)}
+.vessel-toggle-wrap .ship-ic{color:var(--accent);width:16px;height:16px;flex:none}
+.vessel-toggle-wrap .vessel-toggle-lbl{font-size:12.5px;font-weight:500;color:var(--fg);white-space:nowrap}
+.icon-btn{position:relative;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--fg-2)}
+.icon-btn:hover{background:var(--surface-2);color:var(--fg)}
+.icon-btn .dot{position:absolute;top:6px;right:6px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-size:10px;font-weight:600;display:grid;place-items:center;border:2px solid var(--surface)}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;background:var(--accent-soft);color:var(--accent);margin-left:4px}
+.rail{grid-area:rail;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;border-right:1px solid var(--line);background:var(--surface)}
+.rail button{width:48px;padding:8px 0 6px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--fg-3);font-size:10px;font-weight:500;position:relative}
+.rail button:hover{color:var(--fg);background:var(--surface-2)}
+.rail button.on{color:var(--accent);background:var(--accent-soft)}
+.rail .ic{width:20px;height:20px}
+.rail .count{position:absolute;top:3px;right:5px;font-size:9px;background:var(--high);color:#fff;border-radius:7px;padding:0 4px;line-height:14px}
+.rail .spacer{flex:1}
+.stage{grid-area:stage;position:relative;overflow:hidden;min-width:0}
+.view{position:absolute;inset:0;display:none}
+.view.on{display:block}
+
+/* ---------- panels ---------- */
+.panel{background:var(--glass);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pill{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:10px;font-size:11px;font-weight:500;white-space:nowrap;border:1px solid transparent}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.plain::before{display:none}
+.q-escalate{color:var(--high);background:color-mix(in srgb,var(--high) 13%,transparent)}
+.q-investigate{color:var(--mid);background:color-mix(in srgb,var(--mid) 15%,transparent)}
+.q-gaps{color:var(--slate);background:color-mix(in srgb,var(--slate) 15%,transparent)}
+.q-monitor{color:var(--low);background:color-mix(in srgb,var(--low) 15%,transparent)}
+.b-low{color:var(--low);background:color-mix(in srgb,var(--low) 15%,transparent)}
+.b-mid{color:var(--mid);background:color-mix(in srgb,var(--mid) 15%,transparent)}
+.b-high{color:var(--high);background:color-mix(in srgb,var(--high) 13%,transparent)}
+.b-none{color:var(--fg-3);background:var(--surface-2)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;font-size:11.5px;background:var(--surface-2);color:var(--fg-2);white-space:nowrap;border:1px solid var(--line)}
+.agent{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--accent);white-space:nowrap}
+.agent::before{content:"";width:7px;height:7px;border-radius:2px;background:currentColor;transform:rotate(45deg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 14px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);font-size:13px;font-weight:500;white-space:nowrap;transition:background .15s,border-color .15s,transform .15s}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{background:var(--accent-hi);border-color:var(--accent-hi)}
+.btn.dark{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--fg-2)}
+.btn.ghost:hover{background:var(--surface-2);color:var(--fg)}
+.btn.sm{height:28px;padding:0 10px;font-size:12px;border-radius:8px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.switch{position:relative;width:30px;height:18px;flex:none}
+.switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
+.switch span{position:absolute;inset:0;border-radius:9px;background:var(--surface-3);border:1px solid var(--line-2);transition:background .2s}
+.switch span::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s}
+.switch input:checked+span{background:var(--accent);border-color:var(--accent)}
+.switch input:checked+span::after{transform:translateX(12px)}
+.switch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);gap:2px}
+.seg button{height:26px;padding:0 10px;border-radius:7px;font-size:12px;font-weight:500;color:var(--fg-2);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* ---------- map ---------- */
+#map-wrap{position:absolute;inset:0;background:var(--ocean)}
+#map{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+#map:active{cursor:grabbing}
+.backdrop{fill:var(--ocean)}
+.sphere{fill:var(--ocean-hi);stroke:none}
+.globe .sphere{fill:url(#ocean-grad)}
+.sphere-edge{fill:none;stroke:var(--line-2);stroke-width:.8;opacity:.7}
+.atmo{fill:url(#atmo-grad);pointer-events:none}
+.shine{fill:url(#shine-grad);pointer-events:none}
+.grat{fill:none;stroke:var(--grat);stroke-width:.6}
+.country{stroke:var(--land-edge);stroke-width:.5;stroke-linejoin:round;transition:fill .5s ease,opacity .4s ease;vector-effect:non-scaling-stroke}
+.country:hover,.country.hov{filter:brightness(1.08) saturate(1.1)}
+.dimmable.dim .country:not(.focus){opacity:.45}
+.sel-outline{fill:none;stroke:var(--fg);stroke-width:1.6;stroke-linejoin:round;pointer-events:none}
+.sel-outline-glow{fill:none;stroke:var(--accent);stroke-width:5;stroke-opacity:.28;stroke-linejoin:round;pointer-events:none}
+.clabel{font:500 10.5px var(--f-body);fill:var(--fg);fill-opacity:.62;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--land-edge);stroke-width:2.5px;stroke-opacity:.5;letter-spacing:.02em}
+.clabel.big{font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.overlay{transition:opacity .45s ease}
+.morphing .overlay{opacity:0}
+.route{fill:none;stroke:var(--fg);stroke-opacity:.16;stroke-width:1;stroke-dasharray:1 4;stroke-linecap:round}
+.route.sel{stroke-opacity:.5;stroke:var(--accent)}
+.dark-seg{fill:none;stroke:var(--high);stroke-width:1.6;stroke-dasharray:5 4;stroke-linecap:round}
+.dark-label{font:600 10px var(--f-mono);fill:var(--high);paint-order:stroke;stroke:var(--ocean);stroke-width:3px}
+.wake{fill:none;stroke-linecap:round}
+.vessel{cursor:pointer}
+.vessel .v-hit{fill:transparent}
+.vessel .v-halo{fill:currentColor;opacity:.16}
+.vessel .v-hull{fill:currentColor;stroke:var(--ocean);stroke-width:1}
+.vessel.dark .v-hull{fill:var(--ocean);stroke:currentColor;stroke-dasharray:2 1.5;stroke-width:1.2}
+.vessel.dark .v-ping{display:block}
+.vessel .v-ping{display:none;fill:none;stroke:currentColor;stroke-width:1.2;animation:ping 1.8s ease-out infinite;transform-origin:0 0}
+.vessel.sel .v-halo{opacity:.3}
+.vessel .v-label,.pin .p-label{font:500 11px var(--f-body);fill:var(--fg);paint-order:stroke;stroke:var(--ocean);stroke-width:3.5px;stroke-linejoin:round;pointer-events:none;opacity:0;transition:opacity .2s}
+.vessel .v-label{font-family:var(--f-mono);font-size:10px}
+.show-labels .p-label,.pin.sel .p-label,.pin:hover .p-label,.vessel.sel .v-label,.vessel:hover .v-label,.show-labels .v-label{opacity:1}
+.pin{cursor:pointer}
+.pin .p-inner{transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.pin:hover .p-inner,.pin.sel .p-inner{transform:scale(1.25)}
+.pin .p-hit{fill:transparent}
+.pin .p-ring{fill:var(--fg);stroke:currentColor;stroke-width:2.6}
+.pin .p-core{fill:currentColor}
+.pin.linked .p-ring{fill:var(--ocean);stroke-dasharray:2.5 1.8;stroke-width:1.8}
+.pin.linked .p-core{r:2}
+.pin .p-pulse{fill:none;stroke:currentColor;stroke-width:1.4;animation:ping 2.2s ease-out infinite;transform-origin:0 0}
+.pin .p-badge circle{fill:var(--fg)}
+.pin .p-badge text{font:600 9px var(--f-mono);fill:var(--bg);text-anchor:middle;dominant-baseline:central}
+.pin.clustered{display:none}
+.p-spider-leg{stroke:var(--accent);stroke-opacity:.55;stroke-width:1.3;stroke-dasharray:2.5 2;pointer-events:none}
+.dimmable.dim .pin:not(.hl),.dimmable.dim .vessel:not(.hl){opacity:.28}
+.pin.hl .p-ring{stroke-width:3.2}
+.st-escalate{color:var(--high)} .st-investigate{color:var(--mid)} .st-gaps{color:var(--slate)} .st-monitor{color:var(--low)}
+.arc{fill:none;stroke:var(--accent);stroke-width:1.3;stroke-opacity:.55;stroke-linecap:round}
+.arc.filing{stroke-dasharray:6 4}
+.arc.news{stroke-dasharray:1.2 4}
+.arc.hl{stroke-opacity:1;stroke-width:2}
+.arcs-dim .arc:not(.hl){stroke-opacity:.12}
+.particle{fill:var(--accent)}
+.arcs-dim .particle:not(.hl){opacity:.15}
+.sts{color:var(--high)}
+.sts circle{fill:none;stroke:currentColor;stroke-width:1.2}
+.sts .sts-pulse{animation:ping 2.4s ease-out infinite;transform-origin:0 0}
+.sts text{font:600 10px var(--f-mono);fill:currentColor;paint-order:stroke;stroke:var(--ocean);stroke-width:3px}
+.wx .wx-blob{fill:url(#wx-grad);animation:breathe 5s ease-in-out infinite;transform-origin:0 0;transform-box:view-box}
+.wx text{font:600 10.5px var(--f-mono);fill:var(--high);text-anchor:middle;paint-order:stroke;stroke:var(--ocean);stroke-width:3px}
+@keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+@keyframes breathe{0%,100%{transform:scale(.9);opacity:.75}50%{transform:scale(1.12);opacity:1}}
+.pins-in .pin .p-inner{animation:drop .6s cubic-bezier(.3,1.5,.5,1) both;animation-delay:calc(var(--i) * 45ms)}
+@keyframes drop{0%{transform:translateY(-14px) scale(.2);opacity:0}100%{transform:none;opacity:1}}
+
+#tooltip{position:absolute;z-index:20;pointer-events:none;min-width:180px;max-width:260px;padding:10px 12px;border-radius:11px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-lg);font-size:12.5px;opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s}
+#tooltip.on{opacity:1;transform:none}
+#tooltip .tt-name{font-weight:600;font-size:13.5px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+#tooltip .tt-row{display:flex;justify-content:space-between;gap:12px;color:var(--fg-2);margin-top:3px}
+#tooltip .tt-row b{color:var(--fg);font-weight:500}
+.tt-score{display:flex;align-items:baseline;gap:6px;margin:2px 0 6px}
+.tt-score b{font-family:var(--f-display);font-size:28px;line-height:1;font-weight:500}
+
+/* floating instruments */
+.globe-view{--wl:328px;--dr:0px}
+.globe-view.watch-closed{--wl:14px}
+.globe-view.drawer-open{--dr:466px}
+.globe-view.drawer-open .kpis,.globe-view.has-answer .legend{opacity:0;pointer-events:none}
+.kpis{position:absolute;z-index:5;top:14px;left:var(--wl);display:flex;align-items:stretch;padding:4px;gap:0;transition:left .35s ease,opacity .3s ease}
+.kpi{padding:7px 14px 8px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.kpi+.kpi{border-left:1px solid var(--line)}
+.kpi b{font-family:var(--f-display);font-weight:500;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi small{font-size:11px;color:var(--fg-3);white-space:nowrap}
+.kpi .kpi-sub{font-size:11px;color:var(--fg-2);white-space:nowrap}
+.watch-toggle{position:absolute;z-index:6;top:14px;left:14px;height:40px;padding:0 12px;display:none;align-items:center;gap:8px;font-weight:500;font-size:13px}
+.watch-closed .watch-toggle{display:flex}
+.watch-closed .kpis{left:150px}
+.watch{position:absolute;z-index:6;top:14px;left:14px;bottom:14px;width:300px;display:flex;flex-direction:column;overflow:hidden;transition:transform .4s cubic-bezier(.2,.8,.2,1),opacity .3s}
+.watch-closed .watch{transform:translateX(-110%);opacity:0;pointer-events:none}
+.watch-head{padding:14px 14px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+.watch-title{display:flex;align-items:center;justify-content:space-between}
+.watch-title h2{margin:0;font-family:var(--f-display);font-weight:500;font-size:19px}
+.watch-filter{position:relative}
+.watch-filter input{width:100%;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface);padding:0 10px 0 30px;font-size:12.5px;outline:none}
+.watch-filter input:focus{border-color:var(--accent)}
+.watch-filter .ic{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--fg-3)}
+.tabs{display:flex;gap:2px}
+.tabs button{flex:1;height:28px;border-radius:7px;font-size:11.5px;font-weight:500;color:var(--fg-2);display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.tabs button span{font-family:var(--f-mono);font-size:10px;color:var(--fg-3)}
+.tabs button.on{background:var(--surface);color:var(--fg);box-shadow:0 0 0 1px var(--line)}
+.watch-list{flex:1;overflow:auto;padding:6px;overscroll-behavior:contain}
+.w-item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:left;padding:8px;border-radius:10px;transition:background .15s}
+.w-item:hover{background:var(--surface-2)}
+.w-item.on{background:var(--accent-soft)}
+.w-ico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--surface-2);color:var(--fg-2);border:1px solid var(--line)}
+.w-item.on .w-ico{background:var(--surface)}
+.w-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-sub{font-size:11.5px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-note{padding:10px 12px;margin:4px 4px 8px;border-radius:10px;background:var(--surface-2);font-size:12px;color:var(--fg-2);display:flex;gap:8px}
+.w-foot{padding:10px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--fg-3);display:flex;justify-content:space-between}
+
+.map-ctl{position:absolute;z-index:6;top:14px;right:calc(14px + var(--dr));display:flex;flex-direction:column;align-items:flex-end;gap:8px;transition:right .4s cubic-bezier(.2,.8,.2,1)}
+.ctl-row{display:flex;gap:8px;align-items:center}
+.zoom-stack{display:flex;flex-direction:column;padding:3px;gap:2px}
+.zoom-stack button{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--fg-2)}
+.zoom-stack button:hover{background:var(--surface-2);color:var(--fg)}
+.layers-btn{height:38px;padding:0 12px;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500}
+.layers-btn.on{color:var(--accent)}
+.layers{width:264px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.layers h3{margin:2px 2px 6px;font-size:11px}
+.l-row{display:flex;align-items:center;gap:10px;padding:7px 4px;border-radius:8px}
+.l-row label{flex:1;display:flex;flex-direction:column;cursor:pointer;font-size:13px;font-weight:500}
+.l-row label small{font-weight:400;font-size:11px;color:var(--fg-3)}
+.l-sep{height:1px;background:var(--line);margin:6px 0}
+.beta{font-size:9.5px;font-weight:600;letter-spacing:.06em;color:var(--accent);border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:1px}
+
+.legend{position:absolute;z-index:5;left:var(--wl);bottom:58px;width:300px;padding:12px 14px 12px;transition:left .35s ease,opacity .3s ease}
+.legend-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.legend-head b{font-size:12.5px;font-weight:600}
+.legend-bar{display:flex;height:10px;border-radius:5px;overflow:hidden}
+.legend-bar i{display:block;height:100%}
+.legend-scale{position:relative;height:16px;margin-top:4px;font:10.5px var(--f-mono);color:var(--fg-3)}
+.legend-scale span{position:absolute;transform:translateX(-50%)}
+.legend-keys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
+.legend-keys div{font-size:11.5px;display:flex;flex-direction:column;gap:2px}
+.legend-keys div b{font-weight:600;display:flex;align-items:center;gap:6px}
+.legend-keys div b::before{content:"";width:8px;height:8px;border-radius:2px;background:currentColor}
+.legend-keys div small{color:var(--fg-3);font-family:var(--f-mono);font-size:10.5px}
+.legend-src{margin-top:8px;font-size:10.5px;color:var(--fg-3);display:flex;justify-content:space-between;gap:6px}
+.legend-tune{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:grid;gap:8px}
+.legend-tune label{display:grid;grid-template-columns:1fr auto;font-size:11.5px;color:var(--fg-2);gap:2px 8px;align-items:center}
+.legend-tune input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.legend.cov .legend-cpi,.legend:not(.cov) .legend-cov{display:none}
+
+.ticker{position:absolute;z-index:5;left:var(--wl);right:calc(14px + var(--dr));bottom:14px;height:36px;display:flex;align-items:center;gap:10px;padding:0 6px 0 12px;overflow:hidden;transition:left .35s ease,right .4s cubic-bezier(.2,.8,.2,1)}
+.ticker .live{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--accent);white-space:nowrap;text-transform:uppercase}
+.ticker .live i{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+.ticker-track{flex:1;min-width:0;position:relative;height:100%}
+.ticker-item{position:absolute;inset:0;display:flex;align-items:center;gap:10px;font-size:12.5px;white-space:nowrap;overflow:hidden;transition:transform .5s cubic-bezier(.2,.8,.2,1),opacity .5s;text-align:left}
+.ticker-item.out{transform:translateY(-100%);opacity:0}
+.ticker-item.in{transform:translateY(100%);opacity:0}
+.ticker-item span.t{overflow:hidden;text-overflow:ellipsis}
+.ticker-item time{font-family:var(--f-mono);font-size:11px;color:var(--fg-3)}
+
+/* drawer */
+.drawer{position:absolute;z-index:8;top:14px;right:14px;bottom:14px;width:440px;display:flex;flex-direction:column;overflow:hidden;transform:translateX(calc(100% + 30px));transition:transform .45s cubic-bezier(.2,.8,.2,1);background:var(--surface)}
+.drawer.open{transform:none}
+.dr-head{padding:16px 18px 0;display:flex;flex-direction:column;gap:10px}
+.dr-top{display:flex;align-items:flex-start;gap:12px}
+.dr-ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--line);color:var(--fg-2);flex:none}
+.dr-ico .ic{width:20px;height:20px}
+.dr-title{flex:1;min-width:0}
+.dr-title h2{margin:0;font-family:var(--f-display);font-weight:500;font-size:22px;line-height:1.15;text-wrap:balance}
+.dr-title p{margin:3px 0 0;font-size:12.5px;color:var(--fg-2)}
+.dr-close{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--fg-3);flex:none}
+.dr-close:hover{background:var(--surface-2);color:var(--fg)}
+.dr-chips{display:flex;flex-wrap:wrap;gap:6px}
+.dr-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:4px -18px 0;padding:0 12px;overflow-x:auto;scrollbar-width:none}
+.dr-tabs button{position:relative;height:38px;padding:0 10px;font-size:12.5px;font-weight:500;color:var(--fg-3);white-space:nowrap}
+.dr-tabs button:hover{color:var(--fg)}
+.dr-tabs button.on{color:var(--fg)}
+.dr-tabs button.on::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:var(--accent)}
+.dr-tabs button i{font-style:normal;font-family:var(--f-mono);font-size:10px;color:var(--accent);margin-left:4px}
+.dr-body{flex:1;overflow:auto;padding:16px 18px 22px;display:flex;flex-direction:column;gap:18px;overscroll-behavior:contain}
+.dr-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;background:var(--surface)}
+.dr-foot .btn{flex:1 1 auto}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sec-h h3{margin:0;font-size:13px;font-weight:600}
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.meter{padding:12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.meter .m-top{display:flex;align-items:baseline;justify-content:space-between}
+.meter b{font-family:var(--f-display);font-size:26px;font-weight:500;line-height:1}
+.meter b small{font-size:13px;color:var(--fg-3);font-family:var(--f-body)}
+.bar{height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.route-card{display:grid;grid-template-columns:76px 1fr;gap:12px;align-items:center;padding:12px;border-radius:12px;border:1px solid var(--line)}
+.mini-matrix{width:76px;height:76px}
+.route-card h4{margin:0 0 2px;font-size:14px}
+.route-card p{margin:0;font-size:12.5px;color:var(--fg-2)}
+.factors{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.factors li{display:grid;grid-template-columns:18px 1fr;gap:6px;font-size:12.5px;color:var(--fg-2);align-items:start}
+.factors li b{font-family:var(--f-mono);font-size:12px;width:18px;height:18px;border-radius:5px;display:grid;place-items:center}
+.factors li.up b{color:var(--low);background:color-mix(in srgb,var(--low) 14%,transparent)}
+.factors li.down b{color:var(--high);background:color-mix(in srgb,var(--high) 12%,transparent)}
+.hint{display:flex;gap:10px;padding:10px 12px;border-radius:10px;background:var(--accent-soft);font-size:12.5px;align-items:flex-start}
+.hint .ic{color:var(--accent);margin-top:1px}
+.hint p{margin:0;flex:1}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12.5px;margin:0}
+.kv dt{color:var(--fg-3)}
+.kv dd{margin:0;text-align:right;font-weight:500;min-width:0;overflow-wrap:anywhere}
+.ctx{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:12px;border-radius:12px;background:var(--surface-2)}
+.ctx .big{font-family:var(--f-display);font-size:38px;line-height:1;font-weight:500}
+.ctx .big small{font-size:14px;color:var(--fg-3);font-family:var(--f-body)}
+.scale{position:relative;height:28px;margin-top:4px}
+.scale .track{position:absolute;left:0;right:0;top:8px;height:6px;border-radius:3px;display:flex;overflow:hidden}
+.scale .track i{height:100%}
+.scale .mark{position:absolute;top:1px;width:2px;height:20px;background:var(--fg);border-radius:1px;transform:translateX(-1px)}
+.scale .avg{position:absolute;top:5px;width:1px;height:12px;background:var(--fg-3)}
+.scale .lbl{position:absolute;top:18px;font:10px var(--f-mono);color:var(--fg-3);transform:translateX(-50%);white-space:nowrap}
+.finding{padding:12px;border-radius:12px;border:1px solid var(--line);display:flex;flex-direction:column;gap:7px}
+.finding-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.finding h4{margin:0;font-size:13.5px;font-weight:600}
+.finding p{margin:0;font-size:12.5px;color:var(--fg-2)}
+.finding-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.conf{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--fg-2);white-space:nowrap}
+.conf .cbar{width:44px;height:4px;border-radius:2px;background:var(--surface-3);overflow:hidden}
+.conf .cbar i{display:block;height:100%;background:var(--fg-2)}
+.reason{font-size:12px;color:var(--fg-2);padding:8px 10px;border-radius:8px;background:var(--surface-2);border-left:2px solid var(--low)}
+.graph-box{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface-2)}
+.graph-box svg{display:block;width:100%;height:auto}
+.g-node{cursor:pointer}
+.g-node rect{fill:var(--surface);stroke:var(--line-2)}
+.g-node.cur rect{stroke:var(--accent);stroke-width:1.6}
+.g-node:hover rect{stroke:var(--fg-2)}
+.g-node text{font:500 10.5px var(--f-body);fill:var(--fg)}
+.g-node text.sub{font-size:9.5px;fill:var(--fg-3);font-weight:400}
+.g-edge{fill:none;stroke:var(--fg-2);stroke-width:1.2}
+.g-edge.filing{stroke-dasharray:5 3}
+.g-edge.news{stroke-dasharray:1.2 3}
+.g-elabel{font:500 9.5px var(--f-mono);fill:var(--fg-2);paint-order:stroke;stroke:var(--surface-2);stroke-width:3px}
+.g-legend{display:flex;gap:14px;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--fg-3)}
+.g-legend span{display:flex;align-items:center;gap:6px}
+.g-legend svg{width:22px;height:6px}
+.statement{border-radius:12px;border:1px solid var(--line);overflow:hidden}
+.statement-head{padding:10px 12px;background:var(--surface-2);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg-2);flex-wrap:wrap}
+.statement blockquote{margin:0;padding:12px 14px;font-family:var(--f-display);font-size:16px;line-height:1.45;border-bottom:1px solid var(--line)}
+.claim{padding:10px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 10px;border-bottom:1px solid var(--line)}
+.claim:last-child{border-bottom:0}
+.claim q{font-size:13px;font-weight:500;quotes:"\201C" "\201D"}
+.claim p{grid-column:1/-1;margin:0;font-size:12px;color:var(--fg-2)}
+.tc-consistent{color:var(--low);background:color-mix(in srgb,var(--low) 15%,transparent)}
+.tc-unverified{color:var(--slate);background:color-mix(in srgb,var(--slate) 16%,transparent)}
+.tc-contradicted{color:var(--high);background:color-mix(in srgb,var(--high) 13%,transparent)}
+.memo{border-radius:12px;border:1px solid var(--line);padding:14px 16px;font-size:13px;line-height:1.55;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.memo h4{margin:0;font-family:var(--f-display);font-weight:500;font-size:17px}
+.memo p{margin:0}
+.memo sup{font-family:var(--f-mono);font-size:9.5px;color:var(--accent);margin-left:1px;cursor:help}
+.memo ol{margin:4px 0 0;padding-left:18px;font-size:11.5px;color:var(--fg-3);display:flex;flex-direction:column;gap:2px}
+.signoff{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--fg-2);flex-wrap:wrap}
+.who{display:inline-flex;align-items:center;gap:6px}
+.who i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:9.5px;font-weight:600;background:var(--surface-3);color:var(--fg-2)}
+.timeline{list-style:none;margin:0;padding:0 0 0 14px;border-left:1px solid var(--line-2);display:flex;flex-direction:column;gap:12px}
+.timeline li{position:relative;font-size:12.5px}
+.timeline li::before{content:"";position:absolute;left:-19px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--surface);border:2px solid var(--fg-3)}
+.timeline li.bad::before{border-color:var(--high);background:var(--high)}
+.timeline li.warn::before{border-color:var(--mid)}
+.timeline time{display:block;font-family:var(--f-mono);font-size:10.5px;color:var(--fg-3)}
+.live-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.live-grid div{padding:10px;border-radius:10px;background:var(--surface-2);display:flex;flex-direction:column;gap:2px;min-width:0}
+.live-grid b{font-family:var(--f-mono);font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.link-row{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);text-align:left}
+.link-row:hover{background:var(--surface-2)}
+.link-row .lr-main{flex:1;min-width:0}
+.link-row .lr-main div{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.link-row .lr-main small{font-size:11.5px;color:var(--fg-3)}
+.privacy{display:flex;gap:10px;padding:12px;border-radius:12px;background:var(--surface-2);font-size:12.5px;color:var(--fg-2)}
+
+/* ask answer */
+.answer{position:absolute;z-index:7;left:var(--wl);bottom:58px;width:min(400px,calc(100% - 28px));padding:14px;display:flex;flex-direction:column;gap:10px;transition:left .35s ease;max-height:calc(100% - 140px);overflow:auto}
+.answer-q{display:flex;gap:10px;align-items:flex-start}
+.answer-q .spark{color:var(--accent);margin-top:2px}
+.answer-q p{margin:0;font-family:var(--f-display);font-size:16.5px;line-height:1.3;flex:1}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.steps li{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--fg-3);opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s}
+.steps li.show{opacity:1;transform:none}
+.steps li .ic{color:var(--low);margin-top:1px}
+.steps li.run .ic{color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.answer-res{display:flex;flex-direction:column;gap:6px}
+.answer-res .link-row{background:var(--surface)}
+.answer-sum{font-size:13px;margin:0}
+
+/* modals */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:start center;padding:12vh 16px 16px;background:rgba(20,18,15,.38);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:fade .18s ease}
+.modal[hidden]{display:none}
+@keyframes fade{from{opacity:0}}
+.sheet{width:min(620px,100%);background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden;animation:rise .25s cubic-bezier(.2,.8,.2,1);max-height:80vh;display:flex;flex-direction:column}
+@keyframes rise{from{transform:translateY(10px) scale(.98);opacity:0}}
+.ask-input{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.ask-input .spark{color:var(--accent);width:22px;height:22px}
+.ask-input input{flex:1;border:0;outline:none;background:transparent;font-family:var(--f-display);font-size:20px}
+.ask-input input::placeholder{color:var(--fg-3)}
+.ask-list{padding:8px;overflow:auto}
+.ask-list .eyebrow{padding:8px 10px 4px}
+.ask-list button{display:flex;align-items:center;gap:12px;width:100%;padding:10px;border-radius:10px;text-align:left;font-size:13.5px}
+.ask-list button:hover,.ask-list button.on{background:var(--surface-2)}
+.ask-list button small{margin-left:auto;color:var(--fg-3);font-size:11.5px;white-space:nowrap}
+.ask-foot{padding:10px 18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--fg-3);display:flex;gap:14px;flex-wrap:wrap}
+.sheet-head{padding:18px 20px 12px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--line)}
+.sheet-head h2{margin:0;font-family:var(--f-display);font-weight:500;font-size:22px}
+.sheet-head p{margin:3px 0 0;font-size:12.5px;color:var(--fg-2)}
+.sheet-body{padding:16px 20px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.sheet-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.ddq-q{display:grid;grid-template-columns:24px 1fr;gap:4px 10px;padding:12px;border-radius:12px;border:1px solid var(--line)}
+.ddq-q b{font-family:var(--f-mono);font-size:11px;color:var(--fg-3);padding-top:2px}
+.ddq-q textarea{width:100%;border:0;outline:none;background:transparent;resize:vertical;font-size:13.5px;line-height:1.45;min-height:42px;padding:0}
+.ddq-q small{grid-column:2;font-size:11.5px;color:var(--fg-3);display:flex;gap:6px;align-items:flex-start}
+.ddq-q small .agent{font-size:10.5px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:500;color:var(--fg-2)}
+.field input,.field select{height:36px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);padding:0 10px;outline:none;font-size:13px}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field small{font-size:11.5px;color:var(--fg-3)}
+.check-row{display:flex;gap:8px;flex-wrap:wrap}
+.check-row label{display:flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--line-2);font-size:12.5px;cursor:pointer}
+.check-row input{accent-color:var(--accent)}
+.conn-types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.conn-types button{padding:14px 12px;border-radius:12px;border:1px solid var(--line-2);text-align:left;display:flex;flex-direction:column;gap:6px;transition:border-color .15s,background .15s}
+.conn-types button:hover{background:var(--surface-2)}
+.conn-types button.on{border-color:var(--accent);background:var(--accent-soft)}
+.conn-types b{font-size:14px}
+.conn-types small{font-size:11.5px;color:var(--fg-2);line-height:1.35}
+.test-log{list-style:none;margin:0;padding:12px;border-radius:10px;background:var(--surface-2);font-family:var(--f-mono);font-size:12px;display:flex;flex-direction:column;gap:5px;min-height:60px}
+.test-log li{display:flex;gap:8px}
+.test-log li .ok{color:var(--low)}
+.popover{position:fixed;z-index:45;top:60px;right:16px;width:min(400px,calc(100vw - 32px));max-height:min(560px,calc(100vh - 80px));display:flex;flex-direction:column;overflow:hidden;background:var(--surface)}
+.popover[hidden]{display:none}
+.pop-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.pop-head h3{margin:0;font-family:var(--f-display);font-weight:500;font-size:18px}
+.pop-list{overflow:auto;padding:6px}
+.alert-item{display:grid;grid-template-columns:1fr;gap:4px;padding:10px;border-radius:10px;width:100%;text-align:left}
+.alert-item:hover{background:var(--surface-2)}
+.alert-item .ai-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.alert-item p{margin:0;font-size:12.5px;line-height:1.4}
+.alert-item time{font-family:var(--f-mono);font-size:10.5px;color:var(--fg-3);white-space:nowrap}
+.toast{position:fixed;z-index:60;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;padding:10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:13px;box-shadow:var(--shadow-lg);transition:opacity .25s,transform .25s;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- page views ---------- */
+.page{position:absolute;inset:0;overflow:auto;padding:28px 32px 40px}
+.page-in{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-head h1{margin:0;font-family:var(--f-display);font-weight:500;font-size:34px;letter-spacing:-.01em;line-height:1.1}
+.page-head p{margin:6px 0 0;color:var(--fg-2);max-width:62ch;text-wrap:pretty}
+.stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{padding:14px 16px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.stat b{font-family:var(--f-display);font-weight:500;font-size:30px;line-height:1.05;font-variant-numeric:tabular-nums}
+.stat small{font-size:12px;color:var(--fg-2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.card-h{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.card-h h2{margin:0;font-size:14px;font-weight:600}
+.card-b{padding:16px}
+.rev-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.table-wrap{overflow-x:auto}
+table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px}
+.cases th{text-align:left;font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;background:var(--surface)}
+.cases td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.cases tr{transition:background .15s;cursor:pointer}
+.cases tbody tr:hover,.cases tr.hl{background:var(--surface-2)}
+.cases .c-name{display:flex;align-items:center;gap:9px;min-width:0}
+.cases .c-name div{min-width:0}
+.cases .c-name b{display:block;font-weight:500;font-size:13px;white-space:nowrap}
+.cases .c-name small{color:var(--fg-3)}
+.matrix-svg{width:100%;height:auto;display:block}
+.mx-q{stroke:var(--line);stroke-width:1}
+.mx-ql{font:600 10.5px var(--f-body);letter-spacing:.04em}
+.mx-qs{font:400 9.5px var(--f-body);fill:var(--fg-3)}
+.mx-axis{font:10px var(--f-mono);fill:var(--fg-3)}
+.mx-dot{cursor:pointer;stroke:var(--surface);stroke-width:1.5;transition:cx .5s,cy .5s,fill .4s}
+.mx-dot:hover,.mx-dot.hl{stroke:var(--fg);stroke-width:2}
+.mx-thr{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 3}
+.thr-ctl{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;font-size:12.5px;margin-top:12px}
+.thr-ctl input{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.thr-ctl small{grid-column:1/-1;color:var(--fg-3);font-size:11.5px}
+.calib{display:flex;flex-direction:column;gap:12px}
+.calib-row{display:grid;grid-template-columns:70px 1fr 52px;gap:10px;align-items:center;font-size:12.5px}
+.calib-row .bar{height:8px;position:relative;overflow:visible}
+.calib-row .bar em{position:absolute;top:-4px;width:2px;height:16px;background:var(--fg);border-radius:1px}
+.src-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.src{padding:16px;display:flex;flex-direction:column;gap:12px}
+.src-top{display:flex;align-items:flex-start;gap:10px}
+.src-top h3{margin:0;font-size:14.5px;font-weight:600}
+.src-top p{margin:2px 0 0;font-size:12px;color:var(--fg-3)}
+.src-health{margin-left:auto}
+.src .kv{font-size:12px}
+.src.warn{border-color:color-mix(in srgb,var(--mid) 55%,var(--line))}
+.src-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.code{font-family:var(--f-mono);font-size:12px;line-height:1.6;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;white-space:pre;margin:0}
+.code .k{color:var(--accent)} .code .s{color:var(--low)} .code .c{color:var(--fg-3)}
+.pol-grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
+.doc-card{padding:16px;display:flex;flex-direction:column;gap:14px}
+.doc-thumb{max-width:100%;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);padding:18px 16px;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+.doc-thumb b{font-family:var(--f-display);font-weight:500;font-size:16px;line-height:1.2}
+.doc-thumb i{display:block;height:5px;border-radius:3px;background:var(--surface-3)}
+.doc-thumb i.hl{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.rule{padding:14px 16px;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:4px 14px;border-bottom:1px solid var(--line);align-items:start}
+.rule:last-child{border-bottom:0}
+.rule .rid{font-family:var(--f-mono);font-size:11.5px;color:var(--fg-3);padding-top:2px}
+.rule h3{margin:0;font-size:13.5px;font-weight:500;line-height:1.4}
+.rule p{margin:4px 0 0;font-size:12px;color:var(--fg-2)}
+.rule .rmeta{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.callout{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:14px 16px;border-radius:12px;border:1px solid var(--line)}
+.callout .ic{grid-row:span 2;margin-top:2px}
+.callout.gap .ic{color:var(--slate)} .callout.conflict .ic{color:var(--high)}
+.callout b{font-size:13.5px}
+.callout p{margin:0;font-size:12.5px;color:var(--fg-2)}
+.demo-note{font-size:11.5px;color:var(--fg-3)}
+
+/* ---------- responsive ---------- */
+@media (max-width:1180px){
+  .globe-view{--wl:14px}
+  .globe-view:not(.watch-closed) .watch{box-shadow:var(--shadow-lg)}
+  .kpis .kpi:nth-child(4){display:none}
+  .rev-grid,.pol-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:1180px) and (min-width:761px){
+  .globe-view.watch-closed .kpis{left:150px}
+}
+@media (max-width:900px){
+  .wordmark span,.ws-switch{display:none}
+  .kpis{display:none}
+  .stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ask-btn .lbl,.ask-btn kbd,.vessel-toggle-lbl{display:none}
+}
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:52px minmax(0,1fr) 58px;grid-template-areas:"top" "stage" "rail"}
+  .brand{display:none}
+  .topbar{padding:0 10px;gap:8px}
+  .wordmark b{font-size:18px}
+  .wordmark{display:none}
+  .search{flex:1 1 auto}
+  .search kbd{display:none}
+  #theme-btn,.avatar{display:none}
+  .rail{flex-direction:row;justify-content:space-around;padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px));border-right:0;border-top:1px solid var(--line)}
+  .rail .spacer,.rail .rail-extra{display:none}
+  .rail button{width:auto;flex:1;max-width:84px}
+  .globe-view{--dr:0px}
+  .watch{left:10px;right:10px;width:auto;top:10px;bottom:10px;z-index:9}
+  .watch-toggle{top:10px;left:10px}
+  .map-ctl{top:10px;right:10px}
+  .map-ctl .seg button span{display:none}
+  .legend{left:10px;right:auto;bottom:10px;width:min(260px,calc(100% - 20px));padding:10px 12px}
+  .legend .legend-keys small,.legend .legend-src{display:none}
+  .ticker{display:none}
+  .drawer{top:auto;left:0;right:0;bottom:0;width:auto;height:76%;border-radius:18px 18px 0 0;transform:translateY(105%)}
+  .answer{left:10px;right:10px;width:auto;bottom:10px;max-height:60%}
+  .page{padding:20px 16px 32px}
+  .page-head h1{font-size:28px}
+  .layers{width:min(264px,calc(100vw - 20px))}
+  .modal{padding-top:8vh}
+  .conn-types{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+/* Google Places Autocomplete dropdown */
+.g-powered{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--fg-3);letter-spacing:.01em}
+.g-powered .g-g{color:#4285F4;font-weight:700}
+.g-powered .g-o1{color:#EA4335;font-weight:700}
+.g-powered .g-o2{color:#FBBC05;font-weight:700}
+.g-powered .g-g2{color:#4285F4;font-weight:700}
+.g-powered .g-l{color:#34A853;font-weight:700}
+.g-powered .g-e{color:#EA4335;font-weight:700}
+
+.addr-input-wrap{position:relative;display:flex;align-items:center}
+.addr-input-wrap .addr-pin-ico{position:absolute;left:10px;color:var(--accent);pointer-events:none;z-index:2}
+.addr-input-wrap input{padding-left:32px;padding-right:28px;flex:1;min-width:0}
+.addr-input-wrap .addr-clear-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--fg-3);font-size:16px;cursor:pointer;padding:0 4px;border-radius:4px}
+.addr-input-wrap .addr-clear-btn:hover{color:var(--fg);background:var(--surface-3)}
+
+.addr-dropdown{position:absolute;top:calc(100% + 2px);left:0;right:0;max-height:240px;overflow-y:auto;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;box-shadow:var(--shadow-lg);z-index:10005;padding:4px 0}
+.addr-item{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;cursor:pointer;transition:background .12s}
+.addr-item:hover, .addr-item.active{background:var(--surface-2)}
+.addr-item .addr-item-pin{flex-shrink:0;margin-top:2px;color:#EA4335}
+.addr-item-main{font-weight:600;font-size:12.5px;color:var(--fg);line-height:1.3}
+.addr-item-sub{font-size:11px;color:var(--fg-3);margin-top:2px;line-height:1.25}
+.addr-dropdown-foot{display:flex;align-items:center;justify-content:flex-end;padding:6px 12px 4px;border-top:1px solid var(--line);font-size:10.5px;color:var(--fg-3)}
+
+.addr-feedback{font-size:11.5px;margin-top:4px;min-height:18px;display:flex;align-items:center;gap:5px}
+.addr-feedback.verified{color:var(--low);font-weight:500}
+.addr-feedback.warning{color:var(--mid);font-weight:500}
+.addr-feedback.error{color:var(--high);font-weight:500}
+
+/* Person pin distinct styling on globe */
+.pin.person-pin .p-core{r:2.8}
+.pin.person-pin .p-ring{stroke-width:2.2}
+
+/* UBO & Controlling Persons dynamic table */
+.ubo-section{margin-top:4px}
+.ubo-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ubo-table-head{display:grid;grid-template-columns:150px minmax(0, 1fr) 95px 28px;gap:8px;font-size:11px;font-weight:600;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.4px;padding:0 2px 4px 2px;box-sizing:border-box;width:100%}
+.ubo-wrap{display:flex;flex-direction:column;gap:8px}
+.ubo-row{display:grid;grid-template-columns:150px minmax(0, 1fr) 95px 28px;gap:8px;align-items:flex-start;box-sizing:border-box;width:100%}
+.ubo-role-col{min-width:0;display:flex;flex-direction:column;gap:4px}
+.ubo-role-col select, .ubo-role-col input{font-size:12.5px;padding:6px 8px;width:100% !important;box-sizing:border-box !important;min-width:0 !important}
+.ubo-name-col{min-width:0;width:100%}
+.ubo-name-col input{font-size:12.5px;padding:6px 10px;width:100% !important;box-sizing:border-box !important;min-width:0 !important;max-width:100% !important}
+.ubo-pct-col{min-width:0;width:100%}
+.ubo-pct-wrap{position:relative;display:flex;align-items:center;width:100%;box-sizing:border-box}
+.ubo-pct-wrap input{font-size:12.5px;padding:6px 20px 6px 8px !important;text-align:right;width:100% !important;box-sizing:border-box !important;min-width:0 !important;max-width:100% !important}
+.ubo-pct-wrap .ubo-pct-symbol{position:absolute;right:7px;font-size:11px;color:var(--fg-3);pointer-events:none;font-weight:600}
+.ubo-del-col{min-width:0;display:flex;align-items:center;justify-content:center;padding-top:3px}
+.ubo-del-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg-3);cursor:pointer;font-size:16px;line-height:1;transition:all .15s}
+.ubo-del-btn:hover:not(:disabled){color:var(--high);border-color:var(--high);background:var(--surface-3)}
+.ubo-del-btn:disabled{opacity:.2;cursor:not-allowed}
+
+/* Visual Progress Bar out of 100 */
+.ubo-meter-wrap{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-top:8px;display:flex;flex-direction:column;gap:7px;transition:all .2s}
+.ubo-meter-wrap.valid{background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3)}
+.ubo-meter-wrap.partial{background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.35)}
+.ubo-meter-wrap.invalid{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.35)}
+.ubo-meter-header{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.ubo-meter-title{display:flex;align-items:center;gap:6px;font-weight:500;color:var(--fg)}
+.ubo-meter-wrap.valid .ubo-meter-title{color:var(--low)}
+.ubo-meter-wrap.partial .ubo-meter-title{color:var(--mid)}
+.ubo-meter-wrap.invalid .ubo-meter-title{color:var(--high)}
+.ubo-meter-val{font-weight:700;font-size:12px}
+.ubo-meter-wrap.valid .ubo-meter-val{color:var(--low)}
+.ubo-meter-wrap.partial .ubo-meter-val{color:var(--mid)}
+.ubo-meter-wrap.invalid .ubo-meter-val{color:var(--high)}
+.ubo-progress-track{width:100%;height:8px;background:var(--surface-3);border-radius:999px;overflow:hidden;position:relative;border:1px solid var(--line)}
+.ubo-progress-fill{height:100%;border-radius:999px;transition:width .2s ease,background-color .2s ease;background:var(--accent)}
+.ubo-meter-wrap.valid .ubo-progress-fill{background:var(--low)}
+.ubo-meter-wrap.partial .ubo-progress-fill{background:var(--mid)}
+.ubo-meter-wrap.invalid .ubo-progress-fill{background:var(--high)}
+
+.ubo-add-btn{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px dashed var(--line-2);background:none;color:var(--fg-2);cursor:pointer;transition:all .15s}
+.ubo-add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surface-2)}
+#intake-submit:disabled{opacity:0.45;cursor:not-allowed;filter:grayscale(0.4)}
+
+/* ================= Employee KYC Portal styles ================= */
+.emp-head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.emp-filter-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.emp-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.emp-chip{padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--fg-2);cursor:pointer;transition:all .15s}
+.emp-chip:hover{background:var(--surface-2);color:var(--fg)}
+.emp-chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.emp-search-wrap{display:flex;align-items:center;gap:8px;position:relative}
+.emp-search-wrap input{height:34px;padding:0 12px 0 32px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);font-size:12.5px;min-width:240px;color:var(--fg)}
+.emp-search-wrap svg{position:absolute;left:10px;top:9px;color:var(--fg-3);pointer-events:none}
+.emp-type-sel{height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);font-size:12.5px;color:var(--fg)}
+
+/* KYC Interactive Data Table */
+.kyc-table-wrap{width:100%;overflow-x:auto;border-radius:12px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow)}
+table.kyc-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1450px;text-align:left}
+table.kyc-table th{background:var(--surface-2);padding:11px 12px;font-weight:600;font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:var(--fg-3);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2;white-space:nowrap}
+table.kyc-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+table.kyc-table tbody tr{cursor:pointer;transition:background .15s}
+table.kyc-table tbody tr:hover{background:var(--surface-2)}
+table.kyc-table tbody tr:last-child td{border-bottom:none}
+
+/* Badges & Chips */
+.badge-status{display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.badge-status.submitted{background:rgba(59,130,246,0.14);color:#60a5fa}
+.badge-status.screening-in-progress{background:rgba(245,158,11,0.14);color:#fbbf24}
+.badge-status.pending-ddq{background:rgba(168,85,247,0.14);color:#c084fc}
+.badge-status.approved{background:rgba(34,197,94,0.14);color:#4ade80}
+.badge-status.rejected{background:rgba(239,68,68,0.14);color:#f87171}
+.badge-status.draft{background:rgba(156,163,175,0.14);color:#9ca3af}
+
+.badge-screen{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.badge-screen.clear{background:rgba(34,197,94,0.14);color:#4ade80}
+.badge-screen.watchlist-match{background:rgba(245,158,11,0.14);color:#fbbf24}
+.badge-screen.pep-alert{background:rgba(245,158,11,0.14);color:#fbbf24}
+.badge-screen.sanctions-alert{background:rgba(239,68,68,0.18);color:#ef4444}
+.badge-screen.high-risk{background:rgba(239,68,68,0.18);color:#f87171}
+
+.badge-ai{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;position:relative}
+.badge-ai.low-risk{background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.3)}
+.badge-ai.medium-risk{background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)}
+.badge-ai.high-risk{background:rgba(239,68,68,0.14);color:#f87171;border:1px solid rgba(239,68,68,0.35)}
+.badge-ai.anomalies-flagged{background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)}
+
+.badge-bool{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
+.badge-bool.enabled{background:rgba(34,197,94,0.12);color:#4ade80}
+.badge-bool.disabled{background:var(--surface-3);color:var(--fg-3)}
+.badge-bool.yes{background:rgba(120,140,93,0.16);color:var(--accent);font-weight:600}
+.badge-bool.no{background:var(--surface-3);color:var(--fg-3)}
+
+.badge-ddq-status{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
+.badge-ddq-status.triggered{background:rgba(245,158,11,0.16);color:#fbbf24;font-weight:600}
+.badge-ddq-status.sent-to-counterparty{background:rgba(59,130,246,0.14);color:#60a5fa}
+.badge-ddq-status.returned-to-counterparty{background:rgba(245,158,11,0.16);color:#fbbf24;font-weight:600}
+/* Compliance Agent panel */
+.agent-card{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:10px;border:1px solid var(--accent);background:var(--surface)}
+.agent-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px}
+.agent-head b{color:var(--accent)}
+.agent-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:600;background:var(--surface-3);color:var(--fg-2);white-space:nowrap}
+.agent-pill.rec-auto_clear,.agent-pill.rec-approve{background:rgba(34,197,94,0.14);color:var(--low)}
+.agent-pill.rec-require_ddq,.agent-pill.rec-bounce_back{background:rgba(245,158,11,0.16);color:var(--mid)}
+.agent-pill.rec-escalate{background:rgba(239,68,68,0.16);color:var(--high)}
+.agent-score{font-family:var(--f-display);font-size:22px;line-height:1}
+.agent-score small{font-family:var(--f-body);font-size:11px;color:var(--fg-3)}
+.agent-text{font-size:11.5px;line-height:1.45;color:var(--fg-2)}
+.agent-sub{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-3);margin-top:4px}
+.agent-trace{font-size:11px;color:var(--fg-2)}
+.agent-trace summary{cursor:pointer;font-weight:600}
+.agent-trace li{margin:4px 0}
+.agent-trace code{font-family:var(--f-mono);font-size:10.5px;color:var(--accent)}
+.agent-issue{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;padding:6px 0;border-top:1px solid var(--line);font-size:11.5px}
+.agent-issue input[type=text]{width:100%;height:26px;border-radius:7px;border:1px solid var(--line-2);background:var(--surface-2);padding:0 8px;font-size:11.5px;margin-top:3px}
+.agent-bar{height:5px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.agent-bar i{display:block;height:100%;background:var(--low)}
+
+.badge-ddq-status.under-review{background:rgba(245,158,11,0.14);color:#fbbf24}
+.badge-ddq-status.completed{background:rgba(34,197,94,0.14);color:#4ade80}
+.badge-ddq-status.na{color:var(--fg-3)}
+
+/* Dropzone & Multimodal Upload */
+.emp-dropzone{border:2px dashed var(--line-2);border-radius:12px;padding:16px;text-align:center;background:var(--surface-2);cursor:pointer;transition:all .2s;position:relative}
+.emp-dropzone:hover,.emp-dropzone.dragover{border-color:var(--accent);background:var(--accent-soft)}
+
+/* AI Suggested Highlighting */
+.ai-suggested-highlight{border-color:#38bdf8 !important;background-color:rgba(56,189,248,0.08) !important}
+.ai-chip{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(56,189,248,0.18);color:#0284c7;text-transform:uppercase;letter-spacing:0.04em}
+:root[data-theme="dark"] .ai-chip{color:#38bdf8;background:rgba(56,189,248,0.2)}
+.dynamic-group{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface-2);margin-top:6px}
+.audit-kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+
+/* =====================================================================
+   SAFEGLOBE KYC: LOGIN UI, COMPLIANCE WORKSPACE & GUEST DDQ PORTAL
+   ===================================================================== */
+.login-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.login-container{display:grid;grid-template-columns:1fr 1.1fr;max-width:1040px;width:100%;min-height:580px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden}
+@media (max-width: 860px){.login-container{grid-template-columns:1fr}}
+.login-hero{background:linear-gradient(145deg, var(--surface-2) 0%, var(--surface-3) 100%);padding:40px 30px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;border-right:1px solid var(--line);text-align:center}
+.hero-canvas-wrap{width:260px;height:260px;position:relative;margin:16px 0}
+#hero-globe-canvas{width:100%;height:100%;display:block;cursor:grab}
+#hero-globe-canvas:active{cursor:grabbing}
+.hero-emblem{position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);width:52px;height:52px;background:var(--surface);border:2px solid var(--accent);border-radius:50%;display:grid;place-items:center;box-shadow:0 0 24px var(--atmo);pointer-events:none}
+.hero-emblem svg{width:26px;height:26px}
+.login-card{padding:40px 36px;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.login-header{display:flex;flex-direction:column;gap:5px}
+.login-header h1{font-family:var(--f-display);font-size:27px;margin:0;font-weight:600;letter-spacing:-0.02em}
+.login-header p{margin:0;color:var(--fg-3);font-size:13px}
+
+/* Dual Hackathon Persona Switcher */
+.persona-cards{display:flex;flex-direction:column;gap:9px}
+.persona-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;transition:all .18s;text-align:left}
+.persona-card:hover{border-color:var(--accent);background:var(--surface-3);transform:translateY(-1px)}
+.persona-card.active{border-color:var(--accent);background:var(--accent-soft)}
+.persona-card .p-avatar{width:36px;height:36px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;display:grid;place-items:center;flex-shrink:0}
+.persona-card .p-avatar.comp{background:var(--cov-1)}
+.persona-card .p-meta{flex:1;min-width:0}
+.persona-card .p-meta b{display:block;font-size:13px;color:var(--fg)}
+.persona-card .p-meta small{display:block;font-size:11px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.persona-card .p-badge{font-size:9.5px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--line);color:var(--fg-2);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+
+/* Google Sign In Button */
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:42px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font-size:13px;font-weight:500;transition:all .15s}
+.btn-google:hover{background:var(--surface-2);border-color:var(--fg-3)}
+.btn-google svg{width:18px;height:18px}
+.location-required{padding:12px;border-radius:12px;border:1px solid var(--accent);background:var(--accent-soft)}
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--on-accent)}
+
+/* Topbar Persistent Persona Badge */
+.persona-badge-wrap{display:flex;align-items:center;gap:8px;padding:3px 9px;border-radius:9px;background:var(--surface-2);border:1px solid var(--line);cursor:pointer;transition:all .15s}
+.persona-badge-wrap:hover{background:var(--surface-3);border-color:var(--line-2)}
+.persona-badge-wrap .p-mini-avatar{width:26px;height:26px;border-radius:7px;background:var(--accent);color:#fff;font-size:10.5px;font-weight:600;display:grid;place-items:center}
+.persona-badge-wrap .p-mini-avatar.comp{background:var(--cov-1)}
+.persona-badge-wrap .p-mini-text{display:flex;flex-direction:column;line-height:1.2;text-align:left}
+.persona-badge-wrap .p-mini-text b{font-size:11.5px;color:var(--fg)}
+.persona-badge-wrap .p-mini-text small{font-size:10px;color:var(--fg-3)}
+
+/* Login hero polish, guest mode, AI popover, policy citations */
+.toast{z-index:10000}
+.hero-canvas-wrap{width:320px;height:320px;max-width:100%}
+#hero-globe-canvas{touch-action:none}
+.hero-emblem{animation:emblemGlow 3.2s ease-in-out infinite}
+@keyframes emblemGlow{0%,100%{box-shadow:0 0 18px var(--atmo),0 0 0 0 var(--accent-soft)}50%{box-shadow:0 0 38px var(--accent),0 0 0 10px var(--accent-soft)}}
+@media (prefers-reduced-motion: reduce){.hero-emblem{animation:none}}
+body.guest-mode .app{grid-template-columns:0 minmax(0,1fr)}
+body.guest-mode .brand,body.guest-mode .rail,body.guest-mode .ws-switch,body.guest-mode .topbar .search,body.guest-mode .top-actions>*:not(#theme-btn){display:none}
+body.guest-mode .topbar .wordmark{margin-right:auto}
+#view-ddq{overflow-y:auto}
+.ubo-entry input{height:36px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);padding:0 10px;outline:none;font-size:13px;min-width:0}
+.ubo-entry input:focus{border-color:var(--accent)}
+#ddq-guest-form textarea,#triage-officer-notes{width:100%;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);padding:8px 10px;outline:none;font-size:13px;resize:vertical}
+#ddq-guest-form input:disabled,#ddq-guest-form textarea:disabled{opacity:.7;cursor:not-allowed}
+.ai-pop{position:fixed;z-index:70;max-width:300px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line-2);box-shadow:var(--shadow-lg);font-size:11.5px;line-height:1.45;color:var(--fg-2);pointer-events:none;display:flex;flex-direction:column;gap:3px}
+.ai-pop b{font-size:12px;color:var(--fg)}
+.ai-pop .mono{font-size:10.5px;color:var(--fg-3)}
+.ai-pop p{margin:2px 0 0}
+#comp-triage-modal{padding-top:4vh}
+#comp-triage-modal .sheet{width:min(1180px,100%)}
+.policy-cites{display:flex;flex-direction:column;gap:2px;margin-top:3px}
+.policy-cite{font-family:var(--f-mono,monospace);font-size:10.5px;color:var(--accent);white-space:normal;line-height:1.35}
+.policy-cite.none{color:var(--fg-3)}
+.policy-cite-card{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--surface);font-size:11.5px;color:var(--fg-2)}
+.policy-cite-card b{font-size:12px;color:var(--accent)}
+.policy-cite-card.ok{border-left-color:var(--low)}
+.policy-cite-card.ok b{color:var(--low)}
+.badge-status.ddq-under-review{background:rgba(245,158,11,0.14);color:#fbbf24}
+.badge-status.under-review{background:rgba(245,158,11,0.14);color:#fbbf24}
+
+/* Interactive Google Maps Landmark Selector */
+.landmark-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.landmark-chip{font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg-2);cursor:pointer;transition:all .15s}
+.landmark-chip:hover{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.map-preview-box{height:140px;border-radius:10px;border:1px solid var(--line);background:var(--surface-3);position:relative;overflow:hidden;margin-top:8px;display:flex;align-items:center;justify-content:center}
+.map-pin-marker{position:absolute;transform:translate(-50%, -100%);color:var(--accent);filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));animation:pinBounce .4s ease}
+@keyframes pinBounce{0%{transform:translate(-50%, -160%)}100%{transform:translate(-50%, -100%)}}
+
+/* Guest DDQ External Portal */
+.ddq-portal-stage{max-width:880px;margin:0 auto;padding:36px 20px 80px}
+.ddq-hero-banner{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 28px;box-shadow:var(--shadow);margin-bottom:20px}
+.ddq-lock-notice{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;font-size:13px;margin-bottom:20px}
+.ddq-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow);margin-bottom:18px;display:flex;flex-direction:column;gap:14px}
+.ddq-card-head{border-bottom:1px solid var(--line);padding-bottom:10px}
+.ddq-card-head h3{margin:0;font-size:14.5px;font-weight:600}
+.ddq-card-head p{margin:2px 0 0;font-size:11.5px;color:var(--fg-3)}
+.ubo-entry{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+
+/* Compliance Officer Side-by-Side Review Drawer */
+.triage-drawer-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:14px 0}
+@media (max-width: 1024px){.triage-drawer-grid{grid-template-columns:1fr}}
+.triage-col{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.triage-col-head{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-3);padding-bottom:8px;border-bottom:1px solid var(--line)}
+.policy-flag-item{padding:9px 12px;border-radius:8px;background:rgba(120,140,93,0.12);border:1px solid rgba(120,140,93,0.3);font-size:11.5px}
+
+/* Employee-only shell: no navigation rail, no globe */
+.app.solo{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "stage"}
+.app.solo .topbar .wordmark{margin-right:auto}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M4.6 7.5h14.8M4.6 16.5h14.8"/></symbol>
+    <symbol id="i-review" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 11l2 2 4-4M8.5 17h7"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 0 1-10 0V7zM12 16v5"/></symbol>
+    <symbol id="i-policy" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6L12 3z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16zM10 20.5a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5c.5 4.1 2.4 6 6.5 6.5-4.1.5-6 2.4-6.5 6.5-.5-4.1-2.4-6-6.5-6.5 4.1-.5 6-2.4 6.5-6.5zM18.5 15.5c.2 1.6 1 2.4 2.5 2.5-1.5.2-2.3 1-2.5 2.5-.2-1.5-1-2.3-2.5-2.5 1.5-.1 2.3-.9 2.5-2.5z"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 4 9 4.5-9 4.5-9-4.5L12 4zM3 13l9 4.5 9-4.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+    <symbol id="i-org" viewBox="0 0 24 24"><path d="M4 20.5V8l6-3v15.5M10 20.5V9.5l10 3v8M2.5 20.5h19M13 15h4M13 18h4M6.5 11h1M6.5 14h1M6.5 17h1"/></symbol>
+    <symbol id="i-ship" viewBox="0 0 24 24"><path d="M3.5 15.5 5 19.5h14l2-4.5-9-3-8.5 3.5zM6.5 14V9h11v5M12 9V5.5M9.5 5.5h5M3 21.5c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 2.5 20h19L12 4zM12 10v4.5M12 17.2v.3"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6V3zM14 3v4h4M9 12h6M9 15.5h6M9 9h2"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M20.5 3.5 10 14M20.5 3.5 14 20.5l-4-6.5-6.5-4 17-6.5z"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.5M4.5 12h.5M4.5 18h.5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4v4h-4"/></symbol>
+    <symbol id="i-loader" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/></symbol>
+    <symbol id="i-api" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></symbol>
+    <symbol id="i-feed" viewBox="0 0 24 24"><path d="M5 4h14v5H5zM5 11h14v5H5zM5 18h14"/><path d="M8 6.5h.5M8 13.5h.5"/></symbol>
+    <symbol id="i-web" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M3 9h18M6 6.8h.5M8.5 6.8h.5"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M4.5 15v4.5h15V15"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
+    <symbol id="i-employee" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-excel" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="11" y2="17"/><line x1="11" y1="13" x2="8" y2="17"/><line x1="14" y1="13" x2="17" y2="13"/><line x1="14" y1="17" x2="17" y2="17"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-google" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></symbol>
+  </defs>
+</svg>
+
+
+<div class="app solo" id="app">
+  <header class="topbar">
+    <div class="wordmark"><b>Safe Globe</b><span>Employee KYC Portal</span></div>
+    <div class="top-actions">
+      <button class="icon-btn" id="theme-btn" type="button" title="Switch theme" aria-label="Switch theme"><svg class="ic"><use href="#i-moon"/></svg></button>
+      <div class="persona-badge-wrap" id="top-persona-btn" title="Click to Switch Persona or Log Out">
+        <div class="p-mini-avatar" id="top-user-avatar">JD</div>
+        <div class="p-mini-text">
+          <b id="top-user-name">John Doe</b>
+          <small id="top-user-role">Employee</small>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="view on" id="view-employee" aria-label="Employee Workspace">
+      <div class="page"><div class="page-in" style="max-width:1440px">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Employee Workspace · KYC Portal</div>
+            <h1>Counterparty KYC Requests</h1>
+            <p>Submit counterparty onboardings, run real-time automated policy evaluations, track screening & DDQ status, and export compliance audit reports.</p>
+          </div>
+          <div class="emp-head-actions">
+            <button class="btn" id="emp-export-btn" type="button" title="Export your requests to Excel (.xlsx) with hidden audit metadata"><svg class="ic sm"><use href="#i-excel"/></svg>Export to Excel (.xlsx)</button>
+            <button class="btn primary" id="emp-new-request-btn" type="button" style="gap:6px"><svg class="ic sm"><use href="#i-plus"/></svg>+ New KYC Request</button>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="emp-filter-bar">
+          <div class="emp-chips" id="emp-quick-filters">
+            <button class="emp-chip on" data-filter="all" type="button">All Requests</button>
+            <button class="emp-chip" data-filter="pending" type="button">Pending</button>
+            <button class="emp-chip" data-filter="screened" type="button">Screened</button>
+            <button class="emp-chip" data-filter="ddq" type="button">DDQ Triggered</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="emp-search-wrap">
+              <svg class="ic sm"><use href="#i-search"/></svg>
+              <input type="text" id="emp-search-input" placeholder="Search KYC ID, counterparty, country..." autocomplete="off">
+            </div>
+            <select class="emp-type-sel" id="emp-type-filter">
+              <option value="all">All Entity Types</option>
+              <option value="Organisation">Organisation</option>
+              <option value="Vessel">Vessel</option>
+              <option value="Person">Person</option>
+            </select>
+            <button class="icon-btn" id="emp-refresh-btn" type="button" title="Refresh KYC data" style="width:34px;height:34px;border:1px solid var(--line)"><svg class="ic sm"><use href="#i-refresh"/></svg></button>
+          </div>
+        </div>
+
+        <!-- Interactive Data Table (13 Columns in exact order) -->
+        <div class="kyc-table-wrap">
+          <table class="kyc-table" id="kyc-table">
+            <thead>
+              <tr>
+                <th>KYC ID</th>
+                <th>Submission Date</th>
+                <th>Counterparty Name</th>
+                <th>Entity Type</th>
+                <th>Country</th>
+                <th>Relationship Type</th>
+                <th>Contract Value (SGD)</th>
+                <th>Ongoing Monitoring</th>
+                <th>Request Status</th>
+                <th>KYC Screening Result</th>
+                <th>AI Result</th>
+                <th>DDQ Required</th>
+                <th>DDQ Status</th>
+              </tr>
+            </thead>
+            <tbody id="kyc-table-body">
+              <tr><td colspan="13" style="text-align:center;padding:30px;color:var(--fg-3)">Loading KYC requests...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--fg-3);padding:4px 2px">
+          <span id="emp-count-summary">Showing 0 requests</span>
+          <span>Click any row to inspect audit drawer & hidden metadata · Export includes policy trace logs</span>
+        </div>
+      </div></div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal" id="kyc-modal" hidden>
+  <div class="sheet" style="max-width:720px;max-height:90vh;display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="New KYC Request">
+    <div class="sheet-head">
+      <div style="flex:1">
+        <div class="agent">SafeGlobe KYC · Employee Portal</div>
+        <h2>New Counterparty KYC Request</h2>
+        <p>Submit onboarding counterparty. Gemini multimodal engine auto-fills attributes from verification documents, and Policy RAG evaluates compliance rules in real time.</p>
+      </div>
+      <button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body" id="kyc-modal-body" style="gap:14px">
+      <!-- Point A: Multimodal Document Auto-Fill Dropzone -->
+      <div class="emp-dropzone" id="kyc-dropzone">
+        <svg class="ic" style="width:28px;height:28px;margin:0 auto 6px;display:block;color:var(--accent)"><use href="#i-upload"/></svg>
+        <b style="font-size:13px;display:block">Point A · Multimodal Document Auto-Fill (Google Gemini)</b>
+        <p class="faint" style="margin:2px 0 8px;font-size:11.5px">Drop ACRA Bizfile, Vessel Registry certificate, Passport/ID scan or Incorporation Certificate here to auto-fill form.</p>
+        <input type="file" id="kyc-doc-file" accept=".pdf, .docx, .doc, .txt, .png, .jpg, .jpeg, application/pdf, image/*">
+        <div id="kyc-extract-status" style="font-size:11.5px;color:var(--accent);display:none;align-items:center;justify-content:center;gap:6px">
+          <svg class="ic sm" style="animation:spin 1s linear infinite"><use href="#i-loader"/></svg><span>Gemini extracting entity fields...</span>
+        </div>
+      </div>
+
+      <!-- Base Parameters -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label for="kyc-name">Counterparty Name <span style="color:var(--high)">*</span></label>
+          <input id="kyc-name" type="text" placeholder="e.g. Apex Commodities Pte Ltd" required>
+        </div>
+        <div class="field">
+          <label for="kyc-entity-type">Entity Type <span style="color:var(--high)">*</span></label>
+          <select id="kyc-entity-type">
+            <option value="Organisation" selected>Organisation</option>
+            <option value="Vessel">Vessel</option>
+            <option value="Person">Person</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label for="kyc-country">Country of Incorporation / Flag / Nationality</label>
+          <select id="kyc-country"></select>
+        </div>
+        <div class="field">
+          <label for="kyc-rel-type">Relationship Type <span style="color:var(--high)">*</span></label>
+          <select id="kyc-rel-type">
+            <option value="Vendor/Supplier" selected>Vendor/Supplier</option>
+            <option value="Customer/Trading Partner">Customer/Trading Partner</option>
+            <option value="3rd Party Reps & Brokers">3rd Party Reps & Brokers (Mandatory Policy DDQ)</option>
+            <option value="M&A and Investment">M&A and Investment</option>
+            <option value="Community Investment & Sponsorship">Community Investment & Sponsorship</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label for="kyc-contract-val">Anticipated Contract Value (SGD)</label>
+          <input id="kyc-contract-val" type="number" min="0" step="5000" placeholder="e.g. 250000">
+          <small class="faint">Values > SGD 100,000 automatically trigger Policy §2.1 DDQ</small>
+        </div>
+        <div class="field" style="justify-content:center">
+          <label style="margin-bottom:6px">Ongoing Monitoring</label>
+          <div class="check-row" style="margin:0">
+            <label style="width:100%;display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="kyc-ongoing-mon" checked>
+              <span>Enable continuous monitoring and pin on the globe once approved</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Location Search via Google Maps Places API -->
+      <div class="field" id="kyc-location-field" style="position:relative">
+        <label for="kyc-address" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Monitored Location · Registered Office / Port / Asset Address <b id="kyc-location-req" style="color:var(--high)">* required for Ongoing Monitoring</b></span>
+          <span class="g-powered"><span class="g-g">G</span><span class="g-o1">o</span><span class="g-o2">o</span><span class="g-g2">g</span><span class="g-l">l</span><span class="g-e">e</span> Places API</span>
+        </label>
+        <div class="addr-input-wrap">
+          <svg class="ic sm addr-pin-ico"><use href="#i-pin"/></svg>
+          <input id="kyc-address" type="text" autocomplete="off" placeholder="Search address with Google Maps (e.g. 10 Marina Boulevard, Singapore...)">
+          <button type="button" class="addr-clear-btn" id="kyc-addr-clear" title="Clear address" hidden>&times;</button>
+        </div>
+        <div class="addr-dropdown" id="kyc-addr-dropdown" hidden></div>
+        <div class="addr-feedback" id="kyc-addr-feedback"></div>
+        <!-- Mock Landmark Fallback Chips -->
+        <div style="margin-top:6px">
+          <small class="faint" style="font-size:11px">Mock Landmark Pin Fallbacks (One-Click Singapore Maritime & Financial Hubs):</small>
+          <div class="landmark-chips" id="kyc-landmark-chips">
+            <span class="landmark-chip" data-addr="Marina Bay Financial Centre, 10 Marina Boulevard, Singapore 018983" data-lat="1.2798" data-lng="103.8536" data-id="sg_mbfc">Marina Bay Financial Centre</span>
+            <span class="landmark-chip" data-addr="Jurong Port Terminal, 37 Jurong Port Road, Singapore 619110" data-lat="1.3060" data-lng="103.7140" data-id="sg_jurong">Jurong Port</span>
+            <span class="landmark-chip" data-addr="Tuas Mega Port Terminal, Tuas South Avenue 14, Singapore" data-lat="1.2580" data-lng="103.6350" data-id="sg_tuas">Tuas Terminal</span>
+            <span class="landmark-chip" data-addr="One Raffles Place, Tower 1, Singapore 048616" data-lat="1.2844" data-lng="103.8510" data-id="sg_raffles">Raffles Place</span>
+          </div>
+        </div>
+        <!-- Interactive Map Pin Container -->
+        <div class="map-preview-box" id="kyc-map-preview">
+          <canvas id="kyc-map-canvas" width="660" height="130" style="width:100%;height:100%;display:block"></canvas>
+          <div class="map-pin-marker" id="kyc-map-pin" style="display:none">
+            <svg class="ic" style="width:26px;height:26px;color:var(--accent)"><use href="#i-pin"/></svg>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="field">
+        <label for="kyc-cp-email">Counterparty Contact Email (receives the secure DDQ link if a questionnaire is triggered)</label>
+        <input id="kyc-cp-email" type="email" placeholder="e.g. compliance@counterparty.com">
+      </div>
+
+      <!-- Dynamic Fields by Entity Type: Organisation -->
+      <div id="kyc-dyn-org" class="dynamic-group">
+        <div class="eyebrow" style="margin-bottom:8px">Organisation Attributes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label for="kyc-org-reg">Registration / Tax ID (UEN, EIN, etc.)</label>
+            <input id="kyc-org-reg" type="text" placeholder="e.g. 202419822K">
+          </div>
+          <div class="field">
+            <label for="kyc-org-parent">Parent / Holding Company</label>
+            <input id="kyc-org-parent" type="text" placeholder="e.g. Apex Regional Holdings">
+          </div>
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label for="kyc-org-ubo">Ultimate Beneficial Owner (UBO) Names</label>
+          <input id="kyc-org-ubo" type="text" placeholder="e.g. Tan Wei Liang (60%), Chua Mei Ling (40%)">
+        </div>
+      </div>
+
+      <!-- Dynamic Fields by Entity Type: Vessel -->
+      <div id="kyc-dyn-vessel" class="dynamic-group" style="display:none">
+        <div class="eyebrow" style="margin-bottom:8px">Vessel Maritime Attributes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label for="kyc-vessel-imo">IMO Number (International Maritime Organization)</label>
+            <input id="kyc-vessel-imo" type="text" placeholder="e.g. IMO 9823411">
+          </div>
+          <div class="field">
+            <label for="kyc-vessel-type">Vessel Type</label>
+            <input id="kyc-vessel-type" type="text" placeholder="e.g. Crude Oil Tanker, Bulk Carrier">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div class="field">
+            <label for="kyc-vessel-owner">Registered Owner</label>
+            <input id="kyc-vessel-owner" type="text" placeholder="e.g. Aurora Ocean Marine Ltd">
+          </div>
+          <div class="field">
+            <label for="kyc-vessel-operator">Commercial Operator</label>
+            <input id="kyc-vessel-operator" type="text" placeholder="e.g. Straits Tankers Chartering">
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Fields by Entity Type: Person -->
+      <div id="kyc-dyn-person" class="dynamic-group" style="display:none">
+        <div class="eyebrow" style="margin-bottom:8px">Person / Individual Attributes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label for="kyc-person-fullname">Full Legal Name</label>
+            <input id="kyc-person-fullname" type="text" placeholder="e.g. Dr. Alexander Vance">
+          </div>
+          <div class="field">
+            <label for="kyc-person-aliases">Aliases / Known Names</label>
+            <input id="kyc-person-aliases" type="text" placeholder="e.g. Alex Vance, A. Vance">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div class="field">
+            <label for="kyc-person-dob">Date of Birth</label>
+            <input id="kyc-person-dob" type="date">
+          </div>
+          <div class="field">
+            <label for="kyc-person-id">Identification / Passport Number</label>
+            <input id="kyc-person-id" type="text" placeholder="e.g. Passport P88421094">
+          </div>
+        </div>
+        <div class="check-row" style="margin-top:10px">
+          <label style="width:100%;display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="kyc-person-pep">
+            <span style="font-weight:600">Politically Exposed Person (PEP) Self-Declaration (Triggers Policy §3.6 DDQ)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Remarks & Attachments -->
+      <div class="field">
+        <label for="kyc-remarks">Remarks & Commercial Context</label>
+        <textarea id="kyc-remarks" rows="2" placeholder="Details of business justification, procurement contract scope, or specific compliance flags."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="kyc-attachments">Supporting Attachments</label>
+        <input type="file" id="kyc-attachments" multiple accept=".pdf, .docx, .png, .jpg, .jpeg">
+        <div id="kyc-attachments-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <span class="faint" style="font-size:11.5px;margin-right:auto;align-self:center">
+        Auto-evaluates Policy §2.1 (>100k), §3.6 (PEP), §4.1 (CPI&lt;40), §5.2 (Brokers) & §5.4 (Vessels)
+      </span>
+      <button class="btn ghost" data-close type="button">Cancel</button>
+      <button class="btn primary" id="kyc-submit-btn" type="button"><svg class="ic sm"><use href="#i-check"/></svg>Submit KYC Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- SafeGlobe KYC: Audit & Traceability Drawer Modal -->
+<div class="modal" id="kyc-audit-modal" hidden>
+  <div class="sheet" style="max-width:760px;max-height:90vh;display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="KYC Request Audit Detail">
+    <div class="sheet-head">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="eyebrow" id="aud-id">KYC-2026-0001</span>
+          <span class="badge-status" id="aud-status-badge">Submitted</span>
+        </div>
+        <h2 id="aud-name" style="margin-top:2px">Severny Agro Export LLC</h2>
+        <p id="aud-sub" class="faint">Submitted on 2026-10-06 09:15 · Organisation · SGP</p>
+      </div>
+      <button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body" id="kyc-audit-body" style="gap:16px">
+      <!-- Section 1: Overview Cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <div class="card" style="padding:10px;text-align:center">
+          <small class="faint">Contract Value</small>
+          <b id="aud-contract-val" style="display:block;font-size:13px;margin-top:2px">SGD 1,200,000</b>
+        </div>
+        <div class="card" style="padding:10px;text-align:center">
+          <small class="faint">Relationship</small>
+          <b id="aud-rel-type" style="display:block;font-size:12px;margin-top:2px">Vendor/Supplier</b>
+        </div>
+        <div class="card" style="padding:10px;text-align:center">
+          <small class="faint">Monitoring</small>
+          <b id="aud-monitoring" style="display:block;font-size:12px;margin-top:2px">Enabled</b>
+        </div>
+        <div class="card" style="padding:10px;text-align:center">
+          <small class="faint">Screening</small>
+          <b id="aud-screening" style="display:block;font-size:12px;margin-top:2px">Sanctions Alert</b>
+        </div>
+      </div>
+
+      <!-- Section 2: AI Risk Scoring & Anomaly Detection (Point B) -->
+      <div class="card" style="padding:14px;border-left:3px solid var(--accent)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg class="ic spark" style="color:var(--accent)"><use href="#i-spark"/></svg>
+            <b style="font-size:13px">Compliance Agent · Intake Assessment</b>
+          </div>
+          <span class="badge-ai" id="aud-ai-badge">High Risk (Confidence 96%)</span>
+        </div>
+        <p id="aud-ai-rationale" style="margin:0;font-size:12.5px;line-height:1.45;color:var(--fg-2)"></p>
+      </div>
+
+      <!-- Section 3: Policy RAG & DDQ Governance (Point C) -->
+      <div class="card" style="padding:14px;border-left:3px solid var(--mid)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg class="ic sm" style="color:var(--mid)"><use href="#i-policy"/></svg>
+            <b style="font-size:13px">Compliance Agent · Policy & DDQ</b>
+          </div>
+          <div style="display:flex;gap:6px">
+            <span class="badge-bool" id="aud-ddq-req">DDQ: Yes</span>
+            <span class="badge-ddq-status" id="aud-ddq-status">Triggered</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-2)">
+          <b>Triggered Policy Clause:</b> <span id="aud-ddq-clause" class="mono" style="color:var(--accent);font-size:11.5px"></span>
+        </div>
+      </div>
+
+      <!-- Section 4: Audit & Traceability Hidden Fields -->
+      <div class="card" style="padding:14px">
+        <div class="eyebrow" style="margin-bottom:6px">Audit & Traceability (Metadata Persisted on Submission)</div>
+        <div class="audit-kv-grid" style="font-size:12px">
+          <div><span class="faint">Created By User ID:</span> <b id="aud-user-id" class="mono"></b></div>
+          <div><span class="faint">Created By Email:</span> <b id="aud-user-email"></b></div>
+          <div><span class="faint">Department:</span> <b id="aud-user-dept"></b></div>
+          <div><span class="faint">Client IP Address:</span> <b id="aud-ip" class="mono"></b></div>
+          <div><span class="faint">Client Timestamp:</span> <b id="aud-timestamp" class="mono"></b></div>
+          <div><span class="faint">Last Modified By:</span> <b id="aud-last-mod"></b></div>
+        </div>
+      </div>
+
+      <!-- Section 5: Dynamic Entity Attributes -->
+      <div class="card" style="padding:14px">
+        <div class="eyebrow" style="margin-bottom:6px">Entity Specific Attributes</div>
+        <div id="aud-attrs-content" style="font-size:12.5px;line-height:1.5"></div>
+      </div>
+
+      <!-- Section 6: Verified Physical Address (Google Maps) -->
+      <div class="card" style="padding:14px">
+        <div class="eyebrow" style="margin-bottom:6px">Verified Location (Google Maps Places API)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px">
+          <svg class="ic sm" style="color:var(--accent)"><use href="#i-pin"/></svg>
+          <span id="aud-address">No physical address registered</span>
+        </div>
+        <div id="aud-coords" class="mono faint" style="font-size:11px;margin-top:4px;padding-left:22px"></div>
+      </div>
+
+      <!-- Section 7: Attachments -->
+      <div class="card" style="padding:14px">
+        <div class="eyebrow" style="margin-bottom:6px">Uploaded Verification Files</div>
+        <div id="aud-attachments-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <div id="aud-ddq-actions" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <div id="aud-officer-actions" style="display:flex;gap:6px;margin-right:auto">
+        <button class="btn sm" id="aud-btn-approve" type="button" style="color:var(--low);border-color:var(--low)"><svg class="ic sm"><use href="#i-check"/></svg>Approve</button>
+        <button class="btn sm" id="aud-btn-reject" type="button" style="color:var(--high);border-color:var(--high)"><svg class="ic sm"><use href="#i-close"/></svg>Reject</button>
+      </div>
+      <button class="btn ghost" data-close type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Persona Switcher / Logout Modal -->
+<div class="modal" id="persona-modal" hidden>
+  <div class="sheet" style="max-width:480px" role="dialog" aria-modal="true" aria-label="Switch User Persona">
+    <div class="sheet-head">
+      <div style="flex:1">
+        <div class="eyebrow">Authentication & RBAC</div>
+        <h2>Dual Hackathon Persona Switcher</h2>
+        <p class="faint">Switch between employee submission view and compliance triage workspace.</p>
+      </div>
+      <button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body" style="gap:12px">
+      <div class="persona-cards">
+        <div class="persona-card" id="persona-opt-employee" data-persona="employee">
+          <div class="p-avatar">JD</div>
+          <div class="p-meta">
+            <b>The Company Employee</b>
+            <small>john.doe@safeglobe.com · Procurement & Logistics</small>
+          </div>
+          <span class="p-badge">Scoped View</span>
+        </div>
+        <div class="persona-card" id="persona-opt-compliance" data-persona="compliance">
+          <div class="p-avatar comp">GT</div>
+          <div class="p-meta">
+            <b>The Compliance Officer</b>
+            <small>compliance@safeglobe.com · Compliance Admin</small>
+          </div>
+          <span class="p-badge" style="color:var(--high)">Global Triage</span>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-foot" style="justify-content:space-between">
+      <button class="btn sm" id="persona-logout-btn" type="button" style="color:var(--high);gap:6px"><svg class="ic sm"><use href="#i-lock"/></svg>Log Out</button>
+      <button class="btn ghost sm" data-close type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+/* ===================== helpers ===================== */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ic=(id,cls)=>`<svg class="ic ${cls||''}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+let toastT=null;
+function toast(msg){const t=$('#toast');t.innerHTML=ic('check','sm')+'<span>'+esc(msg)+'</span>';t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3200);}
+$$('[data-close]').forEach(b=>b.addEventListener('click',()=>{b.closest('.modal').hidden=true;}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const m=$$('.modal').find(x=>!x.hidden);if(m)m.hidden=true;}});
+
+/* theme */
+function isDark(){const a=document.documentElement.getAttribute('data-theme');if(a)return a==='dark';return matchMedia('(prefers-color-scheme: dark)').matches;}
+function syncTheme(){$('#theme-btn use').setAttribute('href',isDark()?'#i-sun':'#i-moon');}
+$('#theme-btn').addEventListener('click',()=>{document.documentElement.setAttribute('data-theme',isDark()?'light':'dark');syncTheme();});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncTheme);
+
+/* =====================================================================
+   SESSION · this page is employee-only; other roles are sent elsewhere
+===================================================================== */
+const COMPLIANCE_PERSONA = { email: 'compliance@safeglobe.com', name: 'Grace Teo', role: 'compliance_officer', userId: 'COMP-901', department: 'Compliance & Risk Governance' };
+const SESSION_KEY = 'safeglobe.session';
+let session = null;
+let publicConfig = { googleClientId: '', googleMapsApiKey: '', mapsEnabled: false };
+let compRequestsCache = [];
+
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; }
+}
+function saveSession(s) {
+  session = s;
+  try {
+    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+    else localStorage.removeItem(SESSION_KEY);
+  } catch (e) {}
+}
+function isCompliance() { return Boolean(session && session.role === 'compliance_officer'); }
+
+// All KYC API calls carry the signed-in identity so the backend can row-scope and audit
+function apiFetch(url, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {});
+  if (session.idToken) {
+    headers['Authorization'] = `Bearer ${session.idToken}`;
+  } else {
+    headers['x-user-email'] = session.email;
+    headers['x-user-name'] = session.name;
+    headers['x-user-id'] = session.userId;
+    headers['x-user-department'] = session.department;
+    headers['x-user-role'] = session.role;
+  }
+  headers['x-client-timestamp'] = new Date().toISOString();
+  return fetch(url, Object.assign({}, opts, { headers }));
+}
+
+function initSessionControls() {
+  const initials = String(session.name || session.email).split(/[\s.@]+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+  $('#top-user-avatar').textContent = initials;
+  $('#top-user-name').textContent = session.name;
+  $('#top-user-role').textContent = `Employee · ${session.department}`;
+  $('#persona-opt-employee').classList.add('active');
+  $('#top-persona-btn').addEventListener('click', () => { $('#persona-modal').hidden = false; });
+  $('#persona-opt-employee').addEventListener('click', () => { $('#persona-modal').hidden = true; });
+  $('#persona-opt-compliance').addEventListener('click', () => {
+    saveSession(Object.assign({}, COMPLIANCE_PERSONA));
+    location.href = '/portal/compliance';
+  });
+  $('#persona-logout-btn').addEventListener('click', () => {
+    saveSession(null);
+    location.href = '/login';
+  });
+}
+
+function resolveColor(value, fallback) {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.fillStyle = fallback;
+  ctx.fillStyle = value || fallback;
+  return ctx.fillStyle;
+}
+function cssColor(name, fallback) {
+  return resolveColor(getComputedStyle(document.documentElement).getPropertyValue(name).trim(), fallback);
+}
+
+
+/* =====================================================================
+   EMPLOYEE WORKSPACE · KYC PORTAL CONTROLLER
+   - Interactive 13-Column Table
+   - Quick Filter Chips & Search
+   - Document Auto-Fill via Gemini (Point A)
+   - Real-time Policy Evaluation & DDQ Trigger (Point C)
+   - AI Risk Scoring & Rationale (Point B)
+   - Audit & Traceability Drawer Modal
+   - Excel / CSV Export
+===================================================================== */
+let kycRequestsCache = [];
+let kycFilterState = { chip: 'all', entityType: 'all', search: '' };
+let kycPlacesTimer = null;
+
+function kycSlug(str) {
+  return String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+function getAiRiskClass(aiResult) {
+  const r = String(aiResult || '').toLowerCase();
+  if (r.includes('high risk')) return 'high-risk';
+  if (r.includes('medium risk')) return 'medium-risk';
+  if (r.includes('anomalies')) return 'anomalies-flagged';
+  return 'low-risk';
+}
+
+async function renderEmployeeWorkspace() {
+  const tbody = $('#kyc-table-body');
+  if (!tbody || !session || isCompliance()) return;
+
+  try {
+    const q = new URLSearchParams();
+    if (kycFilterState.search) q.set('search', kycFilterState.search);
+    if (kycFilterState.entityType !== 'all') q.set('entity_type', kycFilterState.entityType);
+
+    const res = await apiFetch(`/api/kyc/my-requests?${q.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch KYC requests');
+    const data = await res.json();
+    kycRequestsCache = data.requests || [];
+
+    // Client-side quick filter chips
+    let filtered = kycRequestsCache;
+    if (kycFilterState.chip === 'pending') {
+      filtered = filtered.filter(r => ['Draft', 'Submitted', 'Screening In Progress', 'Pending DDQ'].includes(r.request_status));
+    } else if (kycFilterState.chip === 'screened') {
+      filtered = filtered.filter(r => ['Approved', 'Rejected'].includes(r.request_status) || ['Clear', 'Watchlist Match', 'PEP Alert', 'Sanctions Alert', 'High Risk'].includes(r.screening_result));
+    } else if (kycFilterState.chip === 'ddq') {
+      filtered = filtered.filter(r => Boolean(r.ddq_required) || (r.ddq_status && r.ddq_status !== 'N/A'));
+    }
+
+    // Update count summary & rail badge
+    const countSummary = $('#emp-count-summary');
+    if (countSummary) countSummary.textContent = `Showing ${filtered.length} of ${kycRequestsCache.length} requests`;
+    const railBadge = $('#rail-emp-count');
+    if (railBadge) railBadge.textContent = String(kycRequestsCache.length);
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:36px;color:var(--fg-3)">No KYC requests matching the selected filter criteria.</td></tr>`;
+      return;
+    }
+
+    // Render table rows matching the 13 columns in exact order
+    tbody.innerHTML = filtered.map(r => {
+      const formattedVal = fmtSgd(r.contract_value);
+      const statusSlug = kycSlug(r.request_status);
+      const screenSlug = kycSlug(r.screening_result);
+      const ddqStatusSlug = kycSlug(r.ddq_status);
+
+      return `
+        <tr data-kyc-id="${esc(r.id)}">
+          <td class="mono" style="font-weight:600;color:var(--accent)">${esc(r.id)}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--fg-2)">${esc(r.submission_date)}</td>
+          <td><b style="font-weight:500;font-size:12.5px">${esc(r.counterparty_name)}</b></td>
+          <td><span style="font-weight:500">${esc(r.entity_type)}</span></td>
+          <td class="mono" style="font-weight:600">${esc(r.country)}</td>
+          <td style="color:var(--fg-2)">${esc(r.relationship_type)}</td>
+          <td class="mono" style="font-weight:600;color:var(--fg)">${formattedVal}</td>
+          <td><span class="badge-bool ${r.ongoing_monitoring ? 'enabled' : 'disabled'}">${r.ongoing_monitoring ? 'Enabled' : 'Disabled'}</span></td>
+          <td><span class="badge-status ${statusSlug}">${esc(r.request_status)}</span></td>
+          <td><span class="badge-screen ${screenSlug}">${esc(r.screening_result)}</span></td>
+          <td>${aiBadgeHtml(r)}</td>
+          <td><span class="badge-bool ${r.ddq_required ? 'yes' : 'no'}">${r.ddq_required ? 'Yes' : 'No'}</span></td>
+          <td><span class="badge-ddq-status ${ddqStatusSlug}">${esc(r.ddq_status)}</span></td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach row click listeners to open audit drawer
+    $$('#kyc-table-body tr').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.dataset.kycId;
+        const rec = kycRequestsCache.find(x => x.id === id);
+        if (rec) openKycAuditModal(rec);
+      });
+    });
+  } catch (err) {
+    console.error('Error rendering KYC table:', err);
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--high)">Error loading KYC requests: ${esc(err.message)}</td></tr>`;
+  }
+}
+
+// Open Audit Drawer / Modal
+function openKycAuditModal(r) {
+  const modal = $('#kyc-audit-modal');
+  if (!modal) return;
+
+  $('#aud-id').textContent = r.id;
+  $('#aud-status-badge').textContent = r.request_status;
+  $('#aud-status-badge').className = `badge-status ${kycSlug(r.request_status)}`;
+  $('#aud-name').textContent = r.counterparty_name;
+  $('#aud-sub').textContent = `Submitted on ${r.submission_date} · ${r.entity_type} · ${r.country}`;
+
+  // Section 1 Overview
+  $('#aud-contract-val').textContent = `SGD ${Number(r.contract_value || 0).toLocaleString('en-US')}`;
+  $('#aud-rel-type').textContent = r.relationship_type;
+  $('#aud-monitoring').textContent = r.ongoing_monitoring ? 'Enabled' : 'Disabled';
+  $('#aud-screening').textContent = r.screening_result;
+
+  // Section 2 Point B AI
+  const aiBadge = $('#aud-ai-badge');
+  aiBadge.textContent = r.ai_result;
+  aiBadge.className = `badge-ai ${getAiRiskClass(r.ai_result)}`;
+  // The Compliance Agent's assessment, plus where the questionnaire stands
+  const agentIntake = r.agent && r.agent.intake;
+  const agentDdq = r.agent && r.agent.ddq;
+  $('#aud-ai-rationale').textContent = [
+    agentIntake ? `${agentIntake.rationale} Recommendation: ${agentIntake.recommendation_label}.` : (r.ai_rationale || 'Awaiting Compliance Agent assessment.'),
+    agentDdq ? `DDQ review: ${agentDdq.score}/100 (${agentDdq.level}).` : '',
+    r.ddq_bounce ? `The questionnaire was returned to the counterparty for clarification (round ${r.ddq_bounce.round}, ${r.ddq_bounce.issues.length} point${r.ddq_bounce.issues.length === 1 ? '' : 's'}).` : ''
+  ].filter(Boolean).join(' ');
+
+  // Section 3 Point C Policy
+  const ddqReq = $('#aud-ddq-req');
+  ddqReq.textContent = `DDQ: ${r.ddq_required ? 'Yes' : 'No'}`;
+  ddqReq.className = `badge-bool ${r.ddq_required ? 'yes' : 'no'}`;
+  const ddqStatus = $('#aud-ddq-status');
+  ddqStatus.textContent = r.ddq_status;
+  ddqStatus.className = `badge-ddq-status ${kycSlug(r.ddq_status)}`;
+  $('#aud-ddq-clause').textContent = r.ddq_clause || (r.ddq_required ? 'Policy §2.1 (Contract Value > SGD 100k)' : 'No mandatory DDQ triggered');
+
+  // Section 4 Hidden Audit Traceability
+  $('#aud-user-id').textContent = r.created_by_user_id || 'EMP-1042';
+  $('#aud-user-email').textContent = r.created_by_email || 'sarah.tan@safeglobe.internal';
+  $('#aud-user-dept').textContent = r.created_by_department || 'Procurement & Supply Chain';
+  $('#aud-ip').textContent = r.ip_address || '127.0.0.1';
+  $('#aud-timestamp').textContent = r.client_timestamp || new Date().toISOString();
+  $('#aud-last-mod').textContent = r.last_modified_by || 'Employee Portal';
+
+  // Section 5 Dynamic Attributes
+  const attrsEl = $('#aud-attrs-content');
+  const attrs = r.attributes || {};
+  const attrEntries = Object.entries(attrs);
+  if (attrEntries.length === 0) {
+    attrsEl.innerHTML = `<span class="faint">No dynamic entity attributes declared.</span>`;
+  } else {
+    attrsEl.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">` +
+      attrEntries.map(([k, v]) => `<div><span class="faint" style="text-transform:capitalize">${esc(k.replace(/_/g, ' '))}:</span> <b>${esc(String(v))}</b></div>`).join('') +
+      `</div>`;
+  }
+
+  // Section 6 Address
+  const loc = r.location || {};
+  $('#aud-address').textContent = loc.address || 'No physical headquarters / port address specified';
+  $('#aud-coords').textContent = (loc.lat && loc.lng) ? `Coordinates: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)} · Verified Place ID: ${loc.place_id || 'N/A'}` : '';
+
+  // Section 7 Attachments
+  const attList = $('#aud-attachments-list');
+  const atts = Array.isArray(r.attachments) ? r.attachments : [];
+  if (atts.length === 0) {
+    attList.innerHTML = `<span class="faint">No files uploaded.</span>`;
+  } else {
+    attList.innerHTML = atts.map(f => `
+      <span class="chip" style="font-size:11.5px;padding:3px 8px;background:var(--surface-2);border:1px solid var(--line-2)">
+        <svg class="ic sm" style="color:var(--accent)"><use href="#i-doc"/></svg> ${esc(f)}
+      </span>
+    `).join('');
+  }
+
+  renderAuditDdqActions(r);
+
+  // Wire Action buttons in Audit Modal
+  $('#aud-btn-approve').onclick = async () => {
+    try {
+      const res = await apiFetch(`/api/kyc/${r.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Approved' })
+      });
+      if (res.ok) {
+        toast(`KYC Request ${r.id} approved`);
+        modal.hidden = true;
+        renderEmployeeWorkspace();
+      }
+    } catch (e) { toast('Error updating request'); }
+  };
+
+  $('#aud-btn-reject').onclick = async () => {
+    try {
+      const res = await apiFetch(`/api/kyc/${r.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Rejected' })
+      });
+      if (res.ok) {
+        toast(`KYC Request ${r.id} rejected`);
+        modal.hidden = true;
+        renderEmployeeWorkspace();
+      }
+    } catch (e) { toast('Error updating request'); }
+  };
+
+  modal.hidden = false;
+}
+
+// Setup KYC Request Modal Form & Google Places Autocomplete
+function initKycPortalControls() {
+  // Quick Filter Chips
+  $$('#emp-quick-filters button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#emp-quick-filters button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      kycFilterState.chip = btn.dataset.filter;
+      renderEmployeeWorkspace();
+    });
+  });
+
+  // Search input
+  const searchInp = $('#emp-search-input');
+  if (searchInp) {
+    let sTimer = null;
+    searchInp.addEventListener('input', () => {
+      clearTimeout(sTimer);
+      sTimer = setTimeout(() => {
+        kycFilterState.search = searchInp.value.trim();
+        renderEmployeeWorkspace();
+      }, 200);
+    });
+  }
+
+  // Entity Type Filter
+  const typeFilter = $('#emp-type-filter');
+  if (typeFilter) {
+    typeFilter.addEventListener('change', () => {
+      kycFilterState.entityType = typeFilter.value;
+      renderEmployeeWorkspace();
+    });
+  }
+
+  // Refresh Button
+  const refreshBtn = $('#emp-refresh-btn');
+  if (refreshBtn) refreshBtn.addEventListener('click', () => renderEmployeeWorkspace());
+
+  // Export to Excel Button
+  const exportBtn = $('#emp-export-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', downloadKycExcel);
+  }
+
+  // Open New KYC Request Modal
+  const newReqBtn = $('#emp-new-request-btn');
+  if (newReqBtn) {
+    newReqBtn.addEventListener('click', () => {
+      populateKycCountries();
+      resetKycForm();
+      $('#kyc-modal').hidden = false;
+    });
+  }
+
+  // Ongoing Monitoring needs a pinned location (it is what places the counterparty on the globe)
+  const monitorToggle = $('#kyc-ongoing-mon');
+  if (monitorToggle) monitorToggle.addEventListener('change', syncKycLocationRequirement);
+
+  // Toggle dynamic entity fields
+  const entityTypeSelect = $('#kyc-entity-type');
+  if (entityTypeSelect) {
+    entityTypeSelect.addEventListener('change', () => {
+      const t = entityTypeSelect.value;
+      const orgDiv = $('#kyc-dyn-org');
+      const vesselDiv = $('#kyc-dyn-vessel');
+      const personDiv = $('#kyc-dyn-person');
+      if (orgDiv) orgDiv.style.display = t === 'Organisation' ? 'block' : 'none';
+      if (vesselDiv) vesselDiv.style.display = t === 'Vessel' ? 'block' : 'none';
+      if (personDiv) personDiv.style.display = t === 'Person' ? 'block' : 'none';
+    });
+  }
+
+  // Multimodal Document Auto-Fill (Point A)
+  const docFile = $('#kyc-doc-file');
+  if (docFile) {
+    docFile.addEventListener('change', async () => {
+      const file = docFile.files[0];
+      if (!file) return;
+      await handleKycDocumentUpload(file);
+    });
+  }
+
+  const dropzone = $('#kyc-dropzone');
+  if (dropzone) {
+    ['dragenter', 'dragover'].forEach(ev => {
+      dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(ev => {
+      dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+    });
+    dropzone.addEventListener('drop', async e => {
+      const file = e.dataTransfer?.files?.[0];
+      if (file) await handleKycDocumentUpload(file);
+    });
+  }
+
+  // Google Maps Places Autocomplete for KYC Address
+  initKycPlacesAutocomplete();
+  initKycLandmarks();
+
+  // Form Submit Button
+  const submitBtn = $('#kyc-submit-btn');
+  if (submitBtn) {
+    submitBtn.addEventListener('click', handleKycFormSubmit);
+  }
+}
+
+// Populate Country Options
+function populateKycCountries() {
+  const sel = $('#kyc-country');
+  if (!sel || sel.options.length > 5) return;
+  const list = [
+    { code: 'SGP', name: 'Singapore (SGP)' },
+    { code: 'USA', name: 'United States (USA)' },
+    { code: 'GBR', name: 'United Kingdom (GBR)' },
+    { code: 'ARE', name: 'United Arab Emirates (ARE)' },
+    { code: 'CHE', name: 'Switzerland (CHE)' },
+    { code: 'HKG', name: 'Hong Kong (HKG)' },
+    { code: 'JPN', name: 'Japan (JPN)' },
+    { code: 'DEU', name: 'Germany (DEU)' },
+    { code: 'NLD', name: 'Netherlands (NLD)' },
+    { code: 'PAN', name: 'Panama (PAN)' },
+    { code: 'LBR', name: 'Liberia (LBR)' },
+    { code: 'MHL', name: 'Marshall Islands (MHL)' },
+    { code: 'MYS', name: 'Malaysia (MYS)' },
+    { code: 'IDN', name: 'Indonesia (IDN)' },
+    { code: 'RUS', name: 'Russian Federation (RUS - High Risk)' },
+    { code: 'CHN', name: 'China (CHN)' }
+  ];
+  sel.innerHTML = list.map(c => `<option value="${c.code}">${c.name}</option>`).join('');
+}
+
+function syncKycLocationRequirement() {
+  const on = $('#kyc-ongoing-mon').checked;
+  $('#kyc-location-req').textContent = on ? '* required for Ongoing Monitoring' : '(optional)';
+  $('#kyc-location-req').style.color = on ? 'var(--high)' : 'var(--fg-3)';
+  $('#kyc-location-field').classList.toggle('location-required', on);
+}
+
+// Reset KYC Modal Form
+function resetKycForm() {
+  $('#kyc-name').value = '';
+  $('#kyc-entity-type').value = 'Organisation';
+  $('#kyc-country').value = 'SGP';
+  $('#kyc-rel-type').value = 'Vendor/Supplier';
+  $('#kyc-contract-val').value = '';
+  $('#kyc-ongoing-mon').checked = true;
+  $('#kyc-remarks').value = '';
+  $('#kyc-address').value = '';
+  delete $('#kyc-address').dataset.lat;
+  delete $('#kyc-address').dataset.lng;
+  delete $('#kyc-address').dataset.placeId;
+  $('#kyc-addr-feedback').textContent = '';
+  $('#kyc-cp-email').value = '';
+  $('#kyc-attachments').value = '';
+  drawKycMap(NaN, NaN);
+  syncKycLocationRequirement();
+
+  // Clear Dynamic
+  $('#kyc-org-reg').value = '';
+  $('#kyc-org-parent').value = '';
+  $('#kyc-org-ubo').value = '';
+  $('#kyc-vessel-imo').value = '';
+  $('#kyc-vessel-type').value = '';
+  $('#kyc-vessel-owner').value = '';
+  $('#kyc-vessel-operator').value = '';
+  $('#kyc-person-fullname').value = '';
+  $('#kyc-person-aliases').value = '';
+  $('#kyc-person-dob').value = '';
+  $('#kyc-person-id').value = '';
+  $('#kyc-person-pep').checked = false;
+
+  // Clear Highlights
+  $$('#kyc-modal input, #kyc-modal select').forEach(el => el.classList.remove('ai-suggested-highlight'));
+  $$('#kyc-modal .ai-chip').forEach(el => el.remove());
+
+  // Show org fields by default
+  $('#kyc-dyn-org').style.display = 'block';
+  $('#kyc-dyn-vessel').style.display = 'none';
+  $('#kyc-dyn-person').style.display = 'none';
+}
+
+// Point A: Multimodal Document Upload & Extraction
+async function handleKycDocumentUpload(file) {
+  const statusEl = $('#kyc-extract-status');
+  if (statusEl) statusEl.style.display = 'flex';
+
+  try {
+    let fileContent = '';
+    let base64Data = '';
+
+    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+      const reader = new FileReader();
+      base64Data = await new Promise((resolve) => {
+        reader.onload = () => {
+          const res = reader.result;
+          resolve(typeof res === 'string' && res.includes(',') ? res.split(',')[1] : '');
+        };
+        reader.readAsDataURL(file);
+      });
+    } else {
+      fileContent = await file.text();
+    }
+
+    const resp = await fetch('/api/kyc/extract-document', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: file.name,
+        fileContent: fileContent.substring(0, 15000),
+        mimeType: file.type || 'application/pdf',
+        base64Data: base64Data
+      })
+    });
+
+    if (!resp.ok) throw new Error('Document extraction failed');
+    const result = await resp.json();
+    const d = result.data || {};
+
+    // Auto-fill fields and apply Point A AI Suggested light blue highlighting
+    function fillAndHighlight(inputSelector, val) {
+      const el = $(inputSelector);
+      if (el && val !== undefined && val !== null && val !== '') {
+        el.value = val;
+        el.classList.add('ai-suggested-highlight');
+        const parentField = el.closest('.field');
+        if (parentField && !parentField.querySelector('.ai-chip')) {
+          const label = parentField.querySelector('label');
+          if (label) {
+            const chip = document.createElement('span');
+            chip.className = 'ai-chip';
+            chip.innerHTML = `<svg class="ic sm"><use href="#i-spark"/></svg>AI Suggested`;
+            chip.style.marginLeft = '8px';
+            label.appendChild(chip);
+          }
+        }
+      }
+    }
+
+    if (d.counterparty_name) fillAndHighlight('#kyc-name', d.counterparty_name);
+    if (d.entity_type) {
+      const et = $('#kyc-entity-type');
+      if (et) {
+        et.value = d.entity_type;
+        et.dispatchEvent(new Event('change'));
+      }
+    }
+    if (d.country) fillAndHighlight('#kyc-country', d.country);
+    if (d.relationship_type) fillAndHighlight('#kyc-rel-type', d.relationship_type);
+    if (d.anticipated_contract_value) fillAndHighlight('#kyc-contract-val', d.anticipated_contract_value);
+
+    // Entity Specific Fields
+    if (d.registration_number) fillAndHighlight('#kyc-org-reg', d.registration_number);
+    if (d.parent_company) fillAndHighlight('#kyc-org-parent', d.parent_company);
+    if (d.directors_ubo) fillAndHighlight('#kyc-org-ubo', d.directors_ubo);
+
+    if (d.imo_number) fillAndHighlight('#kyc-vessel-imo', d.imo_number);
+    if (d.vessel_type) fillAndHighlight('#kyc-vessel-type', d.vessel_type);
+
+    if (d.full_name) fillAndHighlight('#kyc-person-fullname', d.full_name);
+    if (d.dob) fillAndHighlight('#kyc-person-dob', d.dob);
+    if (d.passport) fillAndHighlight('#kyc-person-id', d.passport);
+    if (d.pep_declared !== undefined) {
+      const pepCb = $('#kyc-person-pep');
+      if (pepCb) pepCb.checked = Boolean(d.pep_declared);
+    }
+
+    if (d.remarks) fillAndHighlight('#kyc-remarks', d.remarks);
+
+    toast(`Point A: Gemini multimodal extraction completed (${result.extracted_fields?.length || 4} fields auto-filled)`);
+  } catch (err) {
+    console.error('Error extracting KYC document:', err);
+    toast('Document extraction completed using fallback heuristics');
+  } finally {
+    if (statusEl) statusEl.style.display = 'none';
+  }
+}
+
+// Google Places Autocomplete for KYC Address
+function initKycPlacesAutocomplete() {
+  const inputEl = $('#kyc-address');
+  const dropdownEl = $('#kyc-addr-dropdown');
+  const feedbackEl = $('#kyc-addr-feedback');
+  const clearBtn = $('#kyc-addr-clear');
+  if (!inputEl || !dropdownEl) return;
+
+  inputEl.addEventListener('input', () => {
+    const val = inputEl.value.trim();
+    if (clearBtn) clearBtn.hidden = !val;
+    if (val.length < 2) {
+      dropdownEl.hidden = true;
+      if (feedbackEl) feedbackEl.textContent = '';
+      return;
+    }
+    clearTimeout(kycPlacesTimer);
+    kycPlacesTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(val)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const preds = data.predictions || [];
+        if (preds.length === 0) { dropdownEl.hidden = true; return; }
+
+        dropdownEl.innerHTML = preds.map((p, idx) => `
+          <div class="addr-item" data-idx="${idx}" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--line);font-size:12px">
+            <b>${esc(p.main_text || p.description)}</b>
+            <small class="faint" style="display:block">${esc(p.secondary_text || '')}</small>
+          </div>
+        `).join('');
+        dropdownEl.hidden = false;
+
+        $$('#kyc-addr-dropdown .addr-item').forEach(item => {
+          item.addEventListener('click', async () => {
+            const p = preds[item.dataset.idx];
+            inputEl.value = p.description || p.main_text;
+            dropdownEl.hidden = true;
+
+            // Geocode for coordinates
+            try {
+              const gRes = await fetch(`/api/places/geocode?address=${encodeURIComponent(inputEl.value)}`);
+              if (gRes.ok) {
+                const gData = await gRes.json();
+                setKycLocation({
+                  address: inputEl.value,
+                  lat: gData.lat,
+                  lng: gData.lng,
+                  placeId: gData.id || p.id,
+                  source: publicConfig.mapsEnabled ? 'Google Places' : 'curated place index'
+                });
+              }
+            } catch (ge) {}
+          });
+        });
+      } catch (e) { dropdownEl.hidden = true; }
+    }, 180);
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      inputEl.value = '';
+      clearBtn.hidden = true;
+      dropdownEl.hidden = true;
+      if (feedbackEl) feedbackEl.textContent = '';
+      delete inputEl.dataset.lat;
+      delete inputEl.dataset.lng;
+      delete inputEl.dataset.placeId;
+      drawKycMap(NaN, NaN);
+    });
+  }
+}
+
+// Submit KYC Request Form
+async function handleKycFormSubmit() {
+  const name = $('#kyc-name')?.value?.trim();
+  if (!name) {
+    toast('Please enter Counterparty Name');
+    $('#kyc-name')?.focus();
+    return;
+  }
+
+  const entityType = $('#kyc-entity-type')?.value || 'Organisation';
+  const country = $('#kyc-country')?.value || 'SGP';
+  const relType = $('#kyc-rel-type')?.value || 'Vendor/Supplier';
+  const contractVal = Number($('#kyc-contract-val')?.value || 0);
+  const monitoring = Boolean($('#kyc-ongoing-mon')?.checked);
+  const remarks = $('#kyc-remarks')?.value || '';
+
+  // Extract Entity Attributes
+  const attributes = {};
+  if (entityType === 'Organisation') {
+    attributes.reg_no = $('#kyc-org-reg')?.value || '';
+    attributes.parent_company = $('#kyc-org-parent')?.value || '';
+    attributes.directors_ubo = $('#kyc-org-ubo')?.value || '';
+  } else if (entityType === 'Vessel') {
+    attributes.imo = $('#kyc-vessel-imo')?.value || '';
+    attributes.vessel_type = $('#kyc-vessel-type')?.value || '';
+    attributes.registered_owner = $('#kyc-vessel-owner')?.value || '';
+    attributes.commercial_operator = $('#kyc-vessel-operator')?.value || '';
+  } else if (entityType === 'Person') {
+    attributes.full_name = $('#kyc-person-fullname')?.value || '';
+    attributes.aliases = $('#kyc-person-aliases')?.value || '';
+    attributes.dob = $('#kyc-person-dob')?.value || '';
+    attributes.passport = $('#kyc-person-id')?.value || '';
+    attributes.pep_declared = Boolean($('#kyc-person-pep')?.checked);
+  }
+
+  // Address
+  const addrInp = $('#kyc-address');
+  const location = {
+    address: addrInp?.value || '',
+    lat: addrInp?.dataset?.lat ? Number(addrInp.dataset.lat) : null,
+    lng: addrInp?.dataset?.lng ? Number(addrInp.dataset.lng) : null,
+    place_id: addrInp?.dataset?.placeId || null
+  };
+
+  if (monitoring && !(location.address.trim() && Number.isFinite(location.lat) && Number.isFinite(location.lng))) {
+    toast('Ongoing Monitoring needs a pinned location: choose an address suggestion or a landmark');
+    $('#kyc-location-field').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('#kyc-address')?.focus();
+    return;
+  }
+
+  const payload = {
+    counterparty_name: name,
+    entity_type: entityType,
+    country: country,
+    relationship_type: relType,
+    contract_value: contractVal,
+    ongoing_monitoring: monitoring,
+    remarks: remarks,
+    attributes: attributes,
+    location: location,
+    counterparty_email: $('#kyc-cp-email')?.value?.trim() || '',
+    attachments: Array.from($('#kyc-attachments')?.files || []).map(f => f.name)
+  };
+
+  try {
+    const res = await apiFetch('/api/kyc/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to submit KYC request');
+    }
+
+    const data = await res.json();
+    const created = data.request;
+
+    toast(`KYC Request ${created.id} submitted! Policy RAG: ${created.ddq_required ? 'DDQ Triggered' : 'Clear'}`);
+    $('#kyc-modal').hidden = true;
+    await renderEmployeeWorkspace();
+    if (created.ddq_required) openKycAuditModal(created);
+  } catch (err) {
+    console.error('Error submitting KYC request:', err);
+    toast(`Submission error: ${err.message}`);
+  }
+}
+
+
+/* =====================================================================
+   SHARED KYC HELPERS · AI popover, policy citations, Excel, map pin
+===================================================================== */
+function fmtSgd(v) { return `SGD ${Number(v || 0).toLocaleString('en-US')}`; }
+function findKycRecord(id) {
+  return kycRequestsCache.find(r => r.id === id) || compRequestsCache.find(r => r.id === id) || null;
+}
+
+// "Policy §2.1 (Contract Value > SGD 100k threshold) & Policy §5.2 (...)" -> [{rule, text}]
+function policyCitations(r) {
+  return String(r.ddq_clause || '')
+    .split(/\s*(?:&|;)\s*(?=(?:Policy\s*)?§)/)
+    .map(c => c.trim())
+    .filter(Boolean)
+    .map(c => {
+      const m = c.match(/^(?:Policy\s*)?(§[\d.]+)\s*\(?(.*?)\)?$/);
+      return m ? { rule: m[1], text: m[2] || c } : { rule: '', text: c };
+    });
+}
+function citationLabel(c) {
+  return c.rule ? `Rule ${c.rule} triggered: ${c.text}` : c.text;
+}
+
+function aiBadgeHtml(r) {
+  return `<span class="badge-ai ${getAiRiskClass(r.ai_result)}" data-ai-pop="${esc(r.id)}"><svg class="ic spark sm"><use href="#i-spark"/></svg>${esc(r.ai_result)}</span>`;
+}
+
+function initAiPopover() {
+  const pop = document.createElement('div');
+  pop.className = 'ai-pop';
+  pop.hidden = true;
+  document.body.appendChild(pop);
+  document.addEventListener('mouseover', e => {
+    const badge = e.target.closest && e.target.closest('[data-ai-pop]');
+    if (!badge) { pop.hidden = true; return; }
+    const r = findKycRecord(badge.dataset.aiPop);
+    if (!r) return;
+    const level = String(r.ai_result || '').replace(/\s*\(.*\)\s*$/, '');
+    pop.innerHTML = `<b>Confidence ${esc(String(r.ai_confidence))}% - ${esc(level)}</b>
+      <span class="mono">Risk score ${esc(String(r.ai_score))}/100 · ${esc(r.screening_result)}</span>
+      <p>${esc(r.ai_rationale || 'Risk profile evaluated against watchlists, jurisdiction risk and policy rules.')}</p>`;
+    pop.hidden = false;
+    const b = badge.getBoundingClientRect();
+    const left = Math.min(Math.max(8, b.left), innerWidth - pop.offsetWidth - 8);
+    const below = b.bottom + 6 + pop.offsetHeight < innerHeight;
+    pop.style.left = `${left}px`;
+    pop.style.top = `${below ? b.bottom + 6 : b.top - pop.offsetHeight - 6}px`;
+  });
+}
+
+async function downloadKycExcel() {
+  try {
+    toast('Preparing Excel workbook (.xlsx)...');
+    const res = await apiFetch('/api/kyc/export-excel');
+    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    const blob = await res.blob();
+    const name = (res.headers.get('Content-Disposition') || '').match(/filename="?([^"]+)"?/);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name ? name[1] : 'SafeGlobe_KYC_Requests.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+// Pin map: live Google Maps embed when GOOGLE_MAPS_API_KEY is set, otherwise a labelled mock tile
+function drawKycMap(lat, lng, label) {
+  const box = $('#kyc-map-preview');
+  const canvas = $('#kyc-map-canvas');
+  const pin = $('#kyc-map-pin');
+  if (!box || !canvas) return;
+  let frame = box.querySelector('iframe');
+  const hasPoint = Number.isFinite(lat) && Number.isFinite(lng);
+
+  if (publicConfig.mapsEnabled && hasPoint) {
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0';
+      frame.loading = 'lazy';
+      frame.referrerPolicy = 'no-referrer-when-downgrade';
+      box.appendChild(frame);
+    }
+    frame.src = `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(publicConfig.googleMapsApiKey)}&q=${lat},${lng}&zoom=15`;
+    pin.style.display = 'none';
+    return;
+  }
+  if (frame) frame.remove();
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.fillStyle = cssColor('--surface-3', '#E6E2D8');
+  ctx.fillRect(0, 0, W, H);
+  if (!hasPoint) {
+    pin.style.display = 'none';
+    ctx.fillStyle = cssColor('--fg-3', '#8A8579');
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Search an address or pick a landmark to drop a pin', W / 2, H / 2 + 4);
+    return;
+  }
+  // Deterministic street grid derived from the coordinates so each place looks distinct
+  let seed = Math.abs(Math.round(lat * 1e4) * 31 + Math.round(lng * 1e4));
+  const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  ctx.fillStyle = cssColor('--ocean', '#E5E1D6');
+  ctx.beginPath();
+  ctx.moveTo(0, H); ctx.lineTo(0, H * (0.55 + rand() * 0.3));
+  ctx.bezierCurveTo(W * 0.3, H * (0.5 + rand() * 0.4), W * 0.6, H * (0.7 + rand() * 0.3), W, H * (0.6 + rand() * 0.3));
+  ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = cssColor('--surface', '#FBFAF6');
+  for (let i = 0; i < 9; i++) {
+    ctx.lineWidth = i % 3 === 0 ? 5 : 2;
+    const x = W * (0.05 + rand() * 0.9), skew = (rand() - 0.5) * 80;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + skew, H); ctx.stroke();
+  }
+  for (let i = 0; i < 4; i++) {
+    ctx.lineWidth = i % 2 === 0 ? 5 : 2;
+    const y = H * (0.1 + rand() * 0.8);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y + (rand() - 0.5) * 30); ctx.stroke();
+  }
+  ctx.fillStyle = cssColor('--fg-2', '#5C584F');
+  ctx.font = '600 11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(String(label || '').slice(0, 70), 10, 16);
+  ctx.font = '10px monospace';
+  ctx.fillText(`${lat.toFixed(4)}, ${lng.toFixed(4)}`, 10, 30);
+  ctx.textAlign = 'right';
+  ctx.fillText('Mock map · set GOOGLE_MAPS_API_KEY for live Google Maps', W - 10, H - 8);
+  pin.style.left = '50%';
+  pin.style.top = '62%';
+  pin.style.display = 'block';
+  pin.style.animation = 'none';
+  void pin.offsetWidth;
+  pin.style.animation = '';
+}
+
+function setKycLocation({ address, lat, lng, placeId, source }) {
+  const input = $('#kyc-address');
+  input.value = address;
+  input.dataset.lat = lat;
+  input.dataset.lng = lng;
+  input.dataset.placeId = placeId || '';
+  $('#kyc-addr-clear').hidden = false;
+  $('#kyc-addr-dropdown').hidden = true;
+  $('#kyc-addr-feedback').innerHTML = `<span style="color:var(--low);font-size:11.5px">✓ Pinned ${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)} (${esc(source)})</span>`;
+  drawKycMap(Number(lat), Number(lng), address);
+}
+
+function initKycLandmarks() {
+  $$('#kyc-landmark-chips .landmark-chip').forEach(chip => {
+    chip.addEventListener('click', () => setKycLocation({
+      address: chip.dataset.addr,
+      lat: Number(chip.dataset.lat),
+      lng: Number(chip.dataset.lng),
+      placeId: chip.dataset.id,
+      source: 'Singapore landmark'
+    }));
+  });
+}
+
+
+// Employee-side DDQ actions inside the audit drawer (dispatch / open / copy the signed link)
+function renderAuditDdqActions(r) {
+  const box = $('#aud-ddq-actions');
+  const comp = isCompliance();
+  $('#aud-officer-actions').style.display = comp ? 'flex' : 'none';
+  box.innerHTML = '';
+  if (!r.ddq_required || !r.ddq_link) return;
+  const link = location.origin + r.ddq_link;
+  const canSend = r.ddq_status === 'Triggered';
+  box.innerHTML = `
+    ${canSend ? `<button class="btn sm primary" data-ddq-act="send" type="button"><svg class="ic sm"><use href="#i-send"/></svg>Send DDQ to Counterparty</button>` : ''}
+    <a class="btn sm" href="${esc(r.ddq_link)}" target="_blank" rel="noopener"><svg class="ic sm"><use href="#i-link"/></svg>Open Guest Portal</a>
+    <button class="btn sm" data-ddq-act="copy" type="button">Copy Link</button>
+    ${Object.keys(r.ddq_responses || {}).length ? `<a class="btn sm" href="/ddq/print?id=${encodeURIComponent(r.id)}" target="_blank" rel="noopener"><svg class="ic sm"><use href="#i-doc"/></svg>Download DDQ (PDF)</a>` : ''}`;
+  const copyBtn = box.querySelector('[data-ddq-act="copy"]');
+  copyBtn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(link); toast('Signed DDQ link copied'); }
+    catch (e) { toast(link); }
+  });
+  const sendBtn = box.querySelector('[data-ddq-act="send"]');
+  if (sendBtn) sendBtn.addEventListener('click', async () => {
+    try {
+      const res = await apiFetch(`/api/kyc/${encodeURIComponent(r.id)}/send-ddq`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error);
+      toast(data.message);
+      renderEmployeeWorkspace();
+      openKycAuditModal(data.request);
+    } catch (err) {
+      toast(`Could not send DDQ: ${err.message}`);
+    }
+  });
+}
+
+
+async function boot() {
+  session = loadSession();
+  if (!session) { location.replace('/login'); return; }
+  if (isCompliance()) { location.replace('/portal/compliance'); return; }
+  syncTheme();
+  initSessionControls();
+  initAiPopover();
+  initKycPortalControls();
+  try {
+    const res = await fetch('/api/config/public');
+    if (res.ok) publicConfig = await res.json();
+  } catch (e) {}
+  renderEmployeeWorkspace();
+}
+boot();
+})();
+</script>
+</body>
+</html>

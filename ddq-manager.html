@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safe Globe · DDQ Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/portal-shared.css">
+<style>
+/* DDQ Manager: compliance officers import a questionnaire template and edit every slide and question. */
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;max-width:1320px;margin:0 auto;padding:24px 20px 60px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.page-head{max-width:1320px;margin:0 auto;padding:24px 20px 0}
+.page-head h1{margin:4px 0 4px;font-family:var(--f-display);font-weight:500;font-size:28px}
+.page-head p{margin:0;color:var(--fg-2);font-size:13.5px;max-width:78ch}
+.side{padding:14px;display:flex;flex-direction:column;gap:10px;position:sticky;top:76px}
+.side h2,.panel h2{margin:0;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)}
+.tpl{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.tpl:hover{border-color:var(--line-2);background:var(--surface-2)}
+.tpl.on{border-color:var(--accent);background:var(--accent-soft)}
+.tpl b{display:flex;gap:6px;align-items:center;font-size:13.5px;font-weight:600}
+.tpl small{display:block;color:var(--fg-3);font-size:11.5px;margin-top:2px}
+.side-actions{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.side-actions .btn{justify-content:flex-start}
+
+.editor{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.toolbar .name{flex:1;min-width:220px;font-family:var(--f-display);font-size:20px;height:42px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:500;color:var(--fg-2)}
+.field small{font-size:11.5px;color:var(--fg-3)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.two{grid-template-columns:1fr}}
+details.panel summary{cursor:pointer;font-size:14px;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}
+details.panel summary::-webkit-details-marker{display:none}
+details.panel summary .chev{transition:transform .15s}
+details.panel[open] summary .chev{transform:rotate(90deg)}
+
+/* slide tabs mirror the counterparty's slides */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.tab{flex:none;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);font-size:12.5px;display:flex;align-items:center;gap:6px;background:var(--surface);white-space:nowrap}
+.tab.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.tab .n{font-family:var(--f-mono);font-size:11px;color:var(--fg-3)}
+.sec-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}
+.sec-tools{display:flex;gap:4px;padding-top:20px}
+.qcard{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;grid-template-columns:76px minmax(0,1fr) 150px auto;gap:10px;align-items:start;background:var(--surface)}
+.qcard:hover{border-color:var(--line-2)}
+.qcard .extra{grid-column:2 / 4;display:flex;flex-direction:column;gap:8px}
+.qcard .tools{display:flex;flex-direction:column;gap:2px}
+.qcard .tools .icon-btn{width:28px;height:28px}
+.qcard .req{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fg-2)}
+@media (max-width:760px){.qcard{grid-template-columns:64px minmax(0,1fr)}.qcard .extra{grid-column:1/-1}.qcard .tools{flex-direction:row;grid-column:1/-1}}
+.rot-up{transform:rotate(-90deg)}.rot-down{transform:rotate(90deg)}.rot-left{transform:rotate(180deg)}
+.empty{padding:40px;text-align:center;color:var(--fg-3)}
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:start center;padding:10vh 16px 16px;background:rgba(20,18,15,.4)}
+.modal[hidden]{display:none}
+.sheet{width:min(680px,100%);padding:20px;display:flex;flex-direction:column;gap:12px;max-height:80vh}
+.banner-note{padding:10px 12px;border-radius:10px;border:1px solid var(--mid);background:var(--mid-soft);font-size:12.5px}
+.sheet h3{margin:0;font-family:var(--f-display);font-weight:500;font-size:22px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wordmark"><b>Safe Globe</b><span>DDQ Manager</span></div>
+  <div class="grow"></div>
+  <span class="pill" id="dirty" hidden>Unsaved changes</span>
+  <a class="btn sm" href="/portal/compliance">← Compliance workspace</a>
+  <button class="icon-btn" id="theme-btn" type="button" aria-label="Switch theme"></button>
+</header>
+
+<div class="page-head">
+  <div class="eyebrow">Compliance Officer · Questionnaire templates</div>
+  <h1>DDQ Manager</h1>
+  <p>Import a questionnaire, then edit each slide and question the counterparty will see. The active template is sent with every new DDQ; questionnaires already issued keep the version they were sent with.</p>
+</div>
+
+<div class="layout">
+  <aside class="card side">
+    <h2>Templates</h2>
+    <div id="tpl-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    <div class="side-actions">
+      <button class="btn" id="import-btn" type="button">Import template</button>
+      <button class="btn" id="new-btn" type="button">New blank template</button>
+      <button class="btn" id="dup-btn" type="button">Duplicate selected</button>
+    </div>
+  </aside>
+
+  <main class="editor" id="editor"><div class="card empty">Loading templates…</div></main>
+</div>
+
+<div class="modal" id="import-modal" hidden>
+  <div class="card sheet" role="dialog" aria-modal="true" aria-label="Import questionnaire template">
+    <h3>Import a questionnaire template</h3>
+    <p class="faint" style="margin:0;font-size:13px">Upload a markdown file with numbered <span class="mono">## 1. Section</span> headings, each followed by a <span class="mono">| No. | Question | Response |</span> table. Questions containing “Yes / No” become tick-box questions; other tables become repeating tables.</p>
+    <div class="field"><label for="import-name">Template name (optional)</label><input class="input" id="import-name" placeholder="Taken from the file's title if left blank"></div>
+    <div class="field"><label for="import-file">Template file</label><input type="file" id="import-file" accept=".md,.markdown,.txt,.pdf,.doc,.docx,text/markdown,text/plain,application/pdf">
+      <small class="faint" style="font-size:11.5px">Markdown (.md) works today. PDF and Word templates will be read with Google Document AI once it is connected.</small></div>
+    <div class="banner-note" id="import-note" hidden></div>
+    <div class="field"><label for="import-text">…or paste the template</label><textarea class="textarea mono" id="import-text" rows="8" style="font-size:12px"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn ghost" id="import-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="import-go" type="button">Import</button>
+    </div>
+  </div>
+</div>
+
+<script src="/portal-shared.js"></script>
+<script>
+(function(){
+'use strict';
+const { $, $$, esc, icon, toast, initTheme, loadSession, apiFetch } = SG;
+
+let templates = [];
+let current = null;   // { id, name, is_active, ... }
+let E = null;         // template body being edited
+let secIndex = 0;
+let dirty = false;
+
+const json = (method, body) => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+async function api(url, opts) {
+  const res = await apiFetch(url, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || data.error || `Request failed (${res.status})`);
+  return data;
+}
+function setDirty(v) { dirty = v; $('#dirty').hidden = !v; }
+const lines = v => String(v || '').split('\n').map(s => s.trim()).filter(Boolean);
+
+/* ===================== template list ===================== */
+async function loadList(selectId) {
+  const data = await api('/api/ddq-templates');
+  templates = data.templates;
+  renderList();
+  const target = selectId || (current && current.id) || (templates.find(t => t.is_active) || templates[0] || {}).id;
+  if (target) await select(target, true);
+  else $('#editor').innerHTML = '<div class="card empty">No templates yet. Import one to get started.</div>';
+}
+function renderList() {
+  $('#tpl-list').innerHTML = templates.map(t => `
+    <button class="tpl ${current && current.id === t.id ? 'on' : ''}" type="button" data-id="${esc(t.id)}">
+      <b>${esc(t.name)} ${t.is_active ? '<span class="pill ok">Active</span>' : ''}</b>
+      <small>${t.section_count} slides · ${t.question_count} questions</small>
+      <small>Edited ${esc(String(t.updated_at || '').slice(0, 16))}${t.updated_by ? ` · ${esc(t.updated_by)}` : ''}</small>
+    </button>`).join('');
+}
+async function select(id, force) {
+  if (!force && dirty && !confirmDiscard()) return;
+  const data = await api(`/api/ddq-templates/${encodeURIComponent(id)}`);
+  current = data.template;
+  E = current.template;
+  secIndex = 0;
+  setDirty(false);
+  renderList();
+  renderEditor();
+}
+// window.confirm is avoided on purpose: an inline two-step button is used instead
+function confirmDiscard() {
+  toast('Save or discard your changes first (reload the page to discard).');
+  return false;
+}
+
+/* ===================== editor ===================== */
+function renderEditor() {
+  const total = E.sections.reduce((n, s) => n + s.questions.length, 0);
+  $('#editor').innerHTML = `
+    <div class="card panel">
+      <div class="toolbar">
+        <input class="input name" id="tpl-name" value="${esc(current.name)}" aria-label="Template name">
+        ${current.is_active ? '<span class="pill ok">Active · sent with new DDQs</span>' : '<button class="btn" id="activate-btn" type="button">Make active</button>'}
+        <button class="btn primary" id="save-btn" type="button">${icon('check', 'sm')}Save changes</button>
+        ${current.is_active ? '' : '<button class="btn danger" id="delete-btn" type="button">Delete</button>'}
+      </div>
+      <small class="faint">${esc(current.id)} · ${E.sections.length} slides · ${total} questions${current.source_filename ? ` · imported from ${esc(current.source_filename)}` : ''}</small>
+    </div>
+
+    <details class="card panel">
+      <summary><span class="chev">${icon('chev', 'sm')}</span>Welcome slide, documents, declaration and glossary</summary>
+      <div class="field"><label>Questionnaire title</label><input class="input" data-g="title" value="${esc(E.title)}"></div>
+      <div class="field"><label>Introduction (shown on the welcome slide)</label><textarea class="textarea" rows="3" data-g="intro">${esc(E.intro)}</textarea></div>
+      <div class="two">
+        <div class="field"><label>Instructions</label><textarea class="textarea" rows="6" data-g-list="instructions">${esc(E.instructions.join('\n'))}</textarea><small>One per line</small></div>
+        <div class="field"><label>Supporting documents checklist</label><textarea class="textarea" rows="6" data-g-list="documents">${esc(E.documents.join('\n'))}</textarea><small>One per line. The AI guide suggests these to the counterparty.</small></div>
+      </div>
+      <div class="field"><label>Declaration introduction</label><textarea class="textarea" rows="2" data-decl="intro">${esc(E.declaration.intro)}</textarea></div>
+      <div class="field"><label>Declaration statements</label><textarea class="textarea" rows="6" data-decl-list>${esc(E.declaration.statements.join('\n'))}</textarea><small>One per line. The signatory agrees to these before signing.</small></div>
+      <div class="field"><label>Glossary (used by the AI guide to explain terms)</label><textarea class="textarea" rows="6" data-glossary>${esc(E.glossary.map(g => `${g.term} | ${g.meaning}`).join('\n'))}</textarea><small>One per line as <span class="mono">Term | Meaning</span></small></div>
+    </details>
+
+    <div class="card panel" id="slides-panel"></div>`;
+  renderSlides();
+}
+
+function renderSlides() {
+  const s = E.sections[secIndex];
+  $('#slides-panel').innerHTML = `
+    <h2>Slides</h2>
+    <div class="tabs">
+      ${E.sections.map((x, i) => `<button class="tab ${i === secIndex ? 'on' : ''}" type="button" data-tab="${i}"><span class="n">${i + 1}</span>${esc(x.title)} <span class="n">${x.questions.length}</span></button>`).join('')}
+      <button class="tab" type="button" id="add-section">${icon('plus', 'sm')}Add slide</button>
+    </div>
+    ${s ? `
+    <div class="sec-head">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="field"><label>Heading</label><input class="input" data-s="title" value="${esc(s.title)}"></div>
+        <div class="field"><label>Subheading (optional guidance shown under the heading)</label><textarea class="textarea" rows="2" data-s="subheading">${esc(s.subheading)}</textarea></div>
+      </div>
+      <div class="sec-tools">
+        <button class="icon-btn" type="button" data-sec-move="-1" title="Move slide earlier" ${secIndex === 0 ? 'disabled' : ''}><span class="rot-left">${icon('chev', 'sm')}</span></button>
+        <button class="icon-btn" type="button" data-sec-move="1" title="Move slide later" ${secIndex === E.sections.length - 1 ? 'disabled' : ''}>${icon('chev', 'sm')}</button>
+        <button class="btn sm danger" type="button" id="del-section" ${E.sections.length === 1 ? 'disabled' : ''}>Delete slide</button>
+      </div>
+    </div>
+    <h2 style="margin-top:6px">Questions</h2>
+    ${s.questions.map((q, qi) => questionCard(q, qi, s.questions.length)).join('') || '<p class="faint" style="margin:0">No questions on this slide yet.</p>'}
+    <div><button class="btn" type="button" id="add-question">${icon('plus', 'sm')}Add question</button></div>` : '<p class="faint">Add a slide to begin.</p>'}`;
+}
+
+function questionCard(q, qi, count) {
+  return `<div class="qcard" data-qi="${qi}">
+      <div class="field"><label>No.</label><input class="input mono" data-q="id" value="${esc(q.id)}"></div>
+      <div class="field"><label>Question</label><textarea class="textarea" rows="2" data-q="text">${esc(q.text)}</textarea></div>
+      <div class="field"><label>Answer type</label>
+        <select class="select" data-q="type">
+          <option value="text" ${q.type === 'text' ? 'selected' : ''}>Text answer</option>
+          <option value="yesno" ${q.type === 'yesno' ? 'selected' : ''}>Yes / No tick boxes</option>
+          <option value="table" ${q.type === 'table' ? 'selected' : ''}>Repeating table</option>
+        </select>
+        <label class="req"><input type="checkbox" data-q="required" ${q.required !== false ? 'checked' : ''}> Required</label>
+      </div>
+      <div class="tools">
+        <button class="icon-btn" type="button" data-q-move="-1" title="Move up" ${qi === 0 ? 'disabled' : ''}><span class="rot-up">${icon('chev', 'sm')}</span></button>
+        <button class="icon-btn" type="button" data-q-move="1" title="Move down" ${qi === count - 1 ? 'disabled' : ''}><span class="rot-down">${icon('chev', 'sm')}</span></button>
+        <button class="icon-btn" type="button" data-q-del title="Delete question">${icon('close', 'sm')}</button>
+      </div>
+      ${q.type === 'yesno' ? `<div class="extra"><div class="field"><label>Follow-up shown when the answer is Yes</label><input class="input" data-q="detailsPrompt" value="${esc(q.detailsPrompt || '')}" placeholder="Leave blank for a plain Yes / No"></div></div>` : ''}
+      ${q.type === 'table' ? `<div class="extra"><div class="field"><label>Table columns</label><input class="input" data-q-cols value="${esc((q.columns || []).join(' | '))}"><small>Separate columns with <span class="mono">|</span></small></div></div>` : ''}
+    </div>`;
+}
+
+function nextQuestionId(section, si) {
+  const nums = section.questions.map(q => Number((String(q.id).match(/(\d+)$/) || [])[1]) || 0);
+  return `${si + 1}.${Math.max(0, ...nums) + 1}`;
+}
+
+/* ===================== editing events ===================== */
+$('#editor').addEventListener('input', e => {
+  const el = e.target;
+  if (el.id === 'tpl-name') { current.name = el.value; setDirty(true); return; }
+  if (el.dataset.g) { E[el.dataset.g] = el.value; setDirty(true); return; }
+  if (el.dataset.gList) { E[el.dataset.gList] = lines(el.value); setDirty(true); return; }
+  if (el.dataset.decl) { E.declaration[el.dataset.decl] = el.value; setDirty(true); return; }
+  if (el.hasAttribute('data-decl-list')) { E.declaration.statements = lines(el.value); setDirty(true); return; }
+  if (el.hasAttribute('data-glossary')) {
+    E.glossary = lines(el.value).map(l => { const i = l.indexOf('|'); return i < 0 ? { term: l, meaning: '' } : { term: l.slice(0, i).trim(), meaning: l.slice(i + 1).trim() }; });
+    setDirty(true); return;
+  }
+  const s = E.sections[secIndex];
+  if (el.dataset.s) {
+    s[el.dataset.s] = el.value; setDirty(true);
+    if (el.dataset.s === 'title') { const tab = $(`.tab[data-tab="${secIndex}"]`); if (tab) tab.childNodes[1].textContent = el.value + ' '; }
+    return;
+  }
+  const card = el.closest('[data-qi]');
+  if (!card) return;
+  const q = s.questions[Number(card.dataset.qi)];
+  if (el.hasAttribute('data-q-cols')) { q.columns = el.value.split('|').map(c => c.trim()).filter(Boolean); setDirty(true); return; }
+  if (el.dataset.q === 'required') { q.required = el.checked; setDirty(true); return; }
+  if (el.dataset.q && el.dataset.q !== 'type') { q[el.dataset.q] = el.value; setDirty(true); }
+});
+
+$('#editor').addEventListener('change', e => {
+  const el = e.target;
+  const card = el.closest('[data-qi]');
+  if (card && el.dataset.q === 'type') {
+    const q = E.sections[secIndex].questions[Number(card.dataset.qi)];
+    q.type = el.value;
+    if (q.type === 'yesno' && q.detailsPrompt == null) q.detailsPrompt = 'If Yes, give details';
+    if (q.type === 'table' && !(q.columns && q.columns.length)) q.columns = ['Name', 'Details'];
+    setDirty(true);
+    renderSlides();
+  }
+});
+
+$('#editor').addEventListener('click', async e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const s = E.sections[secIndex];
+  if (btn.dataset.tab !== undefined) { secIndex = Number(btn.dataset.tab); renderSlides(); return; }
+  if (btn.id === 'add-section') {
+    E.sections.push({ id: `s${Date.now().toString(36)}`, title: `New slide ${E.sections.length + 1}`, subheading: '', questions: [] });
+    secIndex = E.sections.length - 1; setDirty(true); renderSlides(); return;
+  }
+  if (btn.id === 'del-section') {
+    if (btn.dataset.armed) { E.sections.splice(secIndex, 1); secIndex = Math.max(0, secIndex - 1); setDirty(true); renderSlides(); }
+    else { btn.dataset.armed = '1'; btn.textContent = `Click again to delete “${s.title}”`; }
+    return;
+  }
+  if (btn.dataset.secMove) {
+    const to = secIndex + Number(btn.dataset.secMove);
+    [E.sections[secIndex], E.sections[to]] = [E.sections[to], E.sections[secIndex]];
+    secIndex = to; setDirty(true); renderSlides(); return;
+  }
+  if (btn.id === 'add-question') {
+    s.questions.push({ id: nextQuestionId(s, secIndex), text: '', type: 'text', required: true });
+    setDirty(true); renderSlides();
+    const last = $$('#slides-panel [data-q="text"]').pop(); if (last) last.focus();
+    return;
+  }
+  const card = btn.closest('[data-qi]');
+  if (card) {
+    const qi = Number(card.dataset.qi);
+    if (btn.hasAttribute('data-q-del')) { s.questions.splice(qi, 1); setDirty(true); renderSlides(); return; }
+    if (btn.dataset.qMove) {
+      const to = qi + Number(btn.dataset.qMove);
+      [s.questions[qi], s.questions[to]] = [s.questions[to], s.questions[qi]];
+      setDirty(true); renderSlides(); return;
+    }
+  }
+  try {
+    if (btn.id === 'save-btn') { await save(); return; }
+    if (btn.id === 'activate-btn') {
+      if (dirty) await save();
+      const data = await api(`/api/ddq-templates/${encodeURIComponent(current.id)}/activate`, json('POST'));
+      toast(data.message);
+      await loadList(current.id);
+      return;
+    }
+    if (btn.id === 'delete-btn') {
+      if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Click again to delete'; return; }
+      await api(`/api/ddq-templates/${encodeURIComponent(current.id)}`, { method: 'DELETE' });
+      toast('Template deleted');
+      current = null; setDirty(false);
+      await loadList();
+    }
+  } catch (err) { toast(err.message); }
+});
+
+async function save() {
+  const blank = E.sections.flatMap(s => s.questions).filter(q => !String(q.text).trim()).length;
+  const data = await api(`/api/ddq-templates/${encodeURIComponent(current.id)}`, json('PUT', { name: current.name, template: E }));
+  current = data.template;
+  E = current.template;
+  setDirty(false);
+  secIndex = Math.min(secIndex, E.sections.length - 1);
+  toast(`Saved · ${data.question_count} questions${blank ? ` (${blank} blank question${blank > 1 ? 's' : ''} removed)` : ''}`);
+  const fresh = await api('/api/ddq-templates');
+  templates = fresh.templates;
+  renderList(); renderEditor();
+}
+
+/* ===================== list actions ===================== */
+$('#tpl-list').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b && (!current || b.dataset.id !== current.id)) select(b.dataset.id).catch(err => toast(err.message)); });
+$('#import-btn').addEventListener('click', () => { $('#import-modal').hidden = false; });
+$('#import-cancel').addEventListener('click', () => { $('#import-modal').hidden = true; });
+$('#import-go').addEventListener('click', async () => {
+  try {
+    const file = $('#import-file').files[0];
+    const body = { filename: file ? file.name : 'pasted template.md', mimeType: file ? file.type : 'text/markdown', name: $('#import-name').value };
+    if (file && !/\.(md|markdown|txt)$/i.test(file.name)) {
+      body.base64Data = await new Promise(resolve => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result).split(',')[1] || ''); fr.readAsDataURL(file); });
+    } else {
+      body.markdown = file ? await file.text() : $('#import-text').value;
+    }
+    $('#import-note').hidden = true;
+    const data = await api('/api/ddq-templates/import', json('POST', body));
+    $('#import-modal').hidden = true;
+    $('#import-file').value = ''; $('#import-text').value = ''; $('#import-name').value = '';
+    toast(`Imported ${data.template.template.sections.length} slides and ${data.question_count} questions. Review, then make it active.`);
+    await loadList(data.template.id);
+  } catch (err) {
+    const note = $('#import-note');
+    note.textContent = err.message;
+    note.hidden = false;
+  }
+});
+$('#new-btn').addEventListener('click', async () => {
+  try { const data = await api('/api/ddq-templates', json('POST', { name: 'New questionnaire' })); await loadList(data.template.id); }
+  catch (err) { toast(err.message); }
+});
+$('#dup-btn').addEventListener('click', async () => {
+  if (!current) return;
+  try { const data = await api('/api/ddq-templates', json('POST', { name: `${current.name} (copy)`, copyFrom: current.id })); await loadList(data.template.id); }
+  catch (err) { toast(err.message); }
+});
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ===================== boot ===================== */
+const session = loadSession();
+if (!session) location.replace('/login');
+else if (session.role !== 'compliance_officer') location.replace('/portal/employee');
+else {
+  initTheme($('#theme-btn'));
+  loadList().catch(err => { $('#editor').innerHTML = `<div class="card empty">${esc(err.message)}</div>`; });
+}
+})();
+</script>
+</body>
+</html>
