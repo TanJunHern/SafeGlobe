@@ -167,8 +167,43 @@ class SqliteDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_sr_source ON source_records(source_id);
       CREATE INDEX IF NOT EXISTS idx_sr_name ON source_records(entity_name);
+
+      CREATE TABLE IF NOT EXISTS kyc_requests (
+        id TEXT PRIMARY KEY,
+        submission_date TEXT NOT NULL,
+        counterparty_name TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        country TEXT NOT NULL,
+        relationship_type TEXT NOT NULL,
+        contract_value INTEGER DEFAULT 0,
+        ongoing_monitoring INTEGER DEFAULT 0,
+        request_status TEXT DEFAULT 'Submitted',
+        screening_result TEXT DEFAULT 'Clear',
+        ai_result TEXT,
+        ai_score INTEGER DEFAULT 20,
+        ai_confidence INTEGER DEFAULT 90,
+        ai_rationale TEXT,
+        ddq_required INTEGER DEFAULT 0,
+        ddq_status TEXT DEFAULT 'N/A',
+        ddq_clause TEXT,
+        remarks TEXT,
+        attributes_json TEXT,
+        location_json TEXT,
+        attachments_json TEXT,
+        created_by_user_id TEXT DEFAULT 'EMP-1042',
+        created_by_email TEXT DEFAULT 'sarah.tan@safeglobe.internal',
+        created_by_department TEXT DEFAULT 'Procurement & Supply Chain',
+        ip_address TEXT DEFAULT '127.0.0.1',
+        client_timestamp TEXT,
+        last_modified_by TEXT DEFAULT 'System',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_kyc_status ON kyc_requests(request_status);
+      CREATE INDEX IF NOT EXISTS idx_kyc_date ON kyc_requests(submission_date);
     `);
     this.seedSourceRecordsIfEmpty();
+    this.seedKycRequestsIfEmpty();
   }
 
 
@@ -1011,6 +1046,311 @@ class SqliteDatabase {
     return this.getSourceRecords();
   }
 
+  // --- KYC Requests (Employee Portal Module) ---
+  seedKycRequestsIfEmpty() {
+    try {
+      const row = this.db.prepare('SELECT COUNT(*) as count FROM kyc_requests').get();
+      if (row && row.count > 0) return;
+
+      const initial = [
+        {
+          id: 'KYC-2026-0001',
+          submission_date: '2026-10-07 14:32',
+          counterparty_name: 'Severny Agro Export LLC',
+          entity_type: 'Organisation',
+          country: 'RUS',
+          relationship_type: 'Customer/Trading Partner',
+          contract_value: 1450000,
+          ongoing_monitoring: 1,
+          request_status: 'Screening In Progress',
+          screening_result: 'Sanctions Alert',
+          ai_result: 'High Risk (Confidence 92%)',
+          ai_score: 88,
+          ai_confidence: 92,
+          ai_rationale: '51% state-owned Russian agricultural exporter subject to sectoral sanctions restrictions under EU/UK/OFAC regimes.',
+          ddq_required: 1,
+          ddq_status: 'Triggered',
+          ddq_clause: 'Policy §4.1 (High-risk jurisdiction CPI 22) & §2.1 (Contract > SGD 100k)',
+          remarks: 'Grain procurement agreement renewal for Q4 shipment cycle.',
+          attributes_json: JSON.stringify({
+            reg_no: 'RU-104779601',
+            tax_id: 'OGRN 1092315000418',
+            directors_ubo: 'Russian State Agricultural Holding (51%)',
+            parent_company: 'State Agro Holding'
+          }),
+          location_json: JSON.stringify({
+            address: 'Novorossiysk Commercial Seaport, Krasnodar Krai, Russia',
+            lat: 44.7244,
+            lng: 37.7675
+          }),
+          attachments_json: JSON.stringify(['severny_registry_extract.pdf', 'grain_export_licence.pdf']),
+          created_by_user_id: 'EMP-1042',
+          created_by_email: 'sarah.tan@safeglobe.internal',
+          created_by_department: 'Commodities Trading',
+          ip_address: '10.0.4.12',
+          client_timestamp: '2026-10-07T06:32:00.000Z',
+          last_modified_by: 'System (Automated Screening)'
+        },
+        {
+          id: 'KYC-2026-0002',
+          submission_date: '2026-10-06 09:15',
+          counterparty_name: 'Aurora Venture',
+          entity_type: 'Vessel',
+          country: 'LBR',
+          relationship_type: 'Vendor/Supplier',
+          contract_value: 420000,
+          ongoing_monitoring: 1,
+          request_status: 'Pending DDQ',
+          screening_result: 'Watchlist Match',
+          ai_result: 'Anomalies Flagged',
+          ai_score: 85,
+          ai_confidence: 88,
+          ai_rationale: 'Satellite AIS telemetry identified 31 hr unverified dark period in Arabian Sea followed by STS transfer east of Johor.',
+          ddq_required: 1,
+          ddq_status: 'Sent to Counterparty',
+          ddq_clause: 'Policy §5.4 (Vessel AIS dark period gap) & §2.1 (Contract > SGD 100k)',
+          remarks: 'Time charter proposed for bunker bunkering and clean petroleum products.',
+          attributes_json: JSON.stringify({
+            imo: 'IMO 9412345',
+            flag: 'Liberia',
+            vessel_type: 'Crude Oil Tanker',
+            owner: 'Meridian Maritime Holdings',
+            operator: 'Varnell Maritime Ltd'
+          }),
+          location_json: JSON.stringify({
+            address: 'Port of Monrovia, Liberia / AIS Coordinates',
+            lat: 6.3156,
+            lng: -10.8074
+          }),
+          attachments_json: JSON.stringify(['aurora_q88_charter.pdf']),
+          created_by_user_id: 'EMP-2089',
+          created_by_email: 'marcus.lee@safeglobe.internal',
+          created_by_department: 'Marine Logistics',
+          ip_address: '10.0.8.44',
+          client_timestamp: '2026-10-06T01:15:00.000Z',
+          last_modified_by: 'Compliance Reviewer (Grace Teo)'
+        },
+        {
+          id: 'KYC-2026-0003',
+          submission_date: '2026-10-05 16:40',
+          counterparty_name: 'Apex Global Trading Pte Ltd',
+          entity_type: 'Organisation',
+          country: 'SGP',
+          relationship_type: 'Vendor/Supplier',
+          contract_value: 85000,
+          ongoing_monitoring: 1,
+          request_status: 'Approved',
+          screening_result: 'Clear',
+          ai_result: 'Low Risk (Confidence 94%)',
+          ai_score: 18,
+          ai_confidence: 94,
+          ai_rationale: 'Clean corporate registry extract with verified domestic directors. No international sanctions or adverse media exposure.',
+          ddq_required: 0,
+          ddq_status: 'N/A',
+          ddq_clause: 'None (Standard Risk Profile)',
+          remarks: 'Annual bunker procurement vendor onboarding.',
+          attributes_json: JSON.stringify({
+            reg_no: 'UEN 20210012A',
+            tax_id: 'GST-M9021-X',
+            directors_ubo: 'Tan Wei (55%), Maria Chen (45%)',
+            parent_company: 'Independent'
+          }),
+          location_json: JSON.stringify({
+            address: '71 Robinson Road #14-01, Singapore 068895',
+            lat: 1.2789,
+            lng: 103.8492
+          }),
+          attachments_json: JSON.stringify(['acra_bizfile_apex.pdf']),
+          created_by_user_id: 'EMP-1042',
+          created_by_email: 'sarah.tan@safeglobe.internal',
+          created_by_department: 'Procurement & Supply Chain',
+          ip_address: '10.0.4.12',
+          client_timestamp: '2026-10-05T08:40:00.000Z',
+          last_modified_by: 'System (Auto-clear)'
+        },
+        {
+          id: 'KYC-2026-0004',
+          submission_date: '2026-10-04 11:20',
+          counterparty_name: 'Arkady Zemtsov',
+          entity_type: 'Person',
+          country: 'RUS',
+          relationship_type: 'M&A and Investment',
+          contract_value: 3500000,
+          ongoing_monitoring: 1,
+          request_status: 'Rejected',
+          screening_result: 'Sanctions Alert',
+          ai_result: 'High Risk (Confidence 96%)',
+          ai_score: 95,
+          ai_confidence: 96,
+          ai_rationale: 'Target individual matches UK OFSI and US OFAC designated SDN lists. Beneficial controller of restricted offshore corporate networks.',
+          ddq_required: 1,
+          ddq_status: 'Completed',
+          ddq_clause: 'Policy §3.2 (Sanctioned UBO Block) & §3.6 (PEP / Designated individual)',
+          remarks: 'Proposed equity investment co-investor review.',
+          attributes_json: JSON.stringify({
+            aliases: 'Aleksandr Zemtsov, Alex Zemtsov',
+            dob: '1974-05-12',
+            passport: 'Passport 51-No-889102',
+            pep_declared: 1
+          }),
+          location_json: JSON.stringify({
+            address: 'Tverskaya Street, Moscow, Russia',
+            lat: 55.7643,
+            lng: 37.6056
+          }),
+          attachments_json: JSON.stringify(['passport_scan_zemtsov.pdf']),
+          created_by_user_id: 'EMP-3011',
+          created_by_email: 'david.koh@safeglobe.internal',
+          created_by_department: 'Strategic Corporate Development',
+          ip_address: '10.0.2.88',
+          client_timestamp: '2026-10-04T03:20:00.000Z',
+          last_modified_by: 'Compliance Officer (Grace Teo)'
+        },
+        {
+          id: 'KYC-2026-0005',
+          submission_date: '2026-10-03 15:05',
+          counterparty_name: 'Straits Bunkering Trading LLC',
+          entity_type: 'Organisation',
+          country: 'ARE',
+          relationship_type: '3rd Party Reps & Brokers',
+          contract_value: 160000,
+          ongoing_monitoring: 1,
+          request_status: 'Approved',
+          screening_result: 'Clear',
+          ai_result: 'Low Risk (Confidence 96%)',
+          ai_score: 14,
+          ai_confidence: 96,
+          ai_rationale: 'Potential name-similarity hit on designated entity cleared as false positive via distinct registration number and separate directors.',
+          ddq_required: 1,
+          ddq_status: 'Completed',
+          ddq_clause: 'Policy §5.2 (3rd Party Intermediaries / Brokers) & §2.1 (Contract > SGD 100k)',
+          remarks: 'Middle East bunkering brokerage engagement.',
+          attributes_json: JSON.stringify({
+            reg_no: 'AE-992812',
+            tax_id: 'UAE-VAT-TRN1002',
+            directors_ubo: 'Rashid Al-Falasi (100%)',
+            parent_company: 'Gulf Marine Trading Group'
+          }),
+          location_json: JSON.stringify({
+            address: 'DIFC Gate Precinct Building 4, Dubai, UAE',
+            lat: 25.2048,
+            lng: 55.2708
+          }),
+          attachments_json: JSON.stringify(['dubai_trade_licence.pdf', 'intermediary_ddq_signed.pdf']),
+          created_by_user_id: 'EMP-1042',
+          created_by_email: 'sarah.tan@safeglobe.internal',
+          created_by_department: 'Procurement & Supply Chain',
+          ip_address: '10.0.4.12',
+          client_timestamp: '2026-10-03T07:05:00.000Z',
+          last_modified_by: 'Compliance Reviewer (Grace Teo)'
+        }
+      ];
+
+      for (const r of initial) {
+        this.addKycRequest(r);
+      }
+    } catch (e) {
+      console.error('Error seeding KYC requests:', e);
+    }
+  }
+
+  addKycRequest(r) {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO kyc_requests 
+      (id, submission_date, counterparty_name, entity_type, country, relationship_type, contract_value, ongoing_monitoring,
+       request_status, screening_result, ai_result, ai_score, ai_confidence, ai_rationale, ddq_required, ddq_status, ddq_clause,
+       remarks, attributes_json, location_json, attachments_json, created_by_user_id, created_by_email, created_by_department,
+       ip_address, client_timestamp, last_modified_by, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    stmt.run(
+      r.id,
+      r.submission_date || new Date().toISOString().replace('T', ' ').substring(0, 16),
+      r.counterparty_name,
+      r.entity_type || 'Organisation',
+      (r.country || 'SGP').toUpperCase(),
+      r.relationship_type || 'Vendor/Supplier',
+      r.contract_value || 0,
+      r.ongoing_monitoring ? 1 : 0,
+      r.request_status || 'Submitted',
+      r.screening_result || 'Clear',
+      r.ai_result || 'Low Risk',
+      r.ai_score || 20,
+      r.ai_confidence || 90,
+      r.ai_rationale || '',
+      r.ddq_required ? 1 : 0,
+      r.ddq_status || 'N/A',
+      r.ddq_clause || '',
+      r.remarks || '',
+      typeof r.attributes_json === 'string' ? r.attributes_json : JSON.stringify(r.attributes_json || r.attributes || {}),
+      typeof r.location_json === 'string' ? r.location_json : JSON.stringify(r.location_json || r.location || {}),
+      typeof r.attachments_json === 'string' ? r.attachments_json : JSON.stringify(r.attachments_json || r.attachments || []),
+      r.created_by_user_id || 'EMP-1042',
+      r.created_by_email || 'sarah.tan@safeglobe.internal',
+      r.created_by_department || 'Procurement & Supply Chain',
+      r.ip_address || '127.0.0.1',
+      r.client_timestamp || new Date().toISOString(),
+      r.last_modified_by || 'Employee Portal'
+    );
+    return this.getKycRequestById(r.id);
+  }
+
+  getAllKycRequests(filter = {}) {
+    let query = 'SELECT * FROM kyc_requests WHERE 1=1';
+    const params = [];
+
+    if (filter.status && filter.status !== 'all') {
+      query += ' AND request_status = ?';
+      params.push(filter.status);
+    }
+    if (filter.entity_type && filter.entity_type !== 'all') {
+      query += ' AND entity_type = ?';
+      params.push(filter.entity_type);
+    }
+    if (filter.search) {
+      const term = `%${filter.search.trim().toLowerCase()}%`;
+      query += ' AND (LOWER(counterparty_name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(country) LIKE ?)';
+      params.push(term, term, term);
+    }
+
+    query += ' ORDER BY submission_date DESC, created_at DESC';
+    const rows = this.db.prepare(query).all(...params);
+    return rows.map(r => this._hydrateKycRequest(r));
+  }
+
+  getKycRequestById(id) {
+    const row = this.db.prepare('SELECT * FROM kyc_requests WHERE id = ?').get(id);
+    return row ? this._hydrateKycRequest(row) : null;
+  }
+
+  updateKycRequestStatus(id, status, lastModifiedBy = 'Compliance Officer') {
+    this.db.prepare(`
+      UPDATE kyc_requests
+      SET request_status = ?, last_modified_by = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(status, lastModifiedBy, id);
+    return this.getKycRequestById(id);
+  }
+
+  _hydrateKycRequest(r) {
+    let attributes = {};
+    let location = {};
+    let attachments = [];
+    try { attributes = JSON.parse(r.attributes_json || '{}'); } catch(e){}
+    try { location = JSON.parse(r.location_json || '{}'); } catch(e){}
+    try { attachments = JSON.parse(r.attachments_json || '[]'); } catch(e){}
+
+    return {
+      ...r,
+      ongoing_monitoring: Boolean(r.ongoing_monitoring),
+      ddq_required: Boolean(r.ddq_required),
+      attributes,
+      location,
+      attachments
+    };
+  }
+
   close() {
     try {
       this.db.close();
@@ -1019,4 +1359,5 @@ class SqliteDatabase {
 }
 
 module.exports = SqliteDatabase;
+
 

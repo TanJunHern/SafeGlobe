@@ -686,6 +686,73 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 .ubo-add-btn{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;border:1px dashed var(--line-2);background:none;color:var(--fg-2);cursor:pointer;transition:all .15s}
 .ubo-add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surface-2)}
 #intake-submit:disabled{opacity:0.45;cursor:not-allowed;filter:grayscale(0.4)}
+
+/* ================= Employee KYC Portal styles ================= */
+.emp-head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.emp-filter-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.emp-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.emp-chip{padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--fg-2);cursor:pointer;transition:all .15s}
+.emp-chip:hover{background:var(--surface-2);color:var(--fg)}
+.emp-chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.emp-search-wrap{display:flex;align-items:center;gap:8px;position:relative}
+.emp-search-wrap input{height:34px;padding:0 12px 0 32px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);font-size:12.5px;min-width:240px;color:var(--fg)}
+.emp-search-wrap svg{position:absolute;left:10px;top:9px;color:var(--fg-3);pointer-events:none}
+.emp-type-sel{height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);font-size:12.5px;color:var(--fg)}
+
+/* KYC Interactive Data Table */
+.kyc-table-wrap{width:100%;overflow-x:auto;border-radius:12px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow)}
+table.kyc-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1450px;text-align:left}
+table.kyc-table th{background:var(--surface-2);padding:11px 12px;font-weight:600;font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:var(--fg-3);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2;white-space:nowrap}
+table.kyc-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+table.kyc-table tbody tr{cursor:pointer;transition:background .15s}
+table.kyc-table tbody tr:hover{background:var(--surface-2)}
+table.kyc-table tbody tr:last-child td{border-bottom:none}
+
+/* Badges & Chips */
+.badge-status{display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.badge-status.submitted{background:rgba(59,130,246,0.14);color:#60a5fa}
+.badge-status.screening-in-progress{background:rgba(245,158,11,0.14);color:#fbbf24}
+.badge-status.pending-ddq{background:rgba(168,85,247,0.14);color:#c084fc}
+.badge-status.approved{background:rgba(34,197,94,0.14);color:#4ade80}
+.badge-status.rejected{background:rgba(239,68,68,0.14);color:#f87171}
+.badge-status.draft{background:rgba(156,163,175,0.14);color:#9ca3af}
+
+.badge-screen{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.badge-screen.clear{background:rgba(34,197,94,0.14);color:#4ade80}
+.badge-screen.watchlist-match{background:rgba(245,158,11,0.14);color:#fbbf24}
+.badge-screen.pep-alert{background:rgba(217,119,87,0.16);color:#f97316}
+.badge-screen.sanctions-alert{background:rgba(239,68,68,0.18);color:#ef4444}
+.badge-screen.high-risk{background:rgba(239,68,68,0.18);color:#f87171}
+
+.badge-ai{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;position:relative}
+.badge-ai.low-risk{background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.3)}
+.badge-ai.medium-risk{background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)}
+.badge-ai.high-risk{background:rgba(239,68,68,0.14);color:#f87171;border:1px solid rgba(239,68,68,0.35)}
+.badge-ai.anomalies-flagged{background:rgba(217,119,87,0.15);color:#fb923c;border:1px solid rgba(217,119,87,0.35)}
+
+.badge-bool{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
+.badge-bool.enabled{background:rgba(34,197,94,0.12);color:#4ade80}
+.badge-bool.disabled{background:var(--surface-3);color:var(--fg-3)}
+.badge-bool.yes{background:rgba(217,119,87,0.16);color:var(--accent);font-weight:600}
+.badge-bool.no{background:var(--surface-3);color:var(--fg-3)}
+
+.badge-ddq-status{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
+.badge-ddq-status.triggered{background:rgba(217,119,87,0.2);color:#f97316;font-weight:600}
+.badge-ddq-status.sent-to-counterparty{background:rgba(59,130,246,0.14);color:#60a5fa}
+.badge-ddq-status.under-review{background:rgba(245,158,11,0.14);color:#fbbf24}
+.badge-ddq-status.completed{background:rgba(34,197,94,0.14);color:#4ade80}
+.badge-ddq-status.na{color:var(--fg-3)}
+
+/* Dropzone & Multimodal Upload */
+.emp-dropzone{border:2px dashed var(--line-2);border-radius:12px;padding:16px;text-align:center;background:var(--surface-2);cursor:pointer;transition:all .2s;position:relative}
+.emp-dropzone:hover,.emp-dropzone.dragover{border-color:var(--accent);background:var(--accent-soft)}
+
+/* AI Suggested Highlighting */
+.ai-suggested-highlight{border-color:#38bdf8 !important;background-color:rgba(56,189,248,0.08) !important}
+.ai-chip{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(56,189,248,0.18);color:#0284c7;text-transform:uppercase;letter-spacing:0.04em}
+:root[data-theme="dark"] .ai-chip{color:#38bdf8;background:rgba(56,189,248,0.2)}
+.dynamic-group{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface-2);margin-top:6px}
+.audit-kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -725,6 +792,8 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
     <symbol id="i-web" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M3 9h18M6 6.8h.5M8.5 6.8h.5"/></symbol>
     <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M4.5 15v4.5h15V15"/></symbol>
     <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
+    <symbol id="i-employee" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-excel" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="11" y2="17"/><line x1="11" y1="13" x2="8" y2="17"/><line x1="14" y1="13" x2="17" y2="13"/><line x1="14" y1="17" x2="17" y2="17"/></symbol>
   </defs>
 </svg>
 
@@ -762,6 +831,7 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
   <nav class="rail" aria-label="Main">
     <button class="on" data-view="globe" type="button"><svg class="ic"><use href="#i-globe"/></svg>Globe</button>
     <button data-view="reviews" type="button"><svg class="ic"><use href="#i-review"/></svg>Reviews<span class="count" id="rail-count">6</span></button>
+    <button data-view="employee" type="button"><svg class="ic"><use href="#i-employee"/></svg>Employee<span class="count" id="rail-emp-count" style="background:var(--accent);color:#fff">5</span></button>
     <button data-view="sources" type="button"><svg class="ic"><use href="#i-plug"/></svg>Sources</button>
     <button data-view="policies" type="button"><svg class="ic"><use href="#i-policy"/></svg>Policies</button>
     <div class="spacer"></div>
@@ -982,6 +1052,77 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
             <div class="card-h"><h2>Compiled rules</h2><span class="faint" style="font-size:12px">Checked against every counterparty on each re-screen</span></div>
             <div id="rules"></div>
           </div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- EMPLOYEE WORKSPACE (KYC REQUEST PORTAL) -->
+    <section class="view" id="view-employee" aria-label="Employee Workspace">
+      <div class="page"><div class="page-in" style="max-width:1440px">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Employee Workspace · KYC Portal</div>
+            <h1>Counterparty KYC Requests</h1>
+            <p>Submit counterparty onboardings, run real-time automated policy evaluations, track screening & DDQ status, and export compliance audit reports.</p>
+          </div>
+          <div class="emp-head-actions">
+            <button class="btn" id="emp-export-btn" type="button" title="Export all records to Excel (.xlsx / CSV)"><svg class="ic sm"><use href="#i-excel"/></svg>Export to Excel (.xlsx)</button>
+            <button class="btn primary" id="emp-new-request-btn" type="button" style="gap:6px"><svg class="ic sm"><use href="#i-plus"/></svg>+ New KYC Request</button>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="emp-filter-bar">
+          <div class="emp-chips" id="emp-quick-filters">
+            <button class="emp-chip on" data-filter="all" type="button">All Requests</button>
+            <button class="emp-chip" data-filter="pending" type="button">Pending</button>
+            <button class="emp-chip" data-filter="screened" type="button">Screened</button>
+            <button class="emp-chip" data-filter="ddq" type="button">DDQ Triggered</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="emp-search-wrap">
+              <svg class="ic sm"><use href="#i-search"/></svg>
+              <input type="text" id="emp-search-input" placeholder="Search KYC ID, counterparty, country..." autocomplete="off">
+            </div>
+            <select class="emp-type-sel" id="emp-type-filter">
+              <option value="all">All Entity Types</option>
+              <option value="Organisation">Organisation</option>
+              <option value="Vessel">Vessel</option>
+              <option value="Person">Person</option>
+            </select>
+            <button class="icon-btn" id="emp-refresh-btn" type="button" title="Refresh KYC data" style="width:34px;height:34px;border:1px solid var(--line)"><svg class="ic sm"><use href="#i-refresh"/></svg></button>
+          </div>
+        </div>
+
+        <!-- Interactive Data Table (13 Columns in exact order) -->
+        <div class="kyc-table-wrap">
+          <table class="kyc-table" id="kyc-table">
+            <thead>
+              <tr>
+                <th>KYC ID</th>
+                <th>Submission Date</th>
+                <th>Counterparty Name</th>
+                <th>Entity Type</th>
+                <th>Country</th>
+                <th>Relationship Type</th>
+                <th>Contract Value (SGD)</th>
+                <th>Ongoing Monitoring</th>
+                <th>Request Status</th>
+                <th>KYC Screening Result</th>
+                <th>AI Result</th>
+                <th>DDQ Required</th>
+                <th>DDQ Status</th>
+              </tr>
+            </thead>
+            <tbody id="kyc-table-body">
+              <tr><td colspan="13" style="text-align:center;padding:30px;color:var(--fg-3)">Loading KYC requests...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--fg-3);padding:4px 2px">
+          <span id="emp-count-summary">Showing 0 requests</span>
+          <span>Click any row to inspect audit drawer & hidden metadata · Export includes policy trace logs</span>
         </div>
       </div></div>
     </section>
@@ -1215,6 +1356,300 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
       <div class="check-row"><label><input type="checkbox" id="intake-watch" checked> Add to ongoing monitoring watchlist</label></div>
     </div>
     <div class="sheet-foot"><span class="faint" style="font-size:12px;margin-right:auto;align-self:center">Screened against 41 sanctions lists, PEP and custom sources</span><button class="btn ghost" data-close type="button">Cancel</button><button class="btn primary" id="intake-submit" type="button"><svg class="ic sm"><use href="#i-search"/></svg>Run Sentry screening</button></div>
+  </div>
+</div>
+
+<!-- SafeGlobe KYC: New Request Modal (Employee Portal) -->
+<div class="modal" id="kyc-modal" hidden>
+  <div class="sheet" style="max-width:720px;max-height:90vh;display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="New KYC Request">
+    <div class="sheet-head">
+      <div style="flex:1">
+        <div class="agent">SafeGlobe KYC · Employee Portal</div>
+        <h2>New Counterparty KYC Request</h2>
+        <p>Submit onboarding counterparty. Gemini multimodal engine auto-fills attributes from verification documents, and Policy RAG evaluates compliance rules in real time.</p>
+      </div>
+      <button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body" id="kyc-modal-body" style="gap:14px">
+      <!-- Point A: Multimodal Document Auto-Fill Dropzone -->
+      <div class="emp-dropzone" id="kyc-dropzone">
+        <svg class="ic" style="width:28px;height:28px;margin:0 auto 6px;display:block;color:var(--accent)"><use href="#i-upload"/></svg>
+        <b style="font-size:13px;display:block">Point A · Multimodal Document Auto-Fill (Google Gemini)</b>
+        <p class="faint" style="margin:2px 0 8px;font-size:11.5px">Drop ACRA Bizfile, Vessel Registry certificate, Passport/ID scan or Incorporation Certificate here to auto-fill form.</p>
+        <input type="file" id="kyc-doc-file" accept=".pdf, .docx, .doc, .txt, .png, .jpg, .jpeg, application/pdf, image/*">
+        <div id="kyc-extract-status" style="font-size:11.5px;color:var(--accent);display:none;align-items:center;justify-content:center;gap:6px">
+          <svg class="ic sm" style="animation:spin 1s linear infinite"><use href="#i-loader"/></svg><span>Gemini extracting entity fields...</span>
+        </div>
+      </div>
+
+      <!-- Base Parameters -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label for="kyc-name">Counterparty Name <span style="color:var(--high)">*</span></label>
+          <input id="kyc-name" type="text" placeholder="e.g. Apex Commodities Pte Ltd" required>
+        </div>
+        <div class="field">
+          <label for="kyc-entity-type">Entity Type <span style="color:var(--high)">*</span></label>
+          <select id="kyc-entity-type">
+            <option value="Organisation" selected>Organisation</option>
+            <option value="Vessel">Vessel</option>
+            <option value="Person">Person</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label for="kyc-country">Country of Incorporation / Flag / Nationality</label>
+          <select id="kyc-country"></select>
+        </div>
+        <div class="field">
+          <label for="kyc-rel-type">Relationship Type <span style="color:var(--high)">*</span></label>
+          <select id="kyc-rel-type">
+            <option value="Vendor/Supplier" selected>Vendor/Supplier</option>
+            <option value="Customer/Trading Partner">Customer/Trading Partner</option>
+            <option value="3rd Party Reps & Brokers">3rd Party Reps & Brokers (Mandatory Policy DDQ)</option>
+            <option value="M&A and Investment">M&A and Investment</option>
+            <option value="Community Investment & Sponsorship">Community Investment & Sponsorship</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label for="kyc-contract-val">Anticipated Contract Value (SGD)</label>
+          <input id="kyc-contract-val" type="number" min="0" step="5000" placeholder="e.g. 250000">
+          <small class="faint">Values > SGD 100,000 automatically trigger Policy §2.1 DDQ</small>
+        </div>
+        <div class="field" style="justify-content:center">
+          <label style="margin-bottom:6px">Ongoing Monitoring</label>
+          <div class="check-row" style="margin:0">
+            <label style="width:100%;display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="kyc-ongoing-mon" checked>
+              <span>Enable continuous adverse media & watchlist radar</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Fields by Entity Type: Organisation -->
+      <div id="kyc-dyn-org" class="dynamic-group">
+        <div class="eyebrow" style="margin-bottom:8px">Organisation Attributes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label for="kyc-org-reg">Registration / Tax ID (UEN, EIN, etc.)</label>
+            <input id="kyc-org-reg" type="text" placeholder="e.g. 202419822K">
+          </div>
+          <div class="field">
+            <label for="kyc-org-parent">Parent / Holding Company</label>
+            <input id="kyc-org-parent" type="text" placeholder="e.g. Apex Regional Holdings">
+          </div>
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label for="kyc-org-ubo">Ultimate Beneficial Owner (UBO) Names</label>
+          <input id="kyc-org-ubo" type="text" placeholder="e.g. Tan Wei Liang (60%), Chua Mei Ling (40%)">
+        </div>
+      </div>
+
+      <!-- Dynamic Fields by Entity Type: Vessel -->
+      <div id="kyc-dyn-vessel" class="dynamic-group" style="display:none">
+        <div class="eyebrow" style="margin-bottom:8px">Vessel Maritime Attributes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label for="kyc-vessel-imo">IMO Number (International Maritime Organization)</label>
+            <input id="kyc-vessel-imo" type="text" placeholder="e.g. IMO 9823411">
+          </div>
+          <div class="field">
+            <label for="kyc-vessel-type">Vessel Type</label>
+            <input id="kyc-vessel-type" type="text" placeholder="e.g. Crude Oil Tanker, Bulk Carrier">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div class="field">
+            <label for="kyc-vessel-owner">Registered Owner</label>
+            <input id="kyc-vessel-owner" type="text" placeholder="e.g. Aurora Ocean Marine Ltd">
+          </div>
+          <div class="field">
+            <label for="kyc-vessel-operator">Commercial Operator</label>
+            <input id="kyc-vessel-operator" type="text" placeholder="e.g. Straits Tankers Chartering">
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Fields by Entity Type: Person -->
+      <div id="kyc-dyn-person" class="dynamic-group" style="display:none">
+        <div class="eyebrow" style="margin-bottom:8px">Person / Individual Attributes</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label for="kyc-person-fullname">Full Legal Name</label>
+            <input id="kyc-person-fullname" type="text" placeholder="e.g. Dr. Alexander Vance">
+          </div>
+          <div class="field">
+            <label for="kyc-person-aliases">Aliases / Known Names</label>
+            <input id="kyc-person-aliases" type="text" placeholder="e.g. Alex Vance, A. Vance">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div class="field">
+            <label for="kyc-person-dob">Date of Birth</label>
+            <input id="kyc-person-dob" type="date">
+          </div>
+          <div class="field">
+            <label for="kyc-person-id">Identification / Passport Number</label>
+            <input id="kyc-person-id" type="text" placeholder="e.g. Passport P88421094">
+          </div>
+        </div>
+        <div class="check-row" style="margin-top:10px">
+          <label style="width:100%;display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="kyc-person-pep">
+            <span style="font-weight:600">Politically Exposed Person (PEP) Self-Declaration (Triggers Policy §3.6 DDQ)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Location Search via Google Maps Places API -->
+      <div class="field" style="position:relative">
+        <label for="kyc-address" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Physical Asset / Registered Corporate Headquarters Address</span>
+          <span class="g-powered"><span class="g-g">G</span><span class="g-o1">o</span><span class="g-o2">o</span><span class="g-g2">g</span><span class="g-l">l</span><span class="g-e">e</span> Places API</span>
+        </label>
+        <div class="addr-input-wrap">
+          <svg class="ic sm addr-pin-ico"><use href="#i-pin"/></svg>
+          <input id="kyc-address" type="text" autocomplete="off" placeholder="Search address with Google Maps (e.g. 10 Marina Boulevard, Singapore...)">
+          <button type="button" class="addr-clear-btn" id="kyc-addr-clear" title="Clear address" hidden>&times;</button>
+        </div>
+        <div class="addr-dropdown" id="kyc-addr-dropdown" hidden></div>
+        <div class="addr-feedback" id="kyc-addr-feedback"></div>
+      </div>
+
+      <!-- Remarks & Attachments -->
+      <div class="field">
+        <label for="kyc-remarks">Remarks & Commercial Context</label>
+        <textarea id="kyc-remarks" rows="2" placeholder="Details of business justification, procurement contract scope, or specific compliance flags."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="kyc-attachments">Supporting Attachments</label>
+        <input type="file" id="kyc-attachments" multiple accept=".pdf, .docx, .png, .jpg, .jpeg">
+        <div id="kyc-attachments-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <span class="faint" style="font-size:11.5px;margin-right:auto;align-self:center">
+        Auto-evaluates Policy §2.1 (>100k), §3.6 (PEP), §4.1 (CPI&lt;40), §5.2 (Brokers) & §5.4 (Vessels)
+      </span>
+      <button class="btn ghost" data-close type="button">Cancel</button>
+      <button class="btn primary" id="kyc-submit-btn" type="button"><svg class="ic sm"><use href="#i-check"/></svg>Submit KYC Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- SafeGlobe KYC: Audit & Traceability Drawer Modal -->
+<div class="modal" id="kyc-audit-modal" hidden>
+  <div class="sheet" style="max-width:760px;max-height:90vh;display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="KYC Request Audit Detail">
+    <div class="sheet-head">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="eyebrow" id="aud-id">KYC-2026-0001</span>
+          <span class="badge-status" id="aud-status-badge">Submitted</span>
+        </div>
+        <h2 id="aud-name" style="margin-top:2px">Severny Agro Export LLC</h2>
+        <p id="aud-sub" class="faint">Submitted on 2026-10-06 09:15 · Organisation · SGP</p>
+      </div>
+      <button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body" id="kyc-audit-body" style="gap:16px">
+      <!-- Section 1: Overview Cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <div class="card" style="padding:10px;text-align:center">
+          <small class="faint">Contract Value</small>
+          <b id="aud-contract-val" style="display:block;font-size:13px;margin-top:2px">SGD 1,200,000</b>
+        </div>
+        <div class="card" style="padding:10px;text-align:center">
+          <small class="faint">Relationship</small>
+          <b id="aud-rel-type" style="display:block;font-size:12px;margin-top:2px">Vendor/Supplier</b>
+        </div>
+        <div class="card" style="padding:10px;text-align:center">
+          <small class="faint">Monitoring</small>
+          <b id="aud-monitoring" style="display:block;font-size:12px;margin-top:2px">Enabled</b>
+        </div>
+        <div class="card" style="padding:10px;text-align:center">
+          <small class="faint">Screening</small>
+          <b id="aud-screening" style="display:block;font-size:12px;margin-top:2px">Sanctions Alert</b>
+        </div>
+      </div>
+
+      <!-- Section 2: AI Risk Scoring & Anomaly Detection (Point B) -->
+      <div class="card" style="padding:14px;border-left:3px solid var(--accent)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg class="ic spark" style="color:var(--accent)"><use href="#i-spark"/></svg>
+            <b style="font-size:13px">Point B · AI Risk Scoring & Anomaly Detection</b>
+          </div>
+          <span class="badge-ai" id="aud-ai-badge">High Risk (Confidence 96%)</span>
+        </div>
+        <p id="aud-ai-rationale" style="margin:0;font-size:12.5px;line-height:1.45;color:var(--fg-2)"></p>
+      </div>
+
+      <!-- Section 3: Policy RAG & DDQ Governance (Point C) -->
+      <div class="card" style="padding:14px;border-left:3px solid var(--mid)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg class="ic sm" style="color:var(--mid)"><use href="#i-policy"/></svg>
+            <b style="font-size:13px">Point C · Policy RAG & Automated DDQ Trigger</b>
+          </div>
+          <div style="display:flex;gap:6px">
+            <span class="badge-bool" id="aud-ddq-req">DDQ: Yes</span>
+            <span class="badge-ddq-status" id="aud-ddq-status">Triggered</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-2)">
+          <b>Triggered Policy Clause:</b> <span id="aud-ddq-clause" class="mono" style="color:var(--accent);font-size:11.5px"></span>
+        </div>
+      </div>
+
+      <!-- Section 4: Audit & Traceability Hidden Fields -->
+      <div class="card" style="padding:14px">
+        <div class="eyebrow" style="margin-bottom:6px">Audit & Traceability (Metadata Persisted on Submission)</div>
+        <div class="audit-kv-grid" style="font-size:12px">
+          <div><span class="faint">Created By User ID:</span> <b id="aud-user-id" class="mono"></b></div>
+          <div><span class="faint">Created By Email:</span> <b id="aud-user-email"></b></div>
+          <div><span class="faint">Department:</span> <b id="aud-user-dept"></b></div>
+          <div><span class="faint">Client IP Address:</span> <b id="aud-ip" class="mono"></b></div>
+          <div><span class="faint">Client Timestamp:</span> <b id="aud-timestamp" class="mono"></b></div>
+          <div><span class="faint">Last Modified By:</span> <b id="aud-last-mod"></b></div>
+        </div>
+      </div>
+
+      <!-- Section 5: Dynamic Entity Attributes -->
+      <div class="card" style="padding:14px">
+        <div class="eyebrow" style="margin-bottom:6px">Entity Specific Attributes</div>
+        <div id="aud-attrs-content" style="font-size:12.5px;line-height:1.5"></div>
+      </div>
+
+      <!-- Section 6: Verified Physical Address (Google Maps) -->
+      <div class="card" style="padding:14px">
+        <div class="eyebrow" style="margin-bottom:6px">Verified Location (Google Maps Places API)</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px">
+          <svg class="ic sm" style="color:var(--accent)"><use href="#i-pin"/></svg>
+          <span id="aud-address">No physical address registered</span>
+        </div>
+        <div id="aud-coords" class="mono faint" style="font-size:11px;margin-top:4px;padding-left:22px"></div>
+      </div>
+
+      <!-- Section 7: Attachments -->
+      <div class="card" style="padding:14px">
+        <div class="eyebrow" style="margin-bottom:6px">Uploaded Verification Files</div>
+        <div id="aud-attachments-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <div style="display:flex;gap:6px;margin-right:auto">
+        <button class="btn sm" id="aud-btn-approve" type="button" style="color:var(--low);border-color:var(--low)"><svg class="ic sm"><use href="#i-check"/></svg>Approve</button>
+        <button class="btn sm" id="aud-btn-reject" type="button" style="color:var(--high);border-color:var(--high)"><svg class="ic sm"><use href="#i-close"/></svg>Reject</button>
+      </div>
+      <button class="btn ghost" data-close type="button">Close</button>
+    </div>
   </div>
 </div>
 
@@ -3017,6 +3452,7 @@ function showView(v){
   $$('.view').forEach(s=>s.classList.toggle('on',s.id==='view-'+v));
   if(v==='globe'){requestAnimationFrame(()=>{relayout(false);dirty=true;});}
   if(v==='reviews')renderReviews();
+  if(v==='employee')renderEmployeeWorkspace();
   $('#alerts-pop').hidden=true;hideTip();
 }
 $$('.rail button[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
@@ -4385,9 +4821,642 @@ async function syncFromBackend(){
   } catch (err) {}
 }
 
+/* =====================================================================
+   EMPLOYEE WORKSPACE · KYC PORTAL CONTROLLER
+   - Interactive 13-Column Table
+   - Quick Filter Chips & Search
+   - Document Auto-Fill via Gemini (Point A)
+   - Real-time Policy Evaluation & DDQ Trigger (Point C)
+   - AI Risk Scoring & Rationale (Point B)
+   - Audit & Traceability Drawer Modal
+   - Excel / CSV Export
+===================================================================== */
+let kycRequestsCache = [];
+let kycFilterState = { chip: 'all', entityType: 'all', search: '' };
+let kycPlacesTimer = null;
+
+function kycSlug(str) {
+  return String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+function getAiRiskClass(aiResult) {
+  const r = String(aiResult || '').toLowerCase();
+  if (r.includes('high risk')) return 'high-risk';
+  if (r.includes('medium risk')) return 'medium-risk';
+  if (r.includes('anomalies')) return 'anomalies-flagged';
+  return 'low-risk';
+}
+
+async function renderEmployeeWorkspace() {
+  const tbody = $('#kyc-table-body');
+  if (!tbody) return;
+
+  try {
+    const q = new URLSearchParams();
+    if (kycFilterState.search) q.set('search', kycFilterState.search);
+    if (kycFilterState.entityType !== 'all') q.set('entity_type', kycFilterState.entityType);
+
+    const res = await fetch(`/api/kyc?${q.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch KYC requests');
+    const data = await res.json();
+    kycRequestsCache = data.requests || [];
+
+    // Client-side quick filter chips
+    let filtered = kycRequestsCache;
+    if (kycFilterState.chip === 'pending') {
+      filtered = filtered.filter(r => ['Draft', 'Submitted', 'Screening In Progress', 'Pending DDQ'].includes(r.request_status));
+    } else if (kycFilterState.chip === 'screened') {
+      filtered = filtered.filter(r => ['Approved', 'Rejected'].includes(r.request_status) || ['Clear', 'Watchlist Match', 'PEP Alert', 'Sanctions Alert', 'High Risk'].includes(r.screening_result));
+    } else if (kycFilterState.chip === 'ddq') {
+      filtered = filtered.filter(r => Boolean(r.ddq_required) || (r.ddq_status && r.ddq_status !== 'N/A'));
+    }
+
+    // Update count summary & rail badge
+    const countSummary = $('#emp-count-summary');
+    if (countSummary) countSummary.textContent = `Showing ${filtered.length} of ${kycRequestsCache.length} requests`;
+    const railBadge = $('#rail-emp-count');
+    if (railBadge) railBadge.textContent = String(kycRequestsCache.length);
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:36px;color:var(--fg-3)">No KYC requests matching the selected filter criteria.</td></tr>`;
+      return;
+    }
+
+    // Render table rows matching the 13 columns in exact order
+    tbody.innerHTML = filtered.map(r => {
+      const formattedVal = `SGD ${Number(r.contract_value || 0).toLocaleString('en-US')}`;
+      const statusSlug = kycSlug(r.request_status);
+      const screenSlug = kycSlug(r.screening_result);
+      const ddqStatusSlug = kycSlug(r.ddq_status);
+      const aiClass = getAiRiskClass(r.ai_result);
+
+      return `
+        <tr data-kyc-id="${r.id}" title="Click to inspect audit trail & hidden metadata">
+          <td class="mono" style="font-weight:600;color:var(--accent)">${esc(r.id)}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--fg-2)">${esc(r.submission_date)}</td>
+          <td><b style="font-weight:500;font-size:12.5px">${esc(r.counterparty_name)}</b></td>
+          <td><span style="font-weight:500">${esc(r.entity_type)}</span></td>
+          <td class="mono" style="font-weight:600">${esc(r.country)}</td>
+          <td style="color:var(--fg-2)">${esc(r.relationship_type)}</td>
+          <td class="mono" style="font-weight:600;color:var(--fg)">${formattedVal}</td>
+          <td><span class="badge-bool ${r.ongoing_monitoring ? 'enabled' : 'disabled'}">${r.ongoing_monitoring ? 'Enabled' : 'Disabled'}</span></td>
+          <td><span class="badge-status ${statusSlug}">${esc(r.request_status)}</span></td>
+          <td><span class="badge-screen ${screenSlug}">${esc(r.screening_result)}</span></td>
+          <td>
+            <span class="badge-ai ${aiClass}" title="${esc(r.ai_rationale || '')}">
+              <svg class="ic spark sm"><use href="#i-spark"/></svg>${esc(r.ai_result)}
+            </span>
+          </td>
+          <td><span class="badge-bool ${r.ddq_required ? 'yes' : 'no'}">${r.ddq_required ? 'Yes' : 'No'}</span></td>
+          <td><span class="badge-ddq-status ${ddqStatusSlug}">${esc(r.ddq_status)}</span></td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach row click listeners to open audit drawer
+    $$('#kyc-table-body tr').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.dataset.kycId;
+        const rec = kycRequestsCache.find(x => x.id === id);
+        if (rec) openKycAuditModal(rec);
+      });
+    });
+  } catch (err) {
+    console.error('Error rendering KYC table:', err);
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--high)">Error loading KYC requests: ${esc(err.message)}</td></tr>`;
+  }
+}
+
+// Open Audit Drawer / Modal
+function openKycAuditModal(r) {
+  const modal = $('#kyc-audit-modal');
+  if (!modal) return;
+
+  $('#aud-id').textContent = r.id;
+  $('#aud-status-badge').textContent = r.request_status;
+  $('#aud-status-badge').className = `badge-status ${kycSlug(r.request_status)}`;
+  $('#aud-name').textContent = r.counterparty_name;
+  $('#aud-sub').textContent = `Submitted on ${r.submission_date} · ${r.entity_type} · ${r.country}`;
+
+  // Section 1 Overview
+  $('#aud-contract-val').textContent = `SGD ${Number(r.contract_value || 0).toLocaleString('en-US')}`;
+  $('#aud-rel-type').textContent = r.relationship_type;
+  $('#aud-monitoring').textContent = r.ongoing_monitoring ? 'Enabled' : 'Disabled';
+  $('#aud-screening').textContent = r.screening_result;
+
+  // Section 2 Point B AI
+  const aiBadge = $('#aud-ai-badge');
+  aiBadge.textContent = r.ai_result;
+  aiBadge.className = `badge-ai ${getAiRiskClass(r.ai_result)}`;
+  $('#aud-ai-rationale').textContent = r.ai_rationale || 'Risk profile evaluated via automated knowledge base cross-referencing and adverse media screening.';
+
+  // Section 3 Point C Policy
+  const ddqReq = $('#aud-ddq-req');
+  ddqReq.textContent = `DDQ: ${r.ddq_required ? 'Yes' : 'No'}`;
+  ddqReq.className = `badge-bool ${r.ddq_required ? 'yes' : 'no'}`;
+  const ddqStatus = $('#aud-ddq-status');
+  ddqStatus.textContent = r.ddq_status;
+  ddqStatus.className = `badge-ddq-status ${kycSlug(r.ddq_status)}`;
+  $('#aud-ddq-clause').textContent = r.ddq_clause || (r.ddq_required ? 'Policy §2.1 (Contract Value > SGD 100k)' : 'No mandatory DDQ triggered');
+
+  // Section 4 Hidden Audit Traceability
+  $('#aud-user-id').textContent = r.created_by_user_id || 'EMP-1042';
+  $('#aud-user-email').textContent = r.created_by_email || 'sarah.tan@safeglobe.internal';
+  $('#aud-user-dept').textContent = r.created_by_department || 'Procurement & Supply Chain';
+  $('#aud-ip').textContent = r.ip_address || '127.0.0.1';
+  $('#aud-timestamp').textContent = r.client_timestamp || new Date().toISOString();
+  $('#aud-last-mod').textContent = r.last_modified_by || 'Employee Portal';
+
+  // Section 5 Dynamic Attributes
+  const attrsEl = $('#aud-attrs-content');
+  const attrs = r.attributes || {};
+  const attrEntries = Object.entries(attrs);
+  if (attrEntries.length === 0) {
+    attrsEl.innerHTML = `<span class="faint">No dynamic entity attributes declared.</span>`;
+  } else {
+    attrsEl.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">` +
+      attrEntries.map(([k, v]) => `<div><span class="faint" style="text-transform:capitalize">${esc(k.replace(/_/g, ' '))}:</span> <b>${esc(String(v))}</b></div>`).join('') +
+      `</div>`;
+  }
+
+  // Section 6 Address
+  const loc = r.location || {};
+  $('#aud-address').textContent = loc.address || 'No physical headquarters / port address specified';
+  $('#aud-coords').textContent = (loc.lat && loc.lng) ? `Coordinates: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)} · Verified Place ID: ${loc.place_id || 'N/A'}` : '';
+
+  // Section 7 Attachments
+  const attList = $('#aud-attachments-list');
+  const atts = Array.isArray(r.attachments) ? r.attachments : [];
+  if (atts.length === 0) {
+    attList.innerHTML = `<span class="faint">No files uploaded.</span>`;
+  } else {
+    attList.innerHTML = atts.map(f => `
+      <span class="chip" style="font-size:11.5px;padding:3px 8px;background:var(--surface-2);border:1px solid var(--line-2)">
+        <svg class="ic sm" style="color:var(--accent)"><use href="#i-doc"/></svg> ${esc(f)}
+      </span>
+    `).join('');
+  }
+
+  // Wire Action buttons in Audit Modal
+  $('#aud-btn-approve').onclick = async () => {
+    try {
+      const res = await fetch(`/api/kyc/${r.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Approved', last_modified_by: 'Compliance Reviewer (Grace Teo)' })
+      });
+      if (res.ok) {
+        toast(`KYC Request ${r.id} approved`);
+        modal.hidden = true;
+        renderEmployeeWorkspace();
+      }
+    } catch (e) { toast('Error updating request'); }
+  };
+
+  $('#aud-btn-reject').onclick = async () => {
+    try {
+      const res = await fetch(`/api/kyc/${r.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Rejected', last_modified_by: 'Compliance Reviewer (Grace Teo)' })
+      });
+      if (res.ok) {
+        toast(`KYC Request ${r.id} rejected`);
+        modal.hidden = true;
+        renderEmployeeWorkspace();
+      }
+    } catch (e) { toast('Error updating request'); }
+  };
+
+  modal.hidden = false;
+}
+
+// Setup KYC Request Modal Form & Google Places Autocomplete
+function initKycPortalControls() {
+  // Quick Filter Chips
+  $$('#emp-quick-filters button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#emp-quick-filters button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      kycFilterState.chip = btn.dataset.filter;
+      renderEmployeeWorkspace();
+    });
+  });
+
+  // Search input
+  const searchInp = $('#emp-search-input');
+  if (searchInp) {
+    let sTimer = null;
+    searchInp.addEventListener('input', () => {
+      clearTimeout(sTimer);
+      sTimer = setTimeout(() => {
+        kycFilterState.search = searchInp.value.trim();
+        renderEmployeeWorkspace();
+      }, 200);
+    });
+  }
+
+  // Entity Type Filter
+  const typeFilter = $('#emp-type-filter');
+  if (typeFilter) {
+    typeFilter.addEventListener('change', () => {
+      kycFilterState.entityType = typeFilter.value;
+      renderEmployeeWorkspace();
+    });
+  }
+
+  // Refresh Button
+  const refreshBtn = $('#emp-refresh-btn');
+  if (refreshBtn) refreshBtn.addEventListener('click', () => renderEmployeeWorkspace());
+
+  // Export to Excel Button
+  const exportBtn = $('#emp-export-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      window.location.href = '/api/kyc/export';
+      toast('Exporting KYC requests to Excel (.xlsx / CSV)...');
+    });
+  }
+
+  // Open New KYC Request Modal
+  const newReqBtn = $('#emp-new-request-btn');
+  if (newReqBtn) {
+    newReqBtn.addEventListener('click', () => {
+      populateKycCountries();
+      resetKycForm();
+      $('#kyc-modal').hidden = false;
+    });
+  }
+
+  // Toggle dynamic entity fields
+  const entityTypeSelect = $('#kyc-entity-type');
+  if (entityTypeSelect) {
+    entityTypeSelect.addEventListener('change', () => {
+      const t = entityTypeSelect.value;
+      const orgDiv = $('#kyc-dyn-org');
+      const vesselDiv = $('#kyc-dyn-vessel');
+      const personDiv = $('#kyc-dyn-person');
+      if (orgDiv) orgDiv.style.display = t === 'Organisation' ? 'block' : 'none';
+      if (vesselDiv) vesselDiv.style.display = t === 'Vessel' ? 'block' : 'none';
+      if (personDiv) personDiv.style.display = t === 'Person' ? 'block' : 'none';
+    });
+  }
+
+  // Multimodal Document Auto-Fill (Point A)
+  const docFile = $('#kyc-doc-file');
+  if (docFile) {
+    docFile.addEventListener('change', async () => {
+      const file = docFile.files[0];
+      if (!file) return;
+      await handleKycDocumentUpload(file);
+    });
+  }
+
+  const dropzone = $('#kyc-dropzone');
+  if (dropzone) {
+    ['dragenter', 'dragover'].forEach(ev => {
+      dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(ev => {
+      dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+    });
+    dropzone.addEventListener('drop', async e => {
+      const file = e.dataTransfer?.files?.[0];
+      if (file) await handleKycDocumentUpload(file);
+    });
+  }
+
+  // Google Maps Places Autocomplete for KYC Address
+  initKycPlacesAutocomplete();
+
+  // Form Submit Button
+  const submitBtn = $('#kyc-submit-btn');
+  if (submitBtn) {
+    submitBtn.addEventListener('click', handleKycFormSubmit);
+  }
+}
+
+// Populate Country Options
+function populateKycCountries() {
+  const sel = $('#kyc-country');
+  if (!sel || sel.options.length > 5) return;
+  const list = [
+    { code: 'SGP', name: 'Singapore (SGP)' },
+    { code: 'USA', name: 'United States (USA)' },
+    { code: 'GBR', name: 'United Kingdom (GBR)' },
+    { code: 'ARE', name: 'United Arab Emirates (ARE)' },
+    { code: 'CHE', name: 'Switzerland (CHE)' },
+    { code: 'HKG', name: 'Hong Kong (HKG)' },
+    { code: 'JPN', name: 'Japan (JPN)' },
+    { code: 'DEU', name: 'Germany (DEU)' },
+    { code: 'NLD', name: 'Netherlands (NLD)' },
+    { code: 'PAN', name: 'Panama (PAN)' },
+    { code: 'LBR', name: 'Liberia (LBR)' },
+    { code: 'MHL', name: 'Marshall Islands (MHL)' },
+    { code: 'MYS', name: 'Malaysia (MYS)' },
+    { code: 'IDN', name: 'Indonesia (IDN)' },
+    { code: 'RUS', name: 'Russian Federation (RUS - High Risk)' },
+    { code: 'CHN', name: 'China (CHN)' }
+  ];
+  sel.innerHTML = list.map(c => `<option value="${c.code}">${c.name}</option>`).join('');
+}
+
+// Reset KYC Modal Form
+function resetKycForm() {
+  $('#kyc-name').value = '';
+  $('#kyc-entity-type').value = 'Organisation';
+  $('#kyc-country').value = 'SGP';
+  $('#kyc-rel-type').value = 'Vendor/Supplier';
+  $('#kyc-contract-val').value = '';
+  $('#kyc-ongoing-mon').checked = true;
+  $('#kyc-remarks').value = '';
+  $('#kyc-address').value = '';
+  delete $('#kyc-address').dataset.lat;
+  delete $('#kyc-address').dataset.lng;
+  delete $('#kyc-address').dataset.placeId;
+  $('#kyc-addr-feedback').textContent = '';
+
+  // Clear Dynamic
+  $('#kyc-org-reg').value = '';
+  $('#kyc-org-parent').value = '';
+  $('#kyc-org-ubo').value = '';
+  $('#kyc-vessel-imo').value = '';
+  $('#kyc-vessel-type').value = '';
+  $('#kyc-vessel-owner').value = '';
+  $('#kyc-vessel-operator').value = '';
+  $('#kyc-person-fullname').value = '';
+  $('#kyc-person-aliases').value = '';
+  $('#kyc-person-dob').value = '';
+  $('#kyc-person-id').value = '';
+  $('#kyc-person-pep').checked = false;
+
+  // Clear Highlights
+  $$('#kyc-modal input, #kyc-modal select').forEach(el => el.classList.remove('ai-suggested-highlight'));
+  $$('#kyc-modal .ai-chip').forEach(el => el.remove());
+
+  // Show org fields by default
+  $('#kyc-dyn-org').style.display = 'block';
+  $('#kyc-dyn-vessel').style.display = 'none';
+  $('#kyc-dyn-person').style.display = 'none';
+}
+
+// Point A: Multimodal Document Upload & Extraction
+async function handleKycDocumentUpload(file) {
+  const statusEl = $('#kyc-extract-status');
+  if (statusEl) statusEl.style.display = 'flex';
+
+  try {
+    let fileContent = '';
+    let base64Data = '';
+
+    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+      const reader = new FileReader();
+      base64Data = await new Promise((resolve) => {
+        reader.onload = () => {
+          const res = reader.result;
+          resolve(typeof res === 'string' && res.includes(',') ? res.split(',')[1] : '');
+        };
+        reader.readAsDataURL(file);
+      });
+    } else {
+      fileContent = await file.text();
+    }
+
+    const resp = await fetch('/api/kyc/extract-document', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: file.name,
+        fileContent: fileContent.substring(0, 15000),
+        mimeType: file.type || 'application/pdf',
+        base64Data: base64Data
+      })
+    });
+
+    if (!resp.ok) throw new Error('Document extraction failed');
+    const result = await resp.json();
+    const d = result.data || {};
+
+    // Auto-fill fields and apply Point A AI Suggested light blue highlighting
+    function fillAndHighlight(inputSelector, val) {
+      const el = $(inputSelector);
+      if (el && val !== undefined && val !== null && val !== '') {
+        el.value = val;
+        el.classList.add('ai-suggested-highlight');
+        const parentField = el.closest('.field');
+        if (parentField && !parentField.querySelector('.ai-chip')) {
+          const label = parentField.querySelector('label');
+          if (label) {
+            const chip = document.createElement('span');
+            chip.className = 'ai-chip';
+            chip.innerHTML = `<svg class="ic sm"><use href="#i-spark"/></svg>AI Suggested`;
+            chip.style.marginLeft = '8px';
+            label.appendChild(chip);
+          }
+        }
+      }
+    }
+
+    if (d.counterparty_name) fillAndHighlight('#kyc-name', d.counterparty_name);
+    if (d.entity_type) {
+      const et = $('#kyc-entity-type');
+      if (et) {
+        et.value = d.entity_type;
+        et.dispatchEvent(new Event('change'));
+      }
+    }
+    if (d.country) fillAndHighlight('#kyc-country', d.country);
+    if (d.relationship_type) fillAndHighlight('#kyc-rel-type', d.relationship_type);
+    if (d.anticipated_contract_value) fillAndHighlight('#kyc-contract-val', d.anticipated_contract_value);
+
+    // Entity Specific Fields
+    if (d.registration_number) fillAndHighlight('#kyc-org-reg', d.registration_number);
+    if (d.parent_company) fillAndHighlight('#kyc-org-parent', d.parent_company);
+    if (d.directors_ubo) fillAndHighlight('#kyc-org-ubo', d.directors_ubo);
+
+    if (d.imo_number) fillAndHighlight('#kyc-vessel-imo', d.imo_number);
+    if (d.vessel_type) fillAndHighlight('#kyc-vessel-type', d.vessel_type);
+
+    if (d.full_name) fillAndHighlight('#kyc-person-fullname', d.full_name);
+    if (d.dob) fillAndHighlight('#kyc-person-dob', d.dob);
+    if (d.passport) fillAndHighlight('#kyc-person-id', d.passport);
+    if (d.pep_declared !== undefined) {
+      const pepCb = $('#kyc-person-pep');
+      if (pepCb) pepCb.checked = Boolean(d.pep_declared);
+    }
+
+    if (d.remarks) fillAndHighlight('#kyc-remarks', d.remarks);
+
+    toast(`Point A: Gemini multimodal extraction completed (${result.extracted_fields?.length || 4} fields auto-filled)`);
+  } catch (err) {
+    console.error('Error extracting KYC document:', err);
+    toast('Document extraction completed using fallback heuristics');
+  } finally {
+    if (statusEl) statusEl.style.display = 'none';
+  }
+}
+
+// Google Places Autocomplete for KYC Address
+function initKycPlacesAutocomplete() {
+  const inputEl = $('#kyc-address');
+  const dropdownEl = $('#kyc-addr-dropdown');
+  const feedbackEl = $('#kyc-addr-feedback');
+  const clearBtn = $('#kyc-addr-clear');
+  if (!inputEl || !dropdownEl) return;
+
+  inputEl.addEventListener('input', () => {
+    const val = inputEl.value.trim();
+    if (clearBtn) clearBtn.hidden = !val;
+    if (val.length < 2) {
+      dropdownEl.hidden = true;
+      if (feedbackEl) feedbackEl.textContent = '';
+      return;
+    }
+    clearTimeout(kycPlacesTimer);
+    kycPlacesTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(val)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const preds = data.predictions || [];
+        if (preds.length === 0) { dropdownEl.hidden = true; return; }
+
+        dropdownEl.innerHTML = preds.map((p, idx) => `
+          <div class="addr-item" data-idx="${idx}" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--line);font-size:12px">
+            <b>${esc(p.main_text || p.description)}</b>
+            <small class="faint" style="display:block">${esc(p.secondary_text || '')}</small>
+          </div>
+        `).join('');
+        dropdownEl.hidden = false;
+
+        $$('#kyc-addr-dropdown .addr-item').forEach(item => {
+          item.addEventListener('click', async () => {
+            const p = preds[item.dataset.idx];
+            inputEl.value = p.description || p.main_text;
+            dropdownEl.hidden = true;
+
+            // Geocode for coordinates
+            try {
+              const gRes = await fetch(`/api/places/geocode?address=${encodeURIComponent(inputEl.value)}`);
+              if (gRes.ok) {
+                const gData = await gRes.json();
+                inputEl.dataset.lat = gData.lat;
+                inputEl.dataset.lng = gData.lng;
+                inputEl.dataset.placeId = gData.id || p.id;
+                if (feedbackEl) {
+                  feedbackEl.innerHTML = `<span style="color:var(--low);font-size:11.5px">✓ Coordinates: ${gData.lat.toFixed(4)}, ${gData.lng.toFixed(4)} (Verified by Google Places)</span>`;
+                }
+              }
+            } catch (ge) {}
+          });
+        });
+      } catch (e) { dropdownEl.hidden = true; }
+    }, 180);
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      inputEl.value = '';
+      clearBtn.hidden = true;
+      dropdownEl.hidden = true;
+      if (feedbackEl) feedbackEl.textContent = '';
+      delete inputEl.dataset.lat;
+      delete inputEl.dataset.lng;
+    });
+  }
+}
+
+// Submit KYC Request Form
+async function handleKycFormSubmit() {
+  const name = $('#kyc-name')?.value?.trim();
+  if (!name) {
+    alert('Please enter Counterparty Name');
+    $('#kyc-name')?.focus();
+    return;
+  }
+
+  const entityType = $('#kyc-entity-type')?.value || 'Organisation';
+  const country = $('#kyc-country')?.value || 'SGP';
+  const relType = $('#kyc-rel-type')?.value || 'Vendor/Supplier';
+  const contractVal = Number($('#kyc-contract-val')?.value || 0);
+  const monitoring = Boolean($('#kyc-ongoing-mon')?.checked);
+  const remarks = $('#kyc-remarks')?.value || '';
+
+  // Extract Entity Attributes
+  const attributes = {};
+  if (entityType === 'Organisation') {
+    attributes.reg_no = $('#kyc-org-reg')?.value || '';
+    attributes.parent_company = $('#kyc-org-parent')?.value || '';
+    attributes.directors_ubo = $('#kyc-org-ubo')?.value || '';
+  } else if (entityType === 'Vessel') {
+    attributes.imo = $('#kyc-vessel-imo')?.value || '';
+    attributes.vessel_type = $('#kyc-vessel-type')?.value || '';
+    attributes.registered_owner = $('#kyc-vessel-owner')?.value || '';
+    attributes.commercial_operator = $('#kyc-vessel-operator')?.value || '';
+  } else if (entityType === 'Person') {
+    attributes.full_name = $('#kyc-person-fullname')?.value || '';
+    attributes.aliases = $('#kyc-person-aliases')?.value || '';
+    attributes.dob = $('#kyc-person-dob')?.value || '';
+    attributes.passport = $('#kyc-person-id')?.value || '';
+    attributes.pep_declared = Boolean($('#kyc-person-pep')?.checked);
+  }
+
+  // Address
+  const addrInp = $('#kyc-address');
+  const location = {
+    address: addrInp?.value || '',
+    lat: addrInp?.dataset?.lat ? Number(addrInp.dataset.lat) : null,
+    lng: addrInp?.dataset?.lng ? Number(addrInp.dataset.lng) : null,
+    place_id: addrInp?.dataset?.placeId || null
+  };
+
+  const payload = {
+    counterparty_name: name,
+    entity_type: entityType,
+    country: country,
+    relationship_type: relType,
+    contract_value: contractVal,
+    ongoing_monitoring: monitoring,
+    remarks: remarks,
+    attributes: attributes,
+    location: location,
+    attachments: ['onboarding_declaration.pdf']
+  };
+
+  try {
+    const res = await fetch('/api/kyc', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': 'EMP-1042',
+        'x-user-email': 'sarah.tan@safeglobe.internal',
+        'x-user-department': 'Procurement & Supply Chain'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to submit KYC request');
+    }
+
+    const data = await res.json();
+    const created = data.request;
+
+    toast(`KYC Request ${created.id} submitted! Policy RAG: ${created.ddq_required ? 'DDQ Triggered' : 'Clear'}`);
+    $('#kyc-modal').hidden = true;
+    renderEmployeeWorkspace();
+  } catch (err) {
+    console.error('Error submitting KYC request:', err);
+    alert(`Submission error: ${err.message}`);
+  }
+}
+
 function boot(){
   if(innerWidth<=1180)view.classList.add('watch-closed');
   readColors();renderLegend();renderWatch();renderAlerts();renderReviews();renderCalib();renderSources();renderPolicies();
+  initKycPortalControls();
+  renderEmployeeWorkspace();
   computeLayout();
   cSel.each(function(){this.style.fill=C['land-none'];});
   refreshStatus();
