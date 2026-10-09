@@ -21,7 +21,7 @@ const { getDb } = require('../db');
 /**
  * System Instructions for the KYCP AI Agent
  */
-const KYCP_INSTRUCTIONS = `You are the Safe Globe Senior Compliance AI Analyst.
+const KYCP_INSTRUCTIONS = `You are the DueDilly Senior Compliance AI Analyst.
 Your mission is to perform thorough background Know Your Counterparty (KYCP) checks on organisations, vessels, and individuals.
 
 You must examine 5 compliance pillars:
@@ -162,7 +162,7 @@ async function runKycpCheck({ query, type = 'organisation', jurisdiction = '' })
         return geminiResult;
       }
     } catch (apiErr) {
-      console.warn('[AI KYCP] Gemini API call failed or timed out. Falling back to deterministic compliance engine:', apiErr.message);
+      console.warn('[Pond-Guard · AI KYCP] Gemini API call failed or timed out. Falling back to deterministic compliance engine:', apiErr.message);
     }
   }
 
@@ -249,7 +249,7 @@ Perform full KYCP background analysis and return ONLY a single JSON object with 
   },
   "findings": [
     {
-      "agent": "<Sentry|Web|Tide|Radar>",
+      "agent": "<Sentry|Web|Tide|Ripples>",
       "title": "<string>",
       "detail": "<string>",
       "risk": "<Low|Medium|High>",
@@ -358,7 +358,7 @@ function buildDeterministicKycpReport({ query, entityKind, targetJurisdiction, c
     conf = 78;
     adverseStatus = 'Flagged';
     findings.push({
-      agent: 'Radar',
+      agent: 'Ripples',
       title: 'Regulatory supervisory enforcement bulletin match',
       detail: 'Identified in regulator enforcement bulletin for AML/CFT compliance shortcomings.',
       risk: 'Medium',
@@ -403,7 +403,7 @@ function buildDeterministicKycpReport({ query, entityKind, targetJurisdiction, c
   if (cpiData.score < 35) {
     risk = Math.max(risk, 54);
     findings.push({
-      agent: 'Radar',
+      agent: 'Ripples',
       title: `High-risk jurisdiction exposure (${cpiData.name})`,
       detail: `Counterparty operates in jurisdiction scoring ${cpiData.score}/100 on Transparency International CPI 2025.`,
       risk: 'Medium',

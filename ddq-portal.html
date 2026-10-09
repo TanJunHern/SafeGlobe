@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Safe Globe · Due Diligence Questionnaire</title>
+<title>DueDilly · Due Diligence Questionnaire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/portal-shared.css">
 <style>
 /* Counterparty DDQ wizard: one slide per section, a progress slider along the bottom,
@@ -19,7 +19,7 @@ body{padding-bottom:96px}
 
 /* slide: heading -> subheading -> questions and answers */
 .slide{padding:28px 30px}
-.slide h1{margin:4px 0 6px;font-family:var(--f-display);font-weight:500;font-size:28px;letter-spacing:-.01em}
+.slide h1{margin:4px 0 6px;font-family:var(--f-display);font-weight:600;font-size:28px;letter-spacing:-.01em}
 .slide .sub{margin:0 0 20px;color:var(--fg-2);font-size:13.5px;max-width:68ch}
 .slide h2{font-size:13px;font-weight:600;margin:20px 0 8px}
 .slide ol,.slide ul.plain{margin:0;padding-left:20px;color:var(--fg-2);font-size:13.5px;display:flex;flex-direction:column;gap:6px}
@@ -71,6 +71,37 @@ body{padding-bottom:96px}
 .prefill .grow{flex:1;min-width:220px}
 .prefill b{display:block;font-size:13.5px}
 .prefill small{color:var(--fg-2);font-size:12px}
+/* Dilly: greeting on the welcome slide, reading state, thank-you after submission */
+.dilly{flex:none;display:block}
+.dilly-hello{display:flex;align-items:center;gap:14px;margin-bottom:18px;font-size:14px;font-weight:500}
+.banner.thanks{flex-direction:column;align-items:center;text-align:center;border-color:var(--low);background:var(--low-soft)}
+/* Ducks in a row: mommy duck is the questionnaire, one duckling per section */
+.duck-row{margin-bottom:14px;padding:12px 18px 10px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.duck-line{display:flex;align-items:flex-end;justify-content:center;gap:4px}
+.ducklings{display:flex;flex-direction:row-reverse;flex-wrap:wrap;justify-content:flex-start;align-items:flex-end;gap:2px}
+.duckling{display:flex;flex-direction:column;align-items:center;padding:4px 3px 2px;border-radius:10px;border:1px solid transparent;background:none;cursor:pointer;transition:transform .15s}
+.duckling:hover{transform:translateY(-3px)}
+.duckling.on{background:var(--surface-2);border-color:var(--line-2)}
+.duckling span{font:500 10px var(--f-mono);color:var(--fg-3)}
+.duck-count{text-align:center;font-size:12.5px;color:var(--fg-2);margin-top:4px}
+.duck-row.sent{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:18px}
+.duck-row.sent b{font:600 16px var(--f-display)}
+.attn{margin:0 0 12px;padding:12px 14px;border-radius:12px;border:1px solid var(--mid);background:var(--mid-soft);font-size:13px}
+.attn ul{margin:6px 0 0;padding-left:18px}
+.attn li button{background:none;border:0;padding:2px 0;text-align:left;color:inherit;text-decoration:underline;text-underline-offset:2px;cursor:pointer;font:inherit}
+.sec-duck{vertical-align:-2px;margin-right:8px}
+.review-row .sec-duck{margin-right:6px}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.how div{padding:12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.how b{font-size:13.5px}
+.how small{color:var(--fg-2);font-size:12px}
+details.more{margin-top:14px}
+details.more summary{cursor:pointer;font-weight:500;color:var(--accent)}
+.all-row{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:20px;text-align:center}
+.all-row img{max-height:72px;max-width:100%}
+.submit-hint{font-size:12.5px;text-align:right;margin:18px 0 0}
+@media (max-width:640px){.how{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: reduce){.duckling{transition:none}.duckling:hover{transform:none}}
 
 /* bottom bar: Back / progress slider / Next, then the guide */
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--glass);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;gap:14px}
@@ -108,7 +139,7 @@ body{padding-bottom:96px}
 </head>
 <body>
 <header class="topbar">
-  <div class="wordmark"><b>Safe Globe</b><span id="top-sub">Due Diligence Questionnaire</span></div>
+  <div class="wordmark"><b>DueDilly</b><span id="top-sub">Due Diligence Questionnaire</span></div>
   <div class="grow"></div>
   <span class="pill" id="save-state" hidden></span>
   <button class="btn sm" id="print-btn" type="button" hidden></button>
@@ -117,6 +148,7 @@ body{padding-bottom:96px}
 
 <main class="stage">
   <div id="banner"></div>
+  <div id="duck-row" hidden></div>
   <section class="card slide" id="slide" aria-live="polite"></section>
 </main>
 
@@ -135,7 +167,7 @@ body{padding-bottom:96px}
 <aside class="card guide" id="guide" hidden aria-label="DDQ Guide">
   <div class="guide-head">
     <span class="face" aria-hidden="true"></span>
-    <div style="flex:1"><b>Aria</b><small id="guide-role"></small></div>
+    <div style="flex:1"><b>Dilly</b><small id="guide-role"></small></div>
     <button class="icon-btn" id="guide-close" type="button" aria-label="Close guide"></button>
   </div>
   <div class="guide-lang">
@@ -157,6 +189,8 @@ body{padding-bottom:96px}
 </aside>
 
 <script src="/portal-shared.js"></script>
+<script src="/ddq-section-status.js"></script>
+<script src="/duck-tour.js"></script>
 <script>
 (function(){
 'use strict';
@@ -180,13 +214,13 @@ const chat = [];
 /* Interface labels; translated together with the questionnaire */
 const UI_EN = {
   back: 'Back', next: 'Next', review: 'Review', submit: 'Submit questionnaire', print: 'Print / Save PDF',
-  guide: 'Ask Aria', guideRole: 'Your DDQ guide', language: 'Language', apply: 'Apply',
+  guide: 'Ask Dilly', guideRole: 'Your DDQ guide', language: 'Language', apply: 'Apply',
   explain: 'Explain', yes: 'Yes', no: 'No', addRow: 'Add row', none: 'None to declare', remove: 'Remove',
   answerPlaceholder: 'Type your answer', detailsPlaceholder: 'Give details',
   welcome: 'Welcome', howTo: 'How to complete it', docsNeeded: 'Supporting documents to have ready',
   prefillTitle: 'Already have this information in a document?',
-  prefillBody: 'Upload a previous questionnaire, company profile or registry extract and Aria will suggest answers for you to check.',
-  prefillBtn: 'Upload a document', prefilling: 'Reading your document…',
+  prefillBody: 'Upload a previous questionnaire, company profile or registry extract and Dilly will suggest answers for you to check.',
+  prefillBtn: 'Upload a document', prefilling: 'Dilly is reading the document…',
   aiSuggested: 'AI suggested — please check', confirm: 'Confirm', confirmAll: 'Confirm all on this page',
   documents: 'Supporting documents', documentsSub: 'Tick each document you are providing and attach the file.',
   attach: 'Attach file', uploading: 'Uploading', uploaded: 'Uploaded', declaration: 'Declaration', agree: 'I have read and agree to the declaration above',
@@ -196,14 +230,29 @@ const UI_EN = {
   complete: 'Complete', toDo: 'to do', open: 'Open', saved: 'Saved', saving: 'Saving…',
   section: 'Section', of: 'of', answered: 'answered', notSigned: 'Not signed',
   lockedTitle: 'Questionnaire submitted', lockedBody: 'This questionnaire has been submitted and is locked under compliance review. You can still print or save a copy.',
-  missing: 'Please complete the highlighted questions.', needSign: 'Please agree, add your name and sign the declaration.',
-  submitted: 'Thank you — your questionnaire has been submitted.',
+  missing: 'Please complete the highlighted questions.', needSign: 'Please agree, add your name and job title, and sign the declaration.',
+  submitted: 'Thanks! Your questionnaire has been submitted.', dillyHello: "Hi, I'm Dilly. I'll help you get your ducks in a row.",
   askPlaceholder: 'Ask about this question…', chipExplain: 'Explain this question', chipDocs: 'Which documents do I need?', chipLeft: "What's left?",
-  greeting: "Hi, I'm Aria. I can explain any question in plain language, tell you which documents to attach, and keep track of what's left. Tap “Explain” next to a question to start.",
-  about: 'About', thinking: 'Aria is thinking…', englishNote: 'The English text is the authoritative version of this questionnaire.',
+  greeting: "Hi, I'm Dilly. I can explain any question in plain language, tell you which documents to attach, and keep track of what's left. Tap “Explain” next to a question to start.",
+  about: 'About', thinking: 'Dilly is thinking…', englishNote: 'The English text is the authoritative version of this questionnaire.',
   translating: 'Translating the questionnaire…',
   returnedTitle: 'Returned for clarification', returnedBody: 'Our compliance team reviewed your questionnaire and needs a few points clarified. They are highlighted on the questions below. Update them and submit again.',
-  complianceAsked: 'Compliance asked:', goToFirst: 'Go to the first one', round: 'Round', pointsToClarify: 'points to clarify'
+  complianceAsked: 'Compliance asked:', goToFirst: 'Go to the first one', round: 'Round', pointsToClarify: 'points to clarify',
+  sectionsComplete: 'sections complete', statusNot: 'not started', statusProg: 'in progress', statusDone: 'complete', statusLook: 'needs another look',
+  needLook: 'A few answers need another look before you submit.', allReady: 'All {n} sections complete. Ready to submit.',
+  sentTo: 'Thanks! Your questionnaire has been sent to {company}.', submitHint: 'Finish every section and sign the declaration to submit.',
+  how1: '1. Answer each section', how1b: 'One duckling per section. It fills up as you go.',
+  how2: '2. Fix anything flagged', how2b: 'Dilly tells you in plain words when an answer needs another look.',
+  how3: '3. Sign and submit', how3b: 'When every duckling has a tick, your ducks are in a row.',
+  fullInstructions: 'Full instructions', howItWorks: 'How it works',
+  tourNext: 'Next', tourDone: 'Got it', tourSkip: 'Skip tour',
+  tour1: 'Welcome!', tour1b: "I'm Dilly. This questionnaire has {n} short sections. Let me show you around. It takes 20 seconds.",
+  tour2: 'Your ducks in a row', tour2b: 'Each duckling is one section. It fills up as you answer and gets a tick when the section is complete. Select a duckling to jump to that section.',
+  tour3: 'Save some typing', tour3b: "Upload a company profile or an old questionnaire and I'll suggest answers. You check and confirm each one.",
+  tour4: 'Move between sections', tour4b: 'Use Next and Back. Your answers save by themselves, so you can close this page and come back later.',
+  tour5: 'Stuck on a question?', tour5b: 'Ask me. I can explain any question in plain words and tell you which documents to attach.',
+  tour6: 'Keep a copy', tour6b: 'Print the questionnaire or save it as a PDF at any time.',
+  tour7: 'Before you submit', tour7b: "If an answer needs another look, its duckling shows a “!” and I'll tell you what to fix. When every duckling has a tick, sign the declaration and submit."
 };
 const UI_KEYS = Object.keys(UI_EN);
 let UI = Object.assign({}, UI_EN);
@@ -232,8 +281,7 @@ function sectionProgress(s) {
   return { done: req.filter(isAnswered).length, total: req.length };
 }
 function declarationDone() {
-  const d = R.declaration || {};
-  return Boolean(d.agreed && hasText(d.full_name) && hasText(d.signature));
+  return DDQStatus.declarationStatus(R.declaration).status === 'done';
 }
 function totals() {
   let done = 0, total = 0;
@@ -258,6 +306,86 @@ function slideFill(s) {
   if (s.kind === 'welcome') return 1;
   const tot = totals();
   return tot.done === tot.total && declarationDone() ? 1 : 0;
+}
+
+/* ===================== ducks in a row ===================== */
+const DUCK = '/assets/ddq/';
+const DUCK_ICON = { not_started: 'duckling_not_started', in_progress: 'duckling_in_progress', done: 'duckling_done', needs_attention: 'ugly_duckling' };
+const statusWord = s => t({ not_started: 'statusNot', in_progress: 'statusProg', done: 'statusDone', needs_attention: 'statusLook' }[s]);
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const plainDuck = s => `${DUCK}${s === 'needs_attention' ? 'ugly_duckling_plain' : 'duckling_plain'}.svg`;
+let submittedNow = false;
+let lastDucks = '';
+let lastAttn = null;
+// Checked against the English template so question ids and table column keys always match the saved answers
+const ddqState = () => DDQStatus.evaluate(BASE, R);
+
+function attentionHtml(failed) {
+  return `<div class="attn" role="status"><b>${esc(t('needLook'))}</b><ul>${failed.map(f => `<li><button type="button" data-focus-q="${esc(f.questionId)}">${esc(f.message)}</button></li>`).join('')}</ul></div>`;
+}
+
+function renderDucks() {
+  const row = $('#duck-row');
+  if (!T || !BASE || !SLIDES.length) return;
+  row.hidden = false;
+  if (readOnly && (submittedNow || META.submitted_at)) {
+    row.className = 'duck-row sent';
+    row.innerHTML = `<img src="${DUCK}mommy_duck_envelope.svg" width="96" height="96" alt=""><b>${esc(t('sentTo').replace('{company}', META.issuing_company || 'DueDilly'))}</b>`;
+    return;
+  }
+  const ev = ddqState();
+  const cur = SLIDES[at].kind === 'section' ? SLIDES[at].index : -1;
+  const sig = `${ev.sections.map(s => s.status).join()}|${cur}|${R.language}`;
+  if (sig !== lastDucks) {
+    lastDucks = sig;
+    row.className = 'duck-row';
+    row.innerHTML = `<div class="duck-line" role="group" aria-label="${esc(T.title)}">
+        <div class="ducklings">${ev.sections.map((s, i) => `<button type="button" class="duckling ${s.status} ${i === cur ? 'on' : ''}" data-goto="${i + 1}"${i === cur ? ' aria-current="step"' : ''}
+            aria-label="${esc(`${t('section')} ${i + 1}, ${T.sections[i].title}: ${statusWord(s.status)}`)}" title="${esc(`${i + 1}. ${T.sections[i].title} · ${statusWord(s.status)}`)}">
+            <img src="${DUCK}${DUCK_ICON[s.status]}.svg" width="36" height="36" alt=""><span aria-hidden="true">${i + 1}</span></button>`).join('')}</div>
+        <img class="mommy" src="${DUCK}mommy_duck.svg" width="64" height="64" alt="">
+      </div>
+      <div class="duck-count">${ev.done} ${esc(t('of'))} ${ev.total} ${esc(t('sectionsComplete'))}</div>`;
+  }
+  if (cur < 0) return;
+  // Live parts of the open section: its small duckling and the list of answers that need another look
+  const s = ev.sections[cur];
+  const duck = $('#sec-duck');
+  if (duck && !duck.src.endsWith(plainDuck(s.status))) duck.src = plainDuck(s.status);
+  const box = $('#attn');
+  const key = s.failed.map(x => x.message).join('|');
+  if (box && key !== lastAttn) { lastAttn = key; box.innerHTML = s.failed.length ? attentionHtml(s.failed) : ''; }
+}
+
+function focusQuestion(id) {
+  if (id === 'declaration') { go(SLIDES.length - 2); return; }
+  const i = SLIDES.findIndex(s => s.kind === 'section' && T.sections[s.index].questions.some(q => q.id === id));
+  if (i < 0) return;
+  if (i !== at) go(i);
+  const node = $(`#slide [data-q="${CSS.escape(id)}"]`);
+  if (!node) return;
+  setCurrent(id);
+  node.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  const field = node.querySelector('textarea:not([hidden]), input');
+  if (field) field.focus({ preventScroll: true });
+}
+
+function startTour(force) {
+  if (!window.DuckTour) return;
+  const n = T.sections.length;
+  DuckTour.start({
+    id: 'ddq-portal', force,
+    labels: { next: t('tourNext'), back: t('back'), done: t('tourDone'), skip: t('tourSkip') },
+    steps: [
+      { title: t('tour1'), text: t('tour1b').replace('{n}', n) },
+      { sel: '#duck-row', title: t('tour2'), text: t('tour2b') },
+      { sel: '#prefill-btn', title: t('tour3'), text: t('tour3b') },
+      { sel: '#next-btn', title: t('tour4'), text: t('tour4b') },
+      { sel: '#guide-fab', title: t('tour5'), text: t('tour5b') },
+      { sel: '#print-btn', title: t('tour6'), text: t('tour6b') },
+      { title: t('tour7'), text: t('tour7b') }
+    ]
+  });
 }
 
 /* ===================== autosave ===================== */
@@ -328,10 +456,16 @@ function renderSlide() {
   const el = $('#slide');
   let html = '';
   if (s.kind === 'welcome') {
-    html = `<div class="eyebrow">${esc(META.kyc_id)} · ${esc(META.counterparty_name)}</div>
+    html = `<div class="dilly-hello"><img class="dilly" src="/assets/mascot/dilly_v3_neutral.svg" width="72" height="72" alt=""><span>${esc(t('dillyHello'))}</span></div>
+      <div class="eyebrow">${esc(META.kyc_id)} · ${esc(META.counterparty_name)}</div>
       <h1>${esc(T.title)}</h1>
       <p class="sub">${esc(T.intro)}</p>
-      ${T.instructions.length ? `<h2>${esc(t('howTo'))}</h2><ol>${T.instructions.map(i => `<li>${esc(i)}</li>`).join('')}</ol>` : ''}
+      <div class="how">
+        <div><img src="${DUCK}duckling_in_progress.svg" width="36" height="36" alt=""><b>${esc(t('how1'))}</b><small>${esc(t('how1b'))}</small></div>
+        <div><img src="${DUCK}ugly_duckling.svg" width="36" height="36" alt=""><b>${esc(t('how2'))}</b><small>${esc(t('how2b'))}</small></div>
+        <div><img src="${DUCK}duckling_done.svg" width="36" height="36" alt=""><b>${esc(t('how3'))}</b><small>${esc(t('how3b'))}</small></div>
+      </div>
+      ${T.instructions.length ? `<details class="more"><summary>${esc(t('fullInstructions'))}</summary><ol>${T.instructions.map(i => `<li>${esc(i)}</li>`).join('')}</ol></details>` : ''}
       ${T.documents.length ? `<h2>${esc(t('docsNeeded'))}</h2><ul class="plain">${T.documents.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}
       ${readOnly ? '' : `<div class="prefill">
         <div class="grow"><b>${icon('spark', 'sm')} ${esc(t('prefillTitle'))}</b><small>${esc(t('prefillBody'))}</small></div>
@@ -343,8 +477,9 @@ function renderSlide() {
     const sec = T.sections[s.index];
     const pending = sec.questions.filter(q => needsConfirm(q.id)).length;
     html = `<div class="eyebrow">${esc(t('section'))} ${s.index + 1} ${esc(t('of'))} ${T.sections.length}</div>
-      <h1>${esc(sec.title)}</h1>
+      <h1><img class="sec-duck" id="sec-duck" src="${plainDuck('')}" width="20" height="20" alt="">${esc(sec.title)}</h1>
       ${sec.subheading ? `<p class="sub">${esc(sec.subheading)}</p>` : '<p class="sub"></p>'}
+      <div id="attn"></div>
       ${pending && !readOnly ? `<div class="ai-note" style="margin-bottom:8px">${icon('spark', 'sm')}<b>${pending} × ${esc(t('aiSuggested'))}</b><button class="btn sm" type="button" id="confirm-all">${icon('check', 'sm')}${esc(t('confirmAll'))}</button></div>` : ''}
       ${sec.questions.map(questionHtml).join('')}`;
   } else if (s.kind === 'documents') {
@@ -376,24 +511,27 @@ function renderSlide() {
         <div class="sig-box"><canvas id="sig" width="1200" height="300"></canvas><div class="hint" id="sig-hint" ${d.signature ? 'hidden' : ''}>${esc(readOnly ? t('notSigned') : t('signHint'))}</div></div>
       </div>`;
   } else {
-    const tot = totals();
-    const ready = tot.done === tot.total && declarationDone();
+    const ev = ddqState();
+    const ready = ev.ready;
     html = `<div class="eyebrow">${esc(META.kyc_id)}</div><h1>${esc(t('reviewTitle'))}</h1><p class="sub">${esc(t('reviewSub'))}</p>
       ${T.sections.map((sec, i) => {
-        const p = sectionProgress(sec);
-        return `<div class="review-row"><span class="grow">${i + 1}. ${esc(sec.title)}</span>
-          <span class="pill ${p.done === p.total ? 'ok' : 'warn'}">${p.done === p.total ? esc(t('complete')) : `${p.total - p.done} ${esc(t('toDo'))}`}</span>
+        const st = ev.sections[i];
+        return `<div class="review-row"><span class="grow"><img class="sec-duck" src="${plainDuck(st.status)}" width="20" height="20" alt="">${i + 1}. ${esc(sec.title)}</span>
+          <span class="pill ${st.status === 'done' ? 'ok' : 'warn'}">${st.status === 'done' ? esc(t('complete')) : st.status === 'in_progress' ? `${st.required - st.answered} ${esc(t('toDo'))}` : esc(cap(statusWord(st.status)))}</span>
           <button class="btn sm ghost" type="button" data-goto="${i + 1}">${esc(t('open'))}</button></div>`;
       }).join('')}
       <div class="review-row"><span class="grow">${esc(t('declaration'))}</span>
         <span class="pill ${declarationDone() ? 'ok' : 'warn'}">${declarationDone() ? esc(t('complete')) : esc(t('notSigned'))}</span>
         <button class="btn sm ghost" type="button" data-goto="${SLIDES.length - 2}">${esc(t('open'))}</button></div>
+      ${ev.failed.length && !readOnly ? `<div style="margin-top:16px">${attentionHtml(ev.failed)}</div>` : ''}
+      ${readOnly ? '' : ready ? `<div class="all-row"><img src="${DUCK}banner_all_in_a_row.svg" alt=""><b>${esc(t('allReady').replace('{n}', ev.total))}</b></div>` : `<p class="faint submit-hint">${esc(t('submitHint'))}</p>`}
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px;flex-wrap:wrap">
         <button class="btn" type="button" id="review-print">${icon('doc', 'sm')}${esc(t('print'))}</button>
-        ${readOnly ? '' : `<button class="btn primary" type="button" id="submit-btn" ${ready ? '' : 'data-notready'}>${icon('check', 'sm')}${esc(t('submit'))}</button>`}
+        ${readOnly ? '' : `<button class="btn primary" type="button" id="submit-btn" ${ready ? '' : 'disabled'}>${icon('check', 'sm')}${esc(t('submit'))}</button>`}
       </div>`;
   }
   el.innerHTML = html;
+  lastAttn = null;
   if (s.kind === 'declaration') initSignature();
   renderDock();
   renderGuideContext();
@@ -412,6 +550,7 @@ function renderDock() {
   $('#back-btn').disabled = at === 0;
   $('#next-btn').hidden = at === SLIDES.length - 1;
   $('#next-btn').innerHTML = `<span class="lbl">${esc(at === SLIDES.length - 2 ? t('review') : t('next'))}</span>${icon('chev', 'sm')}`;
+  renderDucks();
 }
 
 function renderChrome() {
@@ -430,6 +569,14 @@ function renderChrome() {
   $('#guide-form button').innerHTML = icon('send', 'sm');
   $('#top-sub').textContent = `${T.title} · ${META.kyc_id}`;
   document.title = `${T.title} · ${META.counterparty_name}`;
+  const oldHelp = $('#help-btn');
+  if (oldHelp) oldHelp.remove();
+  if (window.DuckTour && !readOnly) {
+    const help = DuckTour.helpButton(t('howItWorks'), () => { if (at !== 0) go(0); startTour(true); });
+    help.id = 'help-btn';
+    $('#print-btn').before(help);
+  }
+  lastDucks = '';
 }
 
 function go(i) {
@@ -512,6 +659,7 @@ $('#slide').addEventListener('click', e => {
     (R.tables[id] || []).splice(ri, 1);
     rerenderQuestion(id); touch(); return;
   }
+  if (btn.dataset.focusQ) { focusQuestion(btn.dataset.focusQ); return; }
   if (btn.dataset.goto !== undefined) { go(Number(btn.dataset.goto)); return; }
   if (btn.id === 'confirm-all') {
     T.sections[SLIDES[at].index].questions.forEach(q => { if (needsConfirm(q.id)) R.answers[q.id].confirmed = true; });
@@ -524,6 +672,13 @@ $('#slide').addEventListener('click', e => {
 });
 
 $('#track').addEventListener('click', e => { const seg = e.target.closest('[data-goto]'); if (seg) go(Number(seg.dataset.goto)); });
+$('#duck-row').addEventListener('click', e => {
+  const b = e.target.closest('[data-goto]');
+  if (!b) return;
+  go(Number(b.dataset.goto));
+  const again = $(`#duck-row [data-goto="${b.dataset.goto}"]`);
+  if (again) again.focus({ preventScroll: true });
+});
 $('#back-btn').addEventListener('click', () => go(at - 1));
 $('#next-btn').addEventListener('click', () => go(at + 1));
 $('#print-btn').addEventListener('click', openPrint);
@@ -588,6 +743,7 @@ async function runPrefill(file) {
   const btn = $('#prefill-btn');
   btn.disabled = true;
   btn.querySelector('span').textContent = t('prefilling');
+  btn.insertAdjacentHTML('beforebegin', '<img class="dilly" src="/assets/mascot/dilly_v3_focused.svg" width="72" height="72" alt="">');
   try {
     const body = { token: TOKEN, filename: file.name, mimeType: file.type || '' };
     if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
@@ -718,12 +874,11 @@ $('#lang-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.p
 
 /* ===================== submit ===================== */
 async function submit() {
-  const tot = totals();
-  if (tot.done < tot.total) {
+  const ev = ddqState();
+  if (!ev.allSectionsDone) {
     showMissing = true;
-    toast(t('missing'));
-    const first = SLIDES.findIndex(s => s.kind === 'section' && sectionProgress(T.sections[s.index]).done < sectionProgress(T.sections[s.index]).total);
-    go(first);
+    toast(ev.failed.length ? t('needLook') : t('missing'));
+    go(ev.sections.findIndex(s => s.status !== 'done') + 1);
     return;
   }
   if (!declarationDone()) { toast(t('needSign')); go(SLIDES.length - 2); return; }
@@ -746,7 +901,11 @@ async function submit() {
 function lock(justSubmitted) {
   readOnly = true;
   $('#save-state').hidden = true;
-  $('#banner').innerHTML = `<div class="banner">${icon('lock')}<div><b>${esc(t('lockedTitle'))}</b>${esc(justSubmitted ? t('submitted') + ' ' : '')}${esc(t('lockedBody'))}</div></div>`;
+  if (justSubmitted) submittedNow = true;
+  $('#banner').innerHTML = `<div class="banner">${icon('lock')}<div><b>${esc(t('lockedTitle'))}</b>${esc(t('lockedBody'))}</div></div>`;
+  const help = $('#help-btn');
+  if (help) help.remove();
+  renderDucks();
 }
 
 function firstFlaggedSlide() {
@@ -765,7 +924,7 @@ function renderBounceBanner() {
 }
 
 function fail(message) {
-  $('#slide').innerHTML = `<div class="eyebrow">Safe Globe</div><h1>This link can't be opened</h1><p class="sub">${esc(message)} Please ask your SafeGlobe contact to issue a new secure link.</p>`;
+  $('#slide').innerHTML = `<div class="eyebrow">DueDilly</div><h1>This link can't be opened</h1><p class="sub">${esc(message)} Please ask your DueDilly contact to issue a new secure link.</p>`;
   $('#banner').innerHTML = `<div class="banner bad">${icon('alert')}<div><b>Link invalid or expired</b>The questionnaire could not be loaded.</div></div>`;
 }
 
@@ -797,6 +956,7 @@ async function boot() {
   renderChrome();
   if (R.language && R.language !== 'English') await applyLanguage(R.language);
   else renderSlide();
+  if (!readOnly) startTour(false);
 }
 boot();
 })();

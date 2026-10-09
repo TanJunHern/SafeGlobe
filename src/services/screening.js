@@ -99,7 +99,7 @@ function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP
       conf = 68;
       factors.push(['-', `Jurisdiction carries elevated corruption risk (CPI 2025: ${cpiScore}/100)`]);
       findings.push({
-        agent: 'Radar',
+        agent: 'Ripples',
         title: 'High-risk jurisdiction exposure',
         detail: `Registered in country scoring ${cpiScore}/100 on Transparency International CPI 2025.`,
         risk: 'Medium',

@@ -90,7 +90,7 @@ router.get('/export-excel', async (req, res) => {
     const requests = db.getAllKycRequests(filter);
     const workbook = await kycService.generateKycExcelWorkbook(requests);
 
-    const filename = `SafeGlobe_KYC_Requests_${new Date().toISOString().substring(0, 10)}.xlsx`;
+    const filename = `DueDilly_KYC_Requests_${new Date().toISOString().substring(0, 10)}.xlsx`;
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
@@ -121,7 +121,7 @@ router.get('/export', (req, res) => {
     const requests = db.getAllKycRequests(filter);
     const csvContent = kycService.exportKycCsv(requests);
 
-    const filename = `SafeGlobe_KYC_Requests_${new Date().toISOString().substring(0, 10)}.csv`;
+    const filename = `DueDilly_KYC_Requests_${new Date().toISOString().substring(0, 10)}.csv`;
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(csvContent);
@@ -253,7 +253,7 @@ const submitKycHandler = async (req, res) => {
   try {
     const userContext = {
       userId: req.user.userId || 'EMP-1042',
-      email: req.user.email || 'john.doe@safeglobe.com',
+      email: req.user.email || 'john.doe@duedilly.com',
       department: req.user.department || 'Procurement & Logistics',
       ip: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1',
       clientTimestamp: req.headers['x-client-timestamp'] || new Date().toISOString()

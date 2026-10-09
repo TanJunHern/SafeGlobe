@@ -15,7 +15,7 @@ const crypto = require('crypto');
 const { getDb } = require('../db');
 
 const DEFAULT_TEMPLATE_PATH = path.join(__dirname, '..', 'db', 'supplier-cddq-template.md');
-const DEFAULT_SETTINGS = { issuingCompany: 'SafeGlobe', contactEmail: 'compliance@safeglobe.com' };
+const DEFAULT_SETTINGS = { issuingCompany: 'DueDilly', contactEmail: 'compliance@duedilly.com' };
 const QUESTION_TYPES = ['text', 'yesno', 'table'];
 
 function cleanInline(text = '', settings = DEFAULT_SETTINGS) {
@@ -359,5 +359,6 @@ module.exports = {
   computeProgress,
   deriveScreeningFields,
   isControlQuestion,
-  QUESTION_TYPES
+  QUESTION_TYPES,
+  DEFAULT_SETTINGS
 };

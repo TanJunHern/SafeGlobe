@@ -1,4 +1,4 @@
-SAFE GLOBE — HACKATHON READINESS CHECKLIST
+DUEDILLY — HACKATHON READINESS CHECKLIST
 Benchmarked against h2oai/h2oai-flood-intelligence-agent
 
 Legend: [MUST] blocks the win case | [SHOULD] strengthens it | [STRETCH] if time remains
@@ -7,7 +7,7 @@ Legend: [MUST] blocks the win case | [SHOULD] strengthens it | [STRETCH] if time
 
 1. MAKE ONE AGENT GENUINELY REASON (~1 day)
 
-Flood intelligence won partly because its agents call real models for real judgment calls, not scripted scoring. Pick ONE Safe Globe agent and do the same — don't spread this thin across all five.
+Flood intelligence won partly because its agents call real models for real judgment calls, not scripted scoring. Pick ONE DueDilly agent and do the same — don't spread this thin across all five.
 
 [MUST] Replace the rule-based contradiction check in truthCheck.js with an actual LLM call. Feed it the statement text + retrieved registry facts, ask it to label each claim Consistent / Unverified / Contradicted with a one-line reason.
 
@@ -19,13 +19,13 @@ Flood intelligence won partly because its agents call real models for real judgm
 
 [SHOULD] Compute and display one backtest number, e.g. "flagged 8 of 10 true escalations on held-out cases."
 
-Don't wire all five agents (Sentry, Radar, Web, Tide, Forecast) to real LLM calls under time pressure. One agent done convincingly beats five done shallowly.
+Don't wire all five agents (Sentry, Ripples, Web, Tide, Forecast) to real LLM calls under time pressure. One agent done convincingly beats five done shallowly.
 
 ———————————————
 
 2. WIRE ONE AGENT TO A REAL EXTERNAL FEED (~0.5 day)
 
-Flood intelligence polls USGS and NOAA live. Right now every Safe Globe agent reads seed data only — judges will ask "is this calling a real API, or is it fixtures?"
+Flood intelligence polls USGS and NOAA live. Right now every DueDilly agent reads seed data only — judges will ask "is this calling a real API, or is it fixtures?"
 
 [MUST] Pick one real, free, no-auth-friction source:
 • OpenSanctions API for Sentry (free tier, no key needed for light use) — matches the "41 sanctions lists" copy already in your PRD

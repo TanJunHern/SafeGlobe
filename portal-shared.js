@@ -41,7 +41,7 @@
 
   function isDark() {
     const a = document.documentElement.getAttribute('data-theme');
-    return a ? a === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    return a === 'dark';
   }
   function initTheme(button) {
     if (!button) return;

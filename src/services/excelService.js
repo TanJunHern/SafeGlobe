@@ -7,7 +7,7 @@ const ExcelJS = require('exceljs');
  */
 async function generateKycExcelWorkbook(records = []) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'SafeGlobe Compliance Platform';
+  workbook.creator = 'DueDilly Compliance Platform';
   workbook.lastModifiedBy = 'Compliance Officer';
   workbook.created = new Date();
   workbook.modified = new Date();
