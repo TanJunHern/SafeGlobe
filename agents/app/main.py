@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from google.adk import __version__ as ADK_VERSION
 
 from . import settings
-from .models import AskRequest, AskResponse, Health, ScreenRequest
+from .models import AskRequest, AskResponse, ExtractRequest, ExtractResponse, Health, ProposeFixRequest, ProposeFixResponse, ScreenRequest
 
 app = FastAPI(title="DueDilly agents", version="1.0.0")
 
@@ -51,3 +51,23 @@ async def ask_dilly(request: AskRequest) -> AskResponse:
   from .ask_dilly import ask
 
   return await ask(request)
+
+
+@app.post("/crawler/extract", response_model=ExtractResponse, dependencies=[Depends(caller_is_duedilly), Depends(backend_ready)])
+async def crawler_extract(request: ExtractRequest) -> ExtractResponse:
+  from .crawler import extract
+
+  try:
+    return await extract(request)
+  except Exception as err:  # the app then uses its offline extractor
+    raise HTTPException(status_code=502, detail=f"The crawler agent could not read the page: {str(err)[:200]}")
+
+
+@app.post("/crawler/propose-fix", response_model=ProposeFixResponse, dependencies=[Depends(caller_is_duedilly), Depends(backend_ready)])
+async def crawler_propose_fix(request: ProposeFixRequest) -> ProposeFixResponse:
+  from .crawler import propose_fix
+
+  try:
+    return await propose_fix(request)
+  except Exception as err:
+    raise HTTPException(status_code=502, detail=f"The crawler agent could not suggest a fix: {str(err)[:200]}")

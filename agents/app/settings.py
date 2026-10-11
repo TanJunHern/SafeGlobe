@@ -15,6 +15,12 @@ def model() -> str:
   return os.environ.get("AGENTS_MODEL", "").strip()
 
 
+def thinking_level() -> str:
+  """Optional: MINIMAL, LOW, MEDIUM or HIGH. Empty leaves the model's own default."""
+  level = os.environ.get("AGENTS_THINKING_LEVEL", "").strip().upper()
+  return level if level in ("MINIMAL", "LOW", "MEDIUM", "HIGH") else ""
+
+
 def ready() -> bool:
   return backend() != "disabled" and bool(model())
 
@@ -28,4 +34,4 @@ def app_url() -> str:
   return os.environ.get("DUEDILLY_INTERNAL_URL", "").rstrip("/")
 
 
-PROMPT_VERSION = "pond-guard-2026-10-12"
+PROMPT_VERSION = "pond-guard-2026-10-12b"

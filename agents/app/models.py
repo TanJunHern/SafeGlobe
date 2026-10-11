@@ -61,6 +61,48 @@ class AgentOutput(BaseModel):
   note: str = Field(default="", description="One sentence on what was checked, for the reviewer.")
 
 
+class ExtractRequest(BaseModel):
+  """One page a crawler agent reads for one website source. The app fetched the page; the agent only reads its text."""
+
+  source_label: str = Field(min_length=1, max_length=200)
+  url: str = ""
+  instructions: str = Field(default="", max_length=2000, description="Extra extraction instructions for this source, approved by a compliance officer.")
+  text: str = Field(min_length=1, max_length=30000)
+
+
+class ExtractedRecord(BaseModel):
+  """An organisation, person or vessel the page names. The app drops any record whose quote is not on the page."""
+
+  name: str = Field(description="The name exactly as the page writes it.")
+  kind: Literal["organisation", "person", "vessel"]
+  country: str = Field(default="", description="ISO 3166-1 alpha-3 country code when the page states the country, otherwise empty.")
+  identifier: str = Field(default="", description="Registration number, IMO number or other identifier when the page states one, otherwise empty.")
+  summary: str = Field(description="One plain sentence on what the page says about it.")
+  quote: str = Field(description="Exact words copied from the page that name it, at most 300 characters.")
+
+
+class ExtractOutput(BaseModel):
+  records: list[ExtractedRecord] = Field(default_factory=list)
+  note: str = Field(default="", description="One sentence on what the page is, for the reviewer.")
+
+
+class ExtractResponse(ExtractOutput):
+  model_id: str = ""
+
+
+class ProposeFixRequest(ExtractRequest):
+  problem: str = Field(min_length=1, max_length=600)
+
+
+class ProposeFixOutput(BaseModel):
+  instructions: str = Field(description="New extraction instructions for this source, at most 1200 characters.")
+  reason: str = Field(description="One sentence on what was wrong and what the new instructions change.")
+
+
+class ProposeFixResponse(ProposeFixOutput):
+  model_id: str = ""
+
+
 class AskRequest(BaseModel):
   question: str = Field(min_length=1, max_length=2000)
   user_role: str = "employee"

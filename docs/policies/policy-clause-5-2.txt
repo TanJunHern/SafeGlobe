@@ -1,0 +1,7 @@
+DueDilly Enterprise Compliance & Counterparty Risk Policy (v2026.1)
+Demo policy: written for the DueDilly demo. The company and its policy are fictional.
+
+Section: Entity-Specific Risk Controls
+Clause 5.2 (Intermediaries)
+
+All engagements categorized under "3rd Party Reps & Brokers", intermediaries, or sales agents mandate statutory due diligence questionnaires regardless of initial contract value.

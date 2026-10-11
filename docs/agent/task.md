@@ -28,16 +28,16 @@
 - [x] Plan approved by the user (`implementation_plan.md`), questions 1 to 3 answered
 - [x] Step A: `DEMO_MODE`, rate limit and caps, demo label, `.env.example` placeholder shape
 - [x] Step B: Vertex AI in the shared client; models listed
-- [ ] Step B: models chosen by the user
+- [x] Step B: models chosen (Claude's proposal, kept by the user): app `gemini-3.5-flash-lite`, agents `gemini-3.5-flash`
 - [x] Step C: agents service (Pond-Guard, Ask Dilly), Express client, internal read-only API
 - [x] Step D: drawer live progress; Ask Dilly on the new agent
 - [x] Step E: fallbacks visible in the UI
 - [x] Step F: `gcp-setup.sh`, `deploy.sh`, `smoke.sh`, `agents-dev.sh`, `DEPLOY_GUIDE.md`, `cloudbuild.yaml`, old deploy files disabled
 - [x] Step G: `aiKycpService` through the scorer; sanctions alert goes to "Under Review"
 - [x] Tests pass offline (176 Node, 7 Python); both images build and run locally
-- [ ] Section 9.1 checkpoint: asked, waiting for the user's answer
-- [ ] First live call (Vertex AI from the user's computer), fixes if needed
-- [ ] Deployed to UAT by the user; Pond-Guard screens Aurora Venture live
+- [x] Section 9.1 checkpoint: the user said go for Vertex AI (12 Oct)
+- [x] First live call (Vertex AI from the user's computer): works; three fixes made (see `walkthrough.md`)
+- [x] Deployed to UAT by the user; smoke test passed with `Pond-Guard: live` (a screening on the link still to be confirmed by the user)
 - [x] `walkthrough.md` updated (live results to be added)
 
 ## Accounts phase: roles, workspaces, sign-in, Settings (requested 12 Oct, before Phase 3)
@@ -56,3 +56,19 @@
 - [ ] Section 9.1 checkpoint: asked, waiting for the user's answer (first live Google sign-in)
 - [x] `walkthrough.md`: how to try each sign-in path
 - [ ] Follow-up: pass the workspace to the agents service so live Ask Dilly works outside the Demo workspace
+
+## Phase 3: events, crawler agents, self-healing, Ripples triage, policy search
+- [x] Plan written (`implementation_plan.md`); Accounts plan kept as `implementation_plan.accounts.md`
+- [x] Plan approved by the user (12 Oct); approval needed before each later phase; questions 3 to 6 on the recommended defaults
+- [x] Step 0: API references read and noted in `decisions.md`
+- [x] Step A: event bus, push endpoint, where events are published, subscriptions script, crawl schedule
+- [x] Step B: crawler (robots.txt, terms tick, no login pages, rate limit), snapshots, ADK extraction, change detection, Sources tab, demo fixture
+- [x] Step C: self-healing proposals, approve or dismiss in the Sources tab
+- [x] Step D: Ripples triage, merge, "what changed", High asks for a re-screen
+- [x] Step E: policy files, `kyc_policy.pdf` (demo), Agent Search setup script, clause shown on every route
+- [x] `.env.example` and `DEPLOY_GUIDE.md` steps 5, 7, 8, 13 and 14 updated
+- [x] Tests pass offline (205 Node, 11 Python); gate checked offline and live on Vertex AI locally
+- [x] Section 9.1 go-ahead given (12 Oct). Live and working from this computer: Agent Search, Cloud Storage
+- [ ] Pub/Sub and Cloud Scheduler: set up; first live event needs the redeploy
+- [ ] Deployed to UAT by the user (the link still runs Phase 2)
+- [x] `walkthrough.md` updated

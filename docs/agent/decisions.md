@@ -106,9 +106,77 @@ unless a line here changes them.
 - **No live call yet.** The user said to pause and run Vertex AI on 13 Oct. The section 9.1 go-ahead for Vertex AI,
   Secret Manager and Cloud Run is still to be given.
 
+## Vertex AI go-ahead (12 Oct 2026)
+
+- The user said go for Vertex AI (section 9.1). First live calls were made the same day from the user's computer,
+  with the user's own sign-in (Application Default Credentials), against `safe-globe-compliance`, location `global`.
+- Still **not** live, and still needing the user: Cloud Run (the user runs `scripts/deploy.sh`), Secret Manager
+  from the deployed services, and Google sign-in.
+- Models in use: app `gemini-3.5-flash-lite` (fallbacks `gemini-3.5-flash`, `gemini-2.5-flash`), agents
+  `gemini-3.5-flash`. All three answered on Vertex AI. Grounding with Google Search works with `gemini-3.5-flash`.
+- New optional setting `AGENTS_THINKING_LEVEL`, set to `LOW` in `.env.uat` by Claude: a Pond-Guard run went from
+  about 60 seconds to about 20. To confirm.
+- Adverse media, Claude's choice, to confirm: a web article counts only when the page Google Search returned names
+  the counterparty, and for a vessel only when any IMO number in it is the same. Reason: the demo names are
+  fictional, and the first live search returned news about real ships with other IMO numbers.
+- The user asked to go on to Phases 3 to 6 once the deploy and the smoke test are good.
+
+## Phase 2 gate and Phase 3 approvals (12 Oct 2026)
+
+- The user ran the three deploy commands and the smoke test: all checks passed, `Pond-Guard: live`.
+  Public link `https://duedilly-uat-gqthvx5oha-as.a.run.app`; agents (private)
+  `https://duedilly-agents-uat-gqthvx5oha-as.a.run.app`. A Pond-Guard screening on the link itself was not yet
+  confirmed by anyone when Phase 3 started.
+- **Approval before each phase:** the user said no to running Phases 3 to 6 without stopping. Each phase needs
+  its plan approved first.
+- **Phase 3 is approved** ("Proceed with phase 3"). **Build and test locally first; update the container only
+  when it is ready.**
+- Plan questions 3 to 6 were not answered. Phase 3 is built on the recommended defaults, to confirm in the
+  walkthrough: crawl once a day at 06:30 Singapore time plus "Run now"; a High alert asks for a re-screen inside
+  the daily cap; the 12-hour policy text and the 24-hour scoring rule are both left as they are; the fictional
+  fixture page `/demo/port-notices` is the "changed page".
+
+## Phase 3: what the API references say (read 12 Oct 2026)
+
+- **Pub/Sub publish:** `POST https://pubsub.googleapis.com/v1/projects/{p}/topics/{t}:publish`, body
+  `{messages:[{data: base64, attributes}]}`, scope `pubsub` or `cloud-platform`.
+- **Pub/Sub push:** body `{message:{data, messageId, publishTime, attributes}, subscription}`; 102, 200, 201, 202
+  and 204 acknowledge, anything else is retried. With authentication on, the request carries
+  `Authorization: Bearer <JWT>` signed by Google with `iss https://accounts.google.com`, `aud` as set on the
+  subscription, and `email` of the push service account. The Pub/Sub service agent needs
+  `roles/iam.serviceAccountTokenCreator` on that account. `gcloud pubsub subscriptions create --push-endpoint
+  --push-auth-service-account --push-auth-token-audience`.
+- **Cloud Scheduler HTTP job:** `--uri --http-method --oidc-service-account-email --oidc-token-audience`.
+- **Cloud Storage JSON API:** upload `POST /upload/storage/v1/b/{bucket}/o?uploadType=media&name=`, download
+  `GET /storage/v1/b/{bucket}/o/{object}?alt=media`.
+- **Agent Search (Discovery Engine v1, API definition revision 20261004):** search is
+  `POST v1/{servingConfig}:search` on `.../collections/default_collection/dataStores/{id}/servingConfigs/default_serving_config`;
+  results carry `document.derivedStructData` with `link` and `snippets[].snippet`. Snippets need no Enterprise
+  feature for unstructured data; extractive answers and segments do, so the app does not ask for them. Data store
+  create: `POST .../dataStores?dataStoreId=` with `contentConfig: CONTENT_REQUIRED`; import from Cloud Storage with
+  `gcsSource.dataSchema: "content"`.
+- Not confirmed from the docs: whether `.txt` files are accepted by an unstructured data store (the PDF certainly
+  is), and which edition a data store searched without an app is billed at.
+
+## Phase 3 go-live (12 Oct 2026)
+
+- The user ran `scripts/agent-search-setup.sh` and `scripts/pubsub-subscriptions.sh`; both worked first time.
+  That is the section 9.1 go-ahead for Agent Search, Cloud Storage, Pub/Sub and Cloud Scheduler.
+- Agent Search: data store `duedilly-policies` in `global`, 8 of 8 files indexed (`.txt` files are accepted).
+  First live calls from this computer: all six clauses found by Agent Search; a policy search returned
+  `policy-clause-5-4.txt` first. The serving config `default_serving_config` works on the data store directly.
+- Cloud Storage: first live save and read-back worked. A small test object was left at
+  `gs://duedilly-uat-safe-globe-compliance/snapshots/_selftest/check.txt`.
+- Pub/Sub: six push subscriptions and the job `duedilly-uat-crawl-due` exist. `PUBSUB_MODE=pubsub` is set in
+  `.env.uat`. **No live publish or push has been made yet:** that happens on the deployed app after the redeploy.
+- `.env.uat` now has `DOCUMENT_STORAGE=gcs`, `GCS_BUCKET`, `PUBSUB_MODE=pubsub`, `AGENT_SEARCH_DATA_STORE`,
+  `AGENT_SEARCH_LOCATION` (added by Claude at the user's request).
+- Git: checked that no `.env` file with real values was ever committed on any branch.
+
 ## Open questions
 
-None.
+- Halcyon Marine after a live re-screen (walkthrough, Phase 3, point 1).
+- Phase 3 plan questions 3 to 6: defaults in use, to confirm.
 
 ## Accounts phase approvals (12 Oct 2026)
 

@@ -611,6 +611,17 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 .why-row blockquote,.sugg blockquote{margin:6px 0;padding:5px 9px;border-left:3px solid var(--line-2);font-size:12px;color:var(--fg-2);background:var(--surface-2);border-radius:0 6px 6px 0}
 .why-row small{display:block;font-size:11.5px;color:var(--fg-3)}
 .why-row a{color:var(--accent)}
+.crawl-row{display:grid;grid-template-columns:1fr auto;gap:10px 16px;padding:12px 0;border-top:1px solid var(--line)}
+.crawl-row:first-child{border-top:0;padding-top:0}
+.crawl-row h3{margin:0;font-size:13.5px;font-weight:600}
+.crawl-row p{margin:2px 0 0;font-size:12.5px;color:var(--fg-2);overflow-wrap:anywhere}
+.crawl-row label{display:flex;gap:6px;align-items:flex-start;font-size:12px;color:var(--fg-2);margin-top:6px;cursor:pointer}
+.crawl-acts{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
+.crawl-fix{grid-column:1/-1;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-size:12.5px}
+.crawl-fix pre{white-space:pre-wrap;margin:4px 0 8px;font-family:var(--f-mono);font-size:11.5px;color:var(--fg-2)}
+.sev{height:18px}.sev-High{background:var(--high);color:#fff}.sev-Medium{background:var(--mid);color:#fff}.sev-Low{background:var(--surface-2);color:var(--fg-2)}
+.clause{display:block;margin-top:4px;padding:5px 9px;border-radius:6px;background:var(--surface-2);font-size:11.5px;color:var(--fg-2)}
+.pol-hit{padding:10px 0;border-top:1px solid var(--line);font-size:12.5px}.pol-hit:first-child{border-top:0}.pol-hit b{display:block;font-size:13px}
 .why-total{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding-top:8px;border-top:1px solid var(--line);font-size:13px}
 .why-total span{font-size:12px;color:var(--fg-2)}
 .why-route{margin:0;font-size:12.5px;color:var(--fg-2)}
@@ -1239,6 +1250,13 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         </div>
         <div class="src-grid" id="src-grid"></div>
         <div id="src-cost-host"></div>
+        <div class="card" id="crawler-card" style="margin-bottom:20px">
+          <div class="card-h" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div><div class="eyebrow">Website sources</div><h2>Crawler agents</h2><p class="muted" style="margin:2px 0 0;font-size:12.5px">One agent per website. It obeys robots.txt, never signs in, keeps a snapshot of each page it reads, and raises a ripple when a page changes.</p></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill plain" id="crawl-mode">Checking…</span><button class="btn sm primary" id="crawl-run-all" type="button"><svg class="ic sm"><use href="#i-refresh"/></svg>Run now</button></div>
+          </div>
+          <div class="card-b"><div id="crawl-demo"></div><div id="crawl-list"></div><p class="faint" id="crawl-foot" style="font-size:11.5px;margin:10px 0 0"></p></div>
+        </div>
         <div class="rev-grid">
           <div class="card">
             <div class="card-h"><h2>Built-in data</h2><span class="faint" style="font-size:12px">Maintained by DueDilly</span></div>
@@ -1333,6 +1351,14 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           <div><div class="eyebrow">Policy compiler</div><h1>Policies</h1><p>Upload your internal guidelines. DueDilly turns each clause into a rule checked against every counterparty, and flags gaps and conflicts between policies.</p></div>
           <button class="btn" id="upload-pol" type="button"><svg class="ic sm"><use href="#i-upload"/></svg>Upload policy</button>
           <input type="file" id="upload-pol-file" accept=".pdf, .docx, .doc, .txt, application/pdf, text/plain" style="display:none">
+        </div>
+        <div class="card" id="pol-search-card" style="margin-bottom:20px">
+          <div class="card-h"><h2>Policy search</h2><span class="pill plain" id="pol-search-via">Checking…</span></div>
+          <div class="card-b">
+            <form id="pol-search-form" style="display:flex;gap:10px;flex-wrap:wrap"><input id="pol-search-q" type="search" placeholder="Ask about the policies, for example: when is a vessel questionnaire required?" style="flex:1;min-width:240px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:8px 12px;font-size:13px;color:inherit" autocomplete="off"><button class="btn primary" type="submit"><svg class="ic sm"><use href="#i-search"/></svg>Search</button></form>
+            <div id="pol-search-results" style="margin-top:10px"></div>
+            <details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px">Policy clauses the scoring rules rely on</summary><div id="pol-clauses"></div></details>
+          </div>
         </div>
         <div class="pol-grid">
           <div class="card doc-card">
@@ -3509,7 +3535,9 @@ $('#z-home').addEventListener('click',()=>{if(morphing)return;if(S.mode==='flat'
 
 /* ===================== ticker & alerts ===================== */
 let tick=0;
-function tickerHTML(a){const q=a.q;return `<button class="ticker-item" type="button" data-alert="${ALERTS.indexOf(a)}"><span class="agent">${esc(a.agent)}</span><span class="pill plain q-${q}" style="height:18px">${Q[q].short}</span><span class="t">${esc(a.x)}</span><time>${esc(a.t)}</time></button>`;}
+const qOf=a=>Q[a.q]?a.q:'investigate';
+const sevPill=a=>a.severity?`<span class="pill sev sev-${esc(a.severity)}" title="Severity from Ripples triage (${esc(a.triagedBy||'')}). It sorts alerts for people and is not a risk score.">${esc(a.severity)}</span>`:'';
+function tickerHTML(a){const q=qOf(a);return `<button class="ticker-item" type="button" data-alert="${ALERTS.indexOf(a)}"><span class="agent">${esc(a.agent)}</span>${sevPill(a)}<span class="pill plain q-${q}" style="height:18px">${Q[q].short}</span><span class="t">${esc(a.whatChanged||a.x)}</span><time>${esc(a.t)}</time></button>`;}
 function runTicker(){
   const tr=$('#ticker-track');
   if(!ALERTS.length){if(!tr.firstElementChild)tr.innerHTML='<div class="ticker-item"><span class="faint">No alerts yet. A ripple appears here when something changes for a counterparty you monitor. Add one with Intake.</span></div>';return;}
@@ -3532,7 +3560,25 @@ $('#ticker-track').addEventListener('click',e=>{const b=e.target.closest('[data-
 function renderAlerts(){
   $('#bell-count').textContent=ALERTS.length;if(!ALERTS.length)$('#bell-count').style.display='none';
   if(!ALERTS.length){$('#alerts-list').innerHTML=emptyState('No alerts yet','Alerts from screening and ongoing monitoring will be listed here. They start once you add a counterparty with Intake.',72);return;}
-  $('#alerts-list').innerHTML=ALERTS.map((a,i)=>`<button class="alert-item" data-alert="${i}" type="button"><div class="ai-top"><span class="agent">${esc(a.agent)}</span><span style="display:flex;gap:8px;align-items:center"><span class="pill plain q-${a.q}" style="height:18px">${Q[a.q].short}</span><time>${esc(a.t)}</time></span></div><p>${esc(a.x)}</p></button>`).join('');}
+  $('#alerts-list').innerHTML=ALERTS.map((a,i)=>{const q=qOf(a);const extra=[a.merged?`${a.merged} similar alert${a.merged>1?'s':''} merged`:'',a.rescreen==='requested'?'Re-screen requested':a.rescreen==='recent'?'Screened again recently':a.rescreen&&a.rescreen.startsWith('done')?'Screened again: '+a.rescreen.replace(/^done:?\s*/,''):'',a.triagedBy?'Triage: '+a.triagedBy:''].filter(Boolean).join(' · ');return `<button class="alert-item" data-alert="${i}" type="button"><div class="ai-top"><span class="agent">${esc(a.agent)}</span><span style="display:flex;gap:8px;align-items:center">${sevPill(a)}<span class="pill plain q-${q}" style="height:18px">${Q[q].short}</span><time>${esc(a.t)}</time></span></div><p>${esc(a.whatChanged||a.x)}</p>${extra?`<small class="faint" style="font-size:11px">${esc(extra)}</small>`:''}</button>`;}).join('');}
+/* Alerts as the server holds them: with the Ripples triage (severity, what changed), duplicates merged into one line */
+async function loadAlerts(){
+  if(!isCompliance())return;
+  try{
+    const res=await apiFetch('/api/alerts?limit=80');if(!res.ok)return;
+    const d=await res.json();if(!d||!Array.isArray(d.alerts)||!d.alerts.length)return;
+    const merged={};d.alerts.forEach(a=>{if(a.mergedInto)merged[a.mergedInto]=(merged[a.mergedInto]||0)+1;});
+    const list=d.alerts.filter(a=>!a.mergedInto&&(a.country||ENT.has(a.id))).map(a=>Object.assign({},a,{merged:merged[a.alertId]||0}));
+    // Newest first. The time is text ("06 Oct, 09:42"), so it is read as a date of this year; the alert number breaks ties.
+    const when=a=>{const d=Date.parse(String(a.t).replace(',',' '+new Date().getFullYear()));return isNaN(d)?0:d;};
+    list.sort((a,b)=>when(b)-when(a)||b.alertId-a.alertId);
+    if(!list.length)return;
+    const sig=JSON.stringify(list.map(a=>[a.alertId,a.severity,a.rescreen,a.merged]));
+    if(sig===loadAlerts.sig)return;loadAlerts.sig=sig;
+    ALERTS.length=0;list.forEach(a=>ALERTS.push(a));
+    $('#bell-count').style.display='';renderAlerts();
+  }catch(err){}
+}
 $('#alerts-list').addEventListener('click',e=>{const b=e.target.closest('[data-alert]');if(b)openAlert(+b.dataset.alert);});
 const togglePop=()=>{const p=$('#alerts-pop');p.hidden=!p.hidden;if(!p.hidden)$('#bell-count').style.display='none';};
 $('#bell').addEventListener('click',togglePop);$('#ticker-all').addEventListener('click',togglePop);$('#alerts-close').addEventListener('click',()=>$('#alerts-pop').hidden=true);
@@ -3915,6 +3961,7 @@ function renderSources(){
   $('#src-grid').innerHTML=SOURCES.map(srcCard).join('')+(SOURCES.some(s=>s.id!=='vesselfinder')?'':`<div class="card">${emptyState('No custom sources yet','Your own lists, feeds, APIs, websites and PDF documents will appear here next to the built-in data. Press <b>Add source</b> or <b>Upload PDF document</b> to connect the first one.')}</div>`);
   $('#builtin').innerHTML=`<dl class="kv">${BUILTIN.map(([k,v])=>`<dt>${esc(k)}</dt><dd style="font-weight:400">${esc(v)}</dd>`).join('')}</dl>`;
   fetchKbRecords();
+  loadCrawler();
 }
 
 /* ===================== Converted Knowledge Base Records ===================== */
@@ -7852,7 +7899,7 @@ function whyPanelHTML(e){
   const src=l=>l.sourceUrl?`<a href="${esc(l.sourceUrl)}" target="_blank" rel="noopener">${esc(l.sourceName)}</a>`:`${esc(l.sourceName)}${l.ddqAnswerId?` (DDQ answer ${esc(l.ddqAnswerId)})`:''}`;
   const rows=b.lines.map(l=>`<div class="why-row"><b class="why-pts">${l.setsTotal?'='+l.points:'+'+l.points}</b><div>
     <h4>${esc(l.short)}</h4><p>${esc(l.summary)}</p><blockquote>“${esc(l.quote)}”</blockquote>
-    <small>Rule: ${esc(l.rule)}${l.policy?` · Policy: ${esc(l.policy)}`:''}</small>
+    <small>Rule: ${esc(l.rule)}${l.policy?` · Policy: ${esc(l.policy)}`:''}</small>${clauseHTML(l.policy)}
     <small>About: ${esc(l.subject)} · Source: ${src(l)} · read ${esc(readWhen(l.readAt))} by ${esc(l.agent)}</small></div></div>`).join('');
   const total=b.confirmedSanctions?`A confirmed sanctions match sets the score to ${b.cap}.`:b.capped?`Points add up to ${b.sum}, capped at ${b.cap}.`:b.lines.length>1?`${b.lines.map(l=>l.points).join(' + ')} = ${b.risk}.`:'';
   const left=b.notCounted.length+b.rejected.length;
@@ -7862,6 +7909,7 @@ function whyPanelHTML(e){
     ${rows||'<p class="muted" style="margin:0;font-size:12.5px">No finding added risk points.</p>'}
     <div class="why-total"><b>${b.risk} of ${b.cap} · ${esc(b.level.label)}</b>${total?`<span>${esc(total)}</span>`:''}</div>
     <p class="why-route"><b>Route: ${esc(b.routeLabel)}.</b> ${esc(b.routeReason)} A person signs every decision.</p>
+    ${reliedOnHTML(b)}
     ${audit}
     <p class="faint" style="margin:0;font-size:11.5px">The AI finds facts; the rules give the points. Higher always means riskier. CPI is the one score where low is bad, so a low CPI adds points.</p></div>`;
 }
@@ -7874,6 +7922,104 @@ function confPartsHTML(e){
   else items=b.coverage.list.map(c=>`<li class="${c.ran?'up':'down'}"><b>${c.ran?'+':'−'}</b><span>${esc(c.label)}: ${c.ran?`checked against ${esc(c.sourceName)}`:'not run'}</span></li>`);
   return `<li class="calc-head"><span><b>${b.confidence}%</b> · ${esc(b.confidenceExplanation)}</span></li>${items.join('')}`;
 }
+
+
+/* ===================== Phase 3: crawler agents, suggested fixes, policy clauses and search ===================== */
+let CRAWL=null;
+const POLICY={clauses:new Map(),status:null};
+const clauseIdOf=policy=>{const m=String(policy||'').match(/§\s?(\d+\.\d+)/);return m?'§'+m[1]:null;};
+function clauseHTML(policy){
+  const c=POLICY.clauses.get(clauseIdOf(policy));if(!c)return '';
+  return `<span class="clause"><b>${esc(c.id)}</b> ${esc(c.text)} <i class="faint">Found by ${esc(c.via)}.</i></span>`;
+}
+function reliedOnHTML(b){
+  const ids=[...new Set(b.lines.map(l=>clauseIdOf(l.policy)).filter(id=>POLICY.clauses.has(id)))];
+  if(!ids.length)return '';
+  const via=[...new Set(ids.map(id=>POLICY.clauses.get(id).via))].join(' and ');
+  return `<p class="faint" style="margin:0;font-size:11.5px">Policy clauses this route relied on: ${ids.map(esc).join(', ')} (found by ${esc(via)}).</p>`;
+}
+async function loadClauses(){
+  if(!isCompliance())return;
+  try{
+    const res=await apiFetch('/api/policies/clauses');if(!res.ok)return;
+    const d=await res.json();POLICY.status=d.status;POLICY.clauses=new Map((d.clauses||[]).map(c=>[c.id,c]));
+    const live=d.status&&d.status.mode==='live';
+    const pill=$('#pol-search-via');if(pill){pill.textContent=live?'Agent Search':'Offline fallback';pill.className='pill plain '+(live?'q-monitor':'q-gaps');pill.title=live?'Answered by Agent Search over your policy files':'Agent Search is not connected: the built-in policy text answers';}
+    const box=$('#pol-clauses');if(box)box.innerHTML=(d.clauses||[]).map(c=>`<div class="pol-hit"><b>${esc(c.id)} ${esc(c.title)}</b>${esc(c.text)}<br><span class="faint">${esc(c.file)} · found by ${esc(c.via)}${c.reason?' · '+esc(c.reason):''}</span></div>`).join('');
+    if(S.sel)redraw();
+  }catch(err){}
+}
+$('#pol-search-form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const q=$('#pol-search-q').value.trim(),out=$('#pol-search-results');if(!q)return;
+  out.innerHTML='<p class="faint" style="margin:0;font-size:12.5px">Searching the policies…</p>';
+  try{
+    const res=await apiFetch('/api/policies/search?q='+encodeURIComponent(q));const d=await res.json();
+    if(!res.ok)throw new Error(d.message||d.error||'The search could not run');
+    const head=`<p class="faint" style="margin:0 0 4px;font-size:11.5px">${esc(d.via)}${d.reason?' · '+esc(d.reason):''}</p>`;
+    out.innerHTML=head+(d.results.length?d.results.map(r=>`<div class="pol-hit"><b>${esc(r.title)}</b>${esc(r.snippet||'')}${r.clauseId&&POLICY.clauses.has(r.clauseId)&&!String(r.snippet||'').includes(POLICY.clauses.get(r.clauseId).text)?`<span class="clause">${esc(POLICY.clauses.get(r.clauseId).text)}</span>`:''}<br><span class="faint">${esc(r.file||'')}${r.link?' · '+esc(r.link):''}</span></div>`).join(''):'<p class="muted" style="margin:0;font-size:12.5px">No policy clause matches that.</p>');
+  }catch(err){out.innerHTML=`<p class="muted" style="margin:0;font-size:12.5px">${esc(err.message)}</p>`;}
+});
+
+async function loadCrawler(){
+  const card=$('#crawler-card');if(!card)return;
+  if(!isCompliance()){card.hidden=true;return;}
+  card.hidden=false;
+  try{const res=await apiFetch('/api/sources/crawl/status');if(!res.ok)return;CRAWL=await res.json();renderCrawler();}catch(err){}
+}
+function crawlWhen(iso){if(!iso)return 'never';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+', '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
+function renderCrawler(){
+  if(!CRAWL)return;
+  const pill=$('#crawl-mode');pill.textContent=CRAWL.mode==='live'?'Live agents':'Offline sample';pill.className='pill plain '+(CRAWL.mode==='live'?'q-monitor':'q-gaps');pill.title=CRAWL.reason||'The ADK crawler agents are connected';
+  const dp=CRAWL.demoPage;
+  $('#crawl-demo').innerHTML=dp?`<div class="hint" style="margin-bottom:12px">${ic('alert','sm')}<p style="margin:0"><b>Demo page (fictional).</b> A made-up port authority notice board served by DueDilly at <a href="${esc(dp.url)}" target="_blank" rel="noopener">${esc(dp.url)}</a>. ${!dp.added?'Add it as a source, then publish a change to see a ripple and a re-screen.':dp.version===2?'The changed version is published.':'Publish a change: a new notice that names Aurora Venture.'}</p><span style="display:flex;gap:6px;flex-wrap:wrap">${!dp.added?'<button class="btn sm" data-demo-page="1" type="button">Add the demo page</button>':dp.version===2?'<button class="btn sm" data-demo-page="1" type="button">Reset the demo page</button>':'<button class="btn sm primary" data-demo-page="2" type="button">Publish a change</button>'}</span></div>`:'';
+  const fixes=new Map();(CRAWL.proposals||[]).forEach(p=>fixes.set(p.sourceId,p));
+  $('#crawl-list').innerHTML=CRAWL.sources.length?CRAWL.sources.map(s=>{
+    const ok=['read','unchanged','changed'].includes(s.result);
+    const fix=fixes.get(s.sourceId);
+    const how=s.extractor==='agent'?`Crawler agent${s.modelId?' ('+esc(s.modelId)+')':''}`:s.extractor==='offline'?`Offline sample${s.offlineReason?': '+esc(s.offlineReason):''}`:'';
+    return `<div class="crawl-row" data-crawl="${esc(s.sourceId)}"><div style="min-width:0"><h3>${esc(s.label)}</h3><p class="mono" style="font-size:11.5px">${esc(s.url)}</p>
+      <p><span class="pill plain ${!s.result?'q-gaps':ok?'q-monitor':'q-investigate'}" style="height:18px">${esc(s.resultLabel)}</span> ${s.reason?esc(s.reason):''}</p>
+      <p class="faint" style="font-size:11.5px">Last read ${esc(crawlWhen(s.lastReadAt))} · ${s.recordsCount} record${s.recordsCount===1?'':'s'}${how?' · '+how:''}${s.robots?' · robots.txt: '+esc(s.robots):''}</p>
+      <label><input type="checkbox" data-crawl-set="termsChecked" ${s.termsChecked?'checked':''} ${s.sourceId===(dp&&dp.sourceId)?'disabled':''}>I have checked that this site's terms allow automated reading</label>
+      <label><input type="checkbox" data-crawl-set="runOnScreening" ${s.runOnScreening?'checked':''}>Run on every screening</label></div>
+      <div class="crawl-acts"><button class="btn sm" data-crawl-run type="button">${ic('refresh','sm')}Run now</button>${s.hasSnapshot?'<button class="btn sm ghost" data-crawl-snap type="button">View snapshot</button>':''}</div>
+      ${fix?`<div class="crawl-fix"><b>Dilly suggests a fix.</b> ${esc(fix.problem)}<br><span class="faint">${esc(fix.test.reason||'')}</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px"><div><small class="faint">Instructions now</small><pre>${esc(fix.oldInstructions||'(none)')}</pre></div><div><small class="faint">Suggested instructions</small><pre>${esc(fix.newInstructions)}</pre></div></div>
+        <p style="margin:0 0 8px">Tested on the stored snapshot: ${fix.test.recordsBefore} record${fix.test.recordsBefore===1?'':'s'} now, <b>${fix.test.recordsAfter}</b> with the suggestion${(fix.test.examples||[]).length?': '+fix.test.examples.map(x=>esc(x.name)).join(', '):''}. Suggested by ${esc(fix.proposedBy||'the crawler agent')}. Nothing changes until you approve.</p>
+        <button class="btn sm primary" data-fix="approve" data-fix-id="${esc(fix.id)}" type="button">Approve</button> <button class="btn sm ghost" data-fix="dismiss" data-fix-id="${esc(fix.id)}" type="button">Dismiss</button></div>`:''}
+    </div>`;}).join(''):`<p class="muted" style="margin:0;font-size:12.5px">No website sources yet. Press <b>Add source</b> and choose a website${dp?', or add the demo page above':''}.</p>`;
+  $('#crawl-foot').textContent=`Reads as ${CRAWL.userAgent}. Schedule: ${CRAWL.schedule}. Snapshots: ${CRAWL.storage.mode==='gcs'?'Cloud Storage':'local folder (offline fallback)'}. Events: ${CRAWL.events.mode==='pubsub'?'Pub/Sub':'handled inside the app (offline fallback)'}.`;
+}
+async function crawlCall(path,opts,busyMsg){
+  if(busyMsg)toast(busyMsg);
+  const res=await apiFetch(path,Object.assign({method:'POST',headers:{'Content-Type':'application/json'},body:'{}'},opts||{}));
+  const d=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(d.message||d.error||'That did not work');
+  return d;
+}
+async function afterCrawl(msg){toast(msg);await loadCrawler();fetchKbRecords();setTimeout(()=>{loadAlerts();loadRisk();},1500);setTimeout(loadAlerts,6000);}
+$('#crawl-run-all').addEventListener('click',async()=>{
+  try{const d=await crawlCall('/api/sources/crawl/run-all',null,'Crawler agents are reading the websites…');const changed=d.results.filter(r=>r.result==='changed').length;await afterCrawl(`${d.results.length} website${d.results.length===1?'':'s'} read, ${changed} changed`);}catch(err){toast(err.message);}
+});
+$('#crawler-card').addEventListener('click',async e=>{
+  const row=e.target.closest('[data-crawl]'),id=row&&row.dataset.crawl;
+  try{
+    const demo=e.target.closest('[data-demo-page]');
+    if(demo){const d=await crawlCall('/api/sources/demo-page',{body:JSON.stringify({version:+demo.dataset.demoPage})},'Reading the demo page…');await afterCrawl(d.result&&d.result.result==='changed'?'The demo page changed: new records, and a ripple is on its way':'Demo page read');return;}
+    const fix=e.target.closest('[data-fix]');
+    if(fix){const d=await crawlCall(`/api/sources/proposals/${encodeURIComponent(fix.dataset.fixId)}/${fix.dataset.fix}`);await afterCrawl(d.status==='approved'?`Fix approved${d.recordsCount!=null?': '+d.recordsCount+' records read':''}`:'Suggestion dismissed');return;}
+    if(e.target.closest('[data-crawl-run]')&&id){const d=await crawlCall(`/api/sources/${encodeURIComponent(id)}/crawl`,null,'The crawler agent is reading the page…');await afterCrawl(d.result.resultLabel+(d.result.reason?'. '+d.result.reason:''));return;}
+    if(e.target.closest('[data-crawl-snap]')&&id){
+      const res=await apiFetch(`/api/sources/${encodeURIComponent(id)}/snapshot`);const d=await res.json();if(!res.ok)throw new Error(d.error||'No snapshot');
+      $('#json-modal-tag').textContent='Page snapshot';$('#json-modal-title').textContent=d.label;$('#json-modal-sub').textContent=`${d.url} · read ${crawlWhen(d.readAt)} · stored in: ${d.storedIn}`;$('#json-modal-meta').textContent='Text of the page as the crawler agent read it';$('#json-modal-code').textContent=d.text;$('#json-modal').hidden=false;
+    }
+  }catch(err){toast(err.message);}
+});
+$('#crawler-card').addEventListener('change',async e=>{
+  const box=e.target.closest('[data-crawl-set]'),row=e.target.closest('[data-crawl]');if(!box||!row)return;
+  try{await crawlCall(`/api/sources/${encodeURIComponent(row.dataset.crawl)}/crawl-settings`,{method:'PUT',body:JSON.stringify({[box.dataset.crawlSet]:box.checked})});toast('Saved');loadCrawler();}catch(err){toast(err.message);box.checked=!box.checked;}
+});
 
 /* ---------- Reviews: one section at a time ---------- */
 function showRevPane(pane){
@@ -8030,9 +8176,9 @@ function boot(){
   cSel.each(function(){this.style.fill=C['land-none'];});
   refreshStatus();
   syncFromBackend();
-  initRulesCard();loadRisk();
+  initRulesCard();loadRisk();loadAlerts();loadClauses();
   // Pins change when another session submits or decides a request: re-read while the tab is in view
-  setInterval(()=>{if(!document.hidden)syncFromBackend();},20000);
+  setInterval(()=>{if(!document.hidden){syncFromBackend();loadAlerts();}},20000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncFromBackend();if(!RISK.draft)loadRisk();}});
   runTicker();setInterval(runTicker,5200);
   $('#theme-btn use').setAttribute('href',isDark()?'#i-sun':'#i-moon');

@@ -86,6 +86,11 @@ class AccountsStore {
     return this.getWorkspace(id);
   }
 
+  /** Every workspace id, the Demo workspace first. Used by scheduled runs, which act in each workspace in turn. */
+  listWorkspaceIds() {
+    return this.db.prepare('SELECT id FROM workspaces ORDER BY is_demo DESC, created_at').all().map(r => r.id);
+  }
+
   getWorkspace(id) {
     const row = this.db.prepare('SELECT * FROM workspaces WHERE id = ?').get(id);
     return row ? { id: row.id, name: row.name, isDemo: Boolean(row.is_demo), createdBy: row.created_by, createdAt: row.created_at } : null;

@@ -96,6 +96,22 @@ module.exports = {
   // Every Gemini call goes through services/geminiClient.js, which walks this chain on 404 / 429 / 503.
   geminiModel: process.env.GEMINI_MODEL || 'gemini-flash-lite-latest',
   geminiFallbackModels: (process.env.GEMINI_FALLBACK_MODELS || 'gemini-flash-latest,gemini-3.1-flash-lite').split(',').map(m => m.trim()).filter(Boolean),
+  // Events (src/events). inline: handled inside the app. pubsub: published to <env>-<event>, handled when Pub/Sub pushes them back.
+  pubsubMode: (process.env.PUBSUB_MODE || 'inline').toLowerCase() === 'pubsub' ? 'pubsub' : 'inline',
+  // What a push from Pub/Sub or Cloud Scheduler must prove: the audience its token was made for and who signed it
+  pubsubPushAudience: (process.env.PUBSUB_PUSH_AUDIENCE || '').replace(/\/+$/, ''),
+  pubsubPushServiceAccount: (process.env.PUBSUB_PUSH_SERVICE_ACCOUNT || '').trim().toLowerCase(),
+  // Crawler agents (feature 3): live page extractions per day, and Ripples triage calls per day. 0 = no cap.
+  crawlerDailyCap: wholeNumber(process.env.CRAWLER_DAILY_CAP, 50),
+  triageDailyCap: wholeNumber(process.env.TRIAGE_DAILY_CAP, 200),
+  // Agent Search (formerly Vertex AI Search) for policy search. Empty data store: the built-in policy text is used.
+  agentSearch: {
+    dataStore: (process.env.AGENT_SEARCH_DATA_STORE || '').trim(),
+    location: (process.env.AGENT_SEARCH_LOCATION || 'global').trim(),
+    dailyCap: wholeNumber(process.env.AGENT_SEARCH_DAILY_CAP, 200)
+  },
+  // Cloud Storage bucket for page snapshots when DOCUMENT_STORAGE=gcs. Empty: a local folder.
+  gcsBucket: (process.env.GCS_BUCKET || '').trim(),
   // Supporting documents: 'local' disk for now; 'firebase' is a placeholder driver (services/documentStorage.js)
   documentStorage: process.env.DOCUMENT_STORAGE || 'local',
   // Google Document AI, for parsing PDF / Word questionnaire templates (placeholder: services/documentParserService.js)

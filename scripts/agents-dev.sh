@@ -27,7 +27,7 @@ if [ -f "$ENV_FILE" ]; then
   # Only the lines the agents need are read; the file is not sourced as a script
   while IFS='=' read -r key value; do
     case "$key" in
-      AGENTS_MODEL|AGENTS_INTERNAL_TOKEN|GOOGLE_GENAI_USE_VERTEXAI|GOOGLE_CLOUD_PROJECT|GOOGLE_CLOUD_LOCATION|GOOGLE_API_KEY|GEMINI_API_KEY|DUEDILLY_INTERNAL_URL)
+      AGENTS_MODEL|AGENTS_THINKING_LEVEL|AGENTS_INTERNAL_TOKEN|GOOGLE_GENAI_USE_VERTEXAI|GOOGLE_CLOUD_PROJECT|GOOGLE_CLOUD_LOCATION|GOOGLE_API_KEY|GEMINI_API_KEY|DUEDILLY_INTERNAL_URL)
         [ -n "$value" ] && export "$key=$value" ;;
     esac
   done < <(grep -E '^[A-Z_]+=' "$ENV_FILE" || true)

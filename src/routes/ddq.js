@@ -212,6 +212,7 @@ router.post('/submit', async (req, res) => {
 
   try {
     const result = await submitKycDdqAnswers(token, responses || req.body);
+    try { require('../events/bus').publish('ddq-submitted', { kycId: (result && (result.id || (result.request && result.request.id))) || null, submittedAt: new Date().toISOString() }); } catch (e) {}
     res.json(result);
   } catch (err) {
     console.error('Error submitting DDQ answers:', err);

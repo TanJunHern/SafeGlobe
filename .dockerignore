@@ -22,3 +22,5 @@ docs
 python
 .scratch
 data/*.workspaces
+data/*.objects
+

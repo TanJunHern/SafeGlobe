@@ -28,6 +28,8 @@ app.set('trust proxy', 1);
 
 // Initialize DB early
 getDb();
+// Events: every alert raises "alert-raised"; handlers for triage, changed sources and re-screens (src/events)
+require('./events/handlers').register();
 
 // Middlewares
 app.use(cors({ origin: config.corsOrigin }));
@@ -85,6 +87,17 @@ app.use('/api/risk', officerOnly, require('./routes/risk'));
 app.get('/risk/source', require('./routes/auth').pageSession, require('./routes/risk').sourcePage);
 // Pond-Guard screening and Ask Dilly through the ADK agents service, with the read-only tools that agent may call
 app.use('/api/pond-guard', require('./routes/pondGuard'));
+// Pub/Sub and Cloud Scheduler deliver events here. The route checks the caller's Google-signed token itself.
+app.use('/events', require('./routes/events'));
+// The fictional demo page a crawler agent reads, and the page the crawler's user agent points to
+app.get(require('./services/demoFixtures').PATH, (req, res) => res.type('html').send(require('./services/demoFixtures').render(getDb(), req.path)));
+app.get('/about-bot', (req, res) => res.type('text/plain').send(`DueDillyBot reads public web pages that a DueDilly user added as a compliance source.
+It obeys robots.txt (user agent token: DueDillyBot), never signs in, sends no cookies, and waits at least 5 seconds between requests to one site.
+To stop it reading your site, add to robots.txt:
+
+User-agent: DueDillyBot
+Disallow: /
+`));
 app.use('/internal/ask-tools', require('./routes/pondGuard').internalTools);
 // Settings: the accounts of the workspace, the invitations and the account change log
 app.use('/api/settings', officerOnly, require('./routes/settings'));
