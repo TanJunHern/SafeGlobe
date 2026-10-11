@@ -260,7 +260,22 @@ class SqliteDatabase {
   }
 
 
+  /** False for a workspace created by `npm run demo:clean`: no built-in demo counterparties, alerts, sources or rules. */
+  hasPlaceholderData() {
+    return this.getSetting('placeholder_data', true) !== false;
+  }
+
   seedIfEmpty() {
+    // Clean workspace: only the reference data the rules need (country risk scores) is loaded
+    if (process.env.SAFEGLOBE_NO_PLACEHOLDER_DATA === '1' || !this.hasPlaceholderData()) {
+      this.setSetting('placeholder_data', false);
+      if (!this.db.prepare('SELECT COUNT(*) as count FROM cpi').get().count) {
+        const insertCpi = this.db.prepare('INSERT OR REPLACE INTO cpi (a3, name, score, rank) VALUES (?, ?, ?, ?)');
+        for (const c of seed.CPI_2025) insertCpi.run(c.a3, c.name, c.score, c.rank);
+      }
+      return;
+    }
+
     const row = this.db.prepare('SELECT COUNT(*) as count FROM entities').get();
     if (row && row.count > 0) return; // already seeded
 
@@ -471,6 +486,9 @@ class SqliteDatabase {
       linked: !!entity.linked,
       stateOwned: !!entity.stateOwned,
       ddqPending: !!entity.ddqPending,
+      pending: entity.pending ? true : undefined,
+      route: entity.route,
+      ais: entity.ais,
       mmsi: entity.mmsi,
       built: entity.built,
       dwt: entity.dwt,
@@ -673,6 +691,11 @@ class SqliteDatabase {
   setKycMonitoring(id, monitoring, enabled) {
     this.db.prepare('UPDATE kyc_requests SET monitoring_json = ?, ongoing_monitoring = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
       .run(monitoring ? JSON.stringify(monitoring) : null, enabled ? 1 : 0, id);
+    return this.getKycRequestById(id);
+  }
+
+  setKycAttributes(id, attributes) {
+    this.db.prepare('UPDATE kyc_requests SET attributes_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(JSON.stringify(attributes || {}), id);
     return this.getKycRequestById(id);
   }
 
@@ -1135,6 +1158,8 @@ class SqliteDatabase {
 
   // --- KYC Requests (Employee Portal Module) ---
   seedKycRequestsIfEmpty() {
+    // Clean workspace (npm run demo:clean): no historical sample requests
+    if (process.env.SAFEGLOBE_NO_PLACEHOLDER_DATA === '1' || !this.hasPlaceholderData()) return;
     try {
       const row = this.db.prepare('SELECT COUNT(*) as count FROM kyc_requests').get();
       if (row && row.count > 0) return;

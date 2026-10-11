@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const config = require('./config');
 const { getDb } = require('./db');
 
@@ -120,9 +121,14 @@ app.post('/api/intake', (req, res, next) => {
 // Serve frontend: safe-globe.html and portal routes
 const htmlPath = path.join(config.staticDir, 'safe-globe.html');
 
-app.get(['/', '/portal/compliance', '/login'], (req, res) => {
-  res.sendFile(htmlPath);
-});
+// In a clean workspace (npm run demo:clean) the page is told to drop its built-in demo counterparties
+function sendApp(req, res) {
+  if (getDb().hasPlaceholderData()) return res.sendFile(htmlPath);
+  const html = '<script>window.DUEDILLY_NO_PLACEHOLDERS=true</script>\n' + fs.readFileSync(htmlPath, 'utf8');
+  res.type('html').send(html);
+}
+
+app.get(['/', '/portal/compliance', '/login'], sendApp);
 
 // Standalone DDQ pages: counterparty wizard, compliance template manager, printable copy
 const pageRoutes = {
@@ -140,13 +146,9 @@ app.get(['/portal/employee', '/employee-portal.html'], (req, res) => {
   res.sendFile(employeeHtmlPath);
 });
 
-app.get('/safe-globe.html', (req, res) => {
-  res.sendFile(htmlPath);
-});
+app.get('/safe-globe.html', sendApp);
 
-app.get('/saf-globe.html', (req, res) => {
-  res.sendFile(htmlPath);
-});
+app.get('/saf-globe.html', sendApp);
 
 // Serve static directory for any static assets (PDFs, images, etc.)
 // Only these files are public. The repo root is NOT served: it holds the database, uploaded
@@ -179,6 +181,8 @@ function startServer(port = config.port) {
   try {
     require('./services/ddqTemplateService').ensureDefaultTemplate();
     require('./services/kycService').ensurePersonaSeed();
+    require('./services/vesselFinderService').ensureSource(getDb());
+    require('./services/kycService').syncAllMonitoredEntities();
   } catch (err) {
     console.error('[DueDilly] Persona seed skipped:', err.message);
   }
@@ -188,6 +192,8 @@ function startServer(port = config.port) {
       console.log(`[DueDilly] Serving UI: http://localhost:${port}/safe-globe.html`);
       console.log(`[DueDilly] Ready for local testing and Google Cloud Run deployment.`);
       resolve(server);
+      // Monitored vessels that were never checked get their position and destination from VesselFinder
+      require('./services/kycService').refreshUncheckedVessels().catch(err => console.error('[DueDilly] Vessel lookup skipped:', err.message));
     });
 
     server.on('error', (err) => {

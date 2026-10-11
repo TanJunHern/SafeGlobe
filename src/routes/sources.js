@@ -3,6 +3,7 @@ const router = express.Router();
 const { getDb } = require('../db');
 const { convertAndStoreSource } = require('../services/sourceHandlers');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { isLockedSource } = require('../services/vesselFinderService');
 
 // GET /api/sources
 router.get('/', (req, res) => {
@@ -154,6 +155,7 @@ router.post('/:id/convert', async (req, res) => {
   const sources = db.getSources();
   const source = sources.find(s => s.id === req.params.id);
   if (!source) return res.status(404).json({ error: 'Source not found' });
+  if (isLockedSource(source.id)) return res.status(403).json({ error: 'This source is built in and cannot be changed' });
   const result = await convertAndStoreSource(source);
   res.json({
     status: 'converted',
@@ -215,6 +217,7 @@ router.put('/:id/cost', authenticate, requireRole('compliance_officer'), (req, r
 });
 
 router.delete('/:id', (req, res) => {
+  if (isLockedSource(req.params.id)) return res.status(403).json({ error: 'This source is built in and cannot be removed' });
   const db = getDb();
   db.deleteSource(req.params.id);
   db.deleteSourceRecordsBySourceId(req.params.id);

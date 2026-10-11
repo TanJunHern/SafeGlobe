@@ -202,7 +202,7 @@ test('Tri-Party Portal Tests', async (t) => {
     assert.ok((await res.json()).message.includes('location is required'));
   });
 
-  await t.test('approved requests with Ongoing Monitoring are pinned on the globe', async () => {
+  await t.test('requests with Ongoing Monitoring are pinned on the globe, pending until approved', async () => {
     const onGlobe = async id => (await (await fetch(`${BASE_URL}/api/entities`)).json()).entities.find(e => e.id === `kyc-${id.toLowerCase()}`);
     const submit = async body => (await (await fetch(`${BASE_URL}/api/kyc/submit`, {
       method: 'POST', headers: { ...JSON_HEADERS, ...EMPLOYEE }, body: JSON.stringify(body)
@@ -221,20 +221,28 @@ test('Tri-Party Portal Tests', async (t) => {
     assert.equal(pin.kind, 'org');
     assert.deepEqual(pin.ll, [103.714, 1.306]);
     assert.ok(pin.trigger.includes(green.id));
+    assert.ok(!pin.pending, 'an approved pin is not pending');
 
     // Monitoring off: approved but never pinned
     const unmonitored = await submit({ counterparty_name: 'Quiet Supplies Pte Ltd', entity_type: 'Organisation', country: 'SGP', relationship_type: 'Vendor/Supplier', contract_value: 40000, ongoing_monitoring: false });
     assert.equal(unmonitored.request_status, 'Approved');
     assert.equal(await onGlobe(unmonitored.id), undefined);
 
-    // DDQ required: only pinned once compliance approves, removed again if rejected
+    // DDQ required: pinned as pending from intake, a normal pin once compliance approves, removed if rejected
     const pending = await submit({ counterparty_name: 'Pending Marine Pte Ltd', entity_type: 'Organisation', country: 'SGP', relationship_type: 'Vendor/Supplier', contract_value: 300000, ongoing_monitoring: true, location });
     assert.equal(pending.request_status, 'Pending DDQ');
-    assert.equal(await onGlobe(pending.id), undefined);
+    assert.equal((await onGlobe(pending.id)).pending, true, 'awaiting DDQ should be on the globe, marked pending');
     await triage(pending.id, 'Approve');
-    assert.ok(await onGlobe(pending.id), 'approved after review should be on the globe');
+    assert.ok(!(await onGlobe(pending.id)).pending, 'approved after review should be a normal pin');
     await triage(pending.id, 'Reject');
     assert.equal(await onGlobe(pending.id), undefined);
+
+    // Vessels follow the same rule and keep their kind and pinned location
+    const vessel = await submit({ counterparty_name: 'MV Test Heron', entity_type: 'Vessel', country: 'PAN', relationship_type: 'Customer/Trading Partner', contract_value: 300000, ongoing_monitoring: true, location, attributes: { imo: '9811000' } });
+    const ship = await onGlobe(vessel.id);
+    assert.equal(ship.kind, 'vessel');
+    assert.deepEqual(ship.ll, [103.714, 1.306]);
+    assert.equal(ship.pending, vessel.request_status !== 'Approved');
   });
 
   await stopServer();

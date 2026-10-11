@@ -170,6 +170,9 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px
 .morphing .overlay{opacity:0}
 .route{fill:none;stroke:var(--fg);stroke-opacity:.16;stroke-width:1;stroke-dasharray:1 4;stroke-linecap:round}
 .route.sel{stroke-opacity:.5;stroke:var(--accent)}
+.route.voyage{stroke:var(--accent);stroke-opacity:.6;stroke-width:1.3;stroke-dasharray:5 4;marker-end:url(#route-arrow)}
+.route.voyage.sel{stroke-opacity:1;stroke-width:1.8}
+.route-arrow{fill:var(--accent)}
 .dark-seg{fill:none;stroke:var(--high);stroke-width:1.6;stroke-dasharray:5 4;stroke-linecap:round}
 .dark-label{font:600 10px var(--f-mono);fill:var(--high);paint-order:stroke;stroke:var(--ocean);stroke-width:3px}
 .wake{fill:none;stroke-linecap:round}
@@ -192,6 +195,9 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px
 .pin .p-core{fill:currentColor}
 .pin.linked .p-ring{fill:var(--ocean);stroke-dasharray:2.5 1.8;stroke-width:1.8}
 .pin.linked .p-core{r:2}
+.pin.pending .p-ring{fill:var(--ocean);stroke-dasharray:1.6 1.6;stroke-width:1.8}
+.pin.pending .p-core,.vessel.pending .v-duck{opacity:.55}
+.vessel.pending .v-halo{fill:none;stroke:currentColor;stroke-dasharray:3 3;opacity:.7}
 .pin .p-pulse{fill:none;stroke:currentColor;stroke-width:1.4;animation:ping 2.2s ease-out infinite;transform-origin:0 0}
 .pin .p-badge circle{fill:var(--fg)}
 .pin .p-badge text{font:600 9px var(--f-mono);fill:var(--bg);text-anchor:middle;dominant-baseline:central}
@@ -1787,8 +1793,9 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         <div class="eyebrow" style="margin-bottom:8px">Vessel Maritime Attributes</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="field">
-            <label for="kyc-vessel-imo">IMO Number (International Maritime Organization)</label>
-            <input id="kyc-vessel-imo" type="text" placeholder="e.g. IMO 9823411">
+            <label for="kyc-vessel-imo">IMO Number <b style="color:var(--high-ink)">* required</b></label>
+            <input id="kyc-vessel-imo" type="text" placeholder="e.g. IMO 9811000">
+            <small class="faint" style="display:block;margin-top:4px;font-size:11.5px">Checked on VesselFinder when you submit. An IMO that does not exist is not accepted.</small>
           </div>
           <div class="field">
             <label for="kyc-vessel-type">Vessel Type</label>
@@ -2350,6 +2357,14 @@ const BUILTIN = [
   ["Law and regulation feeds","Gazettes and regulators, read in local languages"],["Vessel data","IMO and MMSI registries, AIS positions, flag and ownership history"]
 ];
 
+/* Clean workspace (npm run demo:clean): the server sets this flag and the built-in demo story is dropped,
+   so the globe, watchlist, alerts and sources show only what is in the database. */
+if (window.DUEDILLY_NO_PLACEHOLDERS) {
+  [ORGS, PEOPLE, VESSELS, EDGES, ALERTS, FORECAST, SOURCES].forEach(list => { list.length = 0; });
+  Object.keys(PERSON_LINKS).forEach(k => delete PERSON_LINKS[k]);
+  STS.ll = null;
+}
+
 (function(){
 'use strict';
 /* ===================== helpers ===================== */
@@ -2527,6 +2542,8 @@ const gLabels=root.append('g').attr('class','labels');
 const gOver=root.append('g').attr('class','overlay');
 const gWx=gOver.append('g');
 const gRoutes=gOver.append('g');
+/* arrowhead at the destination end of a voyage route */
+svg.append('defs').append('marker').attr('id','route-arrow').attr('viewBox','0 0 10 10').attr('refX',8.5).attr('refY',5).attr('markerWidth',7).attr('markerHeight',7).attr('markerUnits','userSpaceOnUse').attr('orient','auto').append('path').attr('class','route-arrow').attr('d','M0 1 L9 5 L0 9 Z');
 const gWakes=gOver.append('g');
 const gArcs=gOver.append('g');
 const gParticles=gOver.append('g');
@@ -2600,13 +2617,16 @@ function rebindPins(){
 function prepRoute(c){const seg=[];let tot=0;for(let i=0;i<c.length-1;i++){const d=d3.geoDistance(c[i],c[i+1]);seg.push({s:tot,d,f:d3.geoInterpolate(c[i],c[i+1])});tot+=d;}return {seg,tot};}
 function posAt(R,fr){fr=clamp(fr,0,1);const t=fr*R.tot;let k=0;while(k<R.seg.length-1&&R.seg[k].s+R.seg[k].d<t)k++;const s=R.seg[k];return s.f(s.d?clamp((t-s.s)/s.d,0,1):0);}
 VESSELS.forEach(v=>{v.R=prepRoute(v.route);v.frac=v.start;v.dir=1;v.ang=0;v.cur=posAt(v.R,v.frac);v.kn={aurora:12.6}[v.id]||12;});
-const routeSel=gRoutes.selectAll('path.route').data(VESSELS).join('path').attr('class','route');
+let routeSel, wakeSel;
 const darkV=VESSELS.filter(v=>v.dark);
 const darkSel=gRoutes.selectAll('path.dark-seg').data(darkV).join('path').attr('class','dark-seg');
 const darkLbl=gRoutes.selectAll('text.dark-label').data(darkV).join('text').attr('class','dark-label').text(v=>v.darkLabel);
 darkV.forEach(v=>{const pts=[];for(let i=0;i<=24;i++)pts.push(posAt(v.R,lerp(v.dark[0],v.dark[1],i/24)));v.darkLine={type:'LineString',coordinates:pts};v.darkMid=posAt(v.R,(v.dark[0]+v.dark[1])/2);});
-const wakeSel=gWakes.selectAll('g').data(VESSELS).join(enter=>{const g=enter.append('g');[.1,.22,.42].forEach((o,i)=>g.append('path').attr('class','wake').attr('stroke-opacity',o).attr('stroke-width',1+i*.7));return g;});
-vesSel=gVessels.selectAll('g.vessel').data(VESSELS).join(enter=>{
+/* Bound by id so vessels synced from the backend after load are drawn, and removed ones disappear */
+function rebindVessels(){
+routeSel=gRoutes.selectAll('path.route').data(VESSELS,v=>v.id).join('path').attr('class','route').classed('voyage',v=>!!v.voyage);
+wakeSel=gWakes.selectAll('g').data(VESSELS,v=>v.id).join(enter=>{const g=enter.append('g');[.1,.22,.42].forEach((o,i)=>g.append('path').attr('class','wake').attr('stroke-opacity',o).attr('stroke-width',1+i*.7));return g;});
+vesSel=gVessels.selectAll('g.vessel').data(VESSELS,v=>v.id).join(enter=>{
   const g=enter.append('g').attr('class','vessel').attr('data-id',v=>v.id);
   g.append('circle').attr('class','v-hit').attr('r',19);
   g.append('circle').attr('class','v-halo').attr('r',23);
@@ -2618,6 +2638,9 @@ vesSel=gVessels.selectAll('g.vessel').data(VESSELS).join(enter=>{
   .on('pointermove',e=>{if(e.pointerType!=='touch')moveTip(e);})
   .on('pointerleave',hideTip)
   .on('click',(e,v)=>{e.stopPropagation();hideTip();select(v.id);});
+  dirty=true;
+}
+rebindVessels();
 rebindPins();
 const stsG=gSts.append('g');
 stsG.append('circle').attr('class','sts-pulse').attr('r',8);
@@ -2679,7 +2702,7 @@ function renderBase(){
   darkSel.attr('d',v=>vesOn?path(v.darkLine):null);
   const roomy=sc>170;
   darkLbl.each(function(v){const ok=vesOn&&roomy&&visible(v.darkMid)&&t>0.5;if(!ok){this.setAttribute('display','none');return;}const p=proj(v.darkMid);this.removeAttribute('display');this.setAttribute('x',(p[0]-38).toFixed(1));this.setAttribute('y',(p[1]+16).toFixed(1));});
-  if(vesOn&&visible(STS.ll)){const p=proj(STS.ll);stsG.attr('display',null).attr('transform',`translate(${p[0].toFixed(1)},${p[1].toFixed(1)})`);stsG.select('text').attr('display',roomy?null:'none');}else stsG.attr('display','none');
+  if(vesOn&&STS.ll&&visible(STS.ll)){const p=proj(STS.ll);stsG.attr('display',null).attr('transform',`translate(${p[0].toFixed(1)},${p[1].toFixed(1)})`);stsG.select('text').attr('display',roomy?null:'none');}else stsG.attr('display','none');
   const kz=t>0.5?Math.sqrt(V.zt.k):Math.sqrt(V.gk);
   wxSel.each(function(d){const f=COUNTRY.get(d.a3);const ok=S.layers.wx&&visible(f.cent);if(!ok){this.setAttribute('display','none');return;}const p=proj(f.cent);this.removeAttribute('display');this.setAttribute('transform',`translate(${p[0].toFixed(1)},${p[1].toFixed(1)})`);this.firstChild.setAttribute('r',((16+d.p*36)*Math.min(kz,3.5)).toFixed(1));});
 }
@@ -2825,7 +2848,7 @@ function refreshStatus(){
   if(pinSel){
     pinSel.each(function(o){
       const q=quad(o);
-      this.setAttribute('class','pin st-'+q+(o.linked?' linked':'')+(S.sel&&S.sel.id===o.id?' sel':'')+(S.hl&&S.hl.has(o.id)?' hl':''));
+      this.setAttribute('class','pin st-'+q+(o.linked?' linked':'')+(o.pending?' pending':'')+(S.sel&&S.sel.id===o.id?' sel':'')+(S.hl&&S.hl.has(o.id)?' hl':''));
       const pulse=this.querySelector('.p-pulse');
       if(pulse) pulse.style.display=q==='escalate'&&!o.linked?'':'none';
     });
@@ -2833,7 +2856,7 @@ function refreshStatus(){
   if(vesSel){
     vesSel.each(function(v){
       const q=quad(v);
-      this.setAttribute('class','vessel st-'+q+(v._dark?' dark':'')+(S.sel&&S.sel.id===v.id?' sel':'')+(S.hl&&S.hl.has(v.id)?' hl':''));
+      this.setAttribute('class','vessel st-'+q+(v._dark?' dark':'')+(v.pending?' pending':'')+(S.sel&&S.sel.id===v.id?' sel':'')+(S.hl&&S.hl.has(v.id)?' hl':''));
     });
   }
   if(root) root.classed('dim',!!S.hl);
@@ -2975,6 +2998,19 @@ function countryTip(f){
   const b=band(p.cpi);const fc=FORECAST.find(x=>x.a3===p.a3);
   return `<div class="tt-name">${esc(p.display)} <span class="pill b-${b}">${bandLabel[b]}</span></div><div class="tt-score"><b>${p.cpi}</b><span class="faint">/100 · rank ${p.rank} of 182</span></div>${p.name==='Somaliland'?'<div class="faint" style="font-size:11.5px">Scored as part of Somalia</div>':''}<div class="tt-row"><span>Counterparties here</span><b class="mono">${n}</b></div>${fc&&S.layers.wx?`<div class="tt-row"><span>Risk outlook, 90 days</span><b class="mono" style="color:var(--high-ink)">${Math.round(fc.p*100)}%</b></div>`:''}`;
 }
+function aisTip(e){
+  const a=e.ais;if(!a)return '';
+  if(a.status!=='found')return `<div class="tt-row"><span>VesselFinder</span><b style="color:var(--high-ink)">${a.status==='unavailable'?'IMO not verified':'IMO not found'}</b></div>`;
+  return `<div class="tt-row"><span>Heading to</span><b>${esc(a.destination||'No destination broadcast')}</b></div>${a.eta?`<div class="tt-row"><span>ETA</span><b>${esc(a.eta)}</b></div>`:''}<div class="tt-row"><span>Position</span><b>VesselFinder${a.reported?' · '+esc(a.reported):''}</b></div>${(a.mismatches||[]).length?`<div class="tt-row"><span>Registry</span><b style="color:var(--high-ink)">${a.mismatches.map(m=>m.field).join(', ')} mismatch</b></div>`:''}`;
+}
+/* Drawer card: what VesselFinder says, next to what was declared on the form */
+function aisCard(v){
+  const a=v.ais;if(!a)return '';
+  const link=`<a href="${esc(a.source_url)}" target="_blank" rel="noopener">VesselFinder</a>`;
+  if(a.status!=='found')return `<div class="hint">${ic('alert')}<p><b>${a.status==='unavailable'?'IMO not verified.':'IMO check failed.'}</b> ${esc(a.message||'')} The marker is at the address given on the intake form. Source: ${link}.</p></div>`;
+  const mm=(a.mismatches||[]).map(m=>`<dt>${esc(m.field)}</dt><dd><span style="color:var(--high-ink)">Declared: ${esc(m.declared)}</span><br>Registry: ${esc(m.registry)}</dd>`).join('');
+  return `<div class="sec"><div class="sec-h"><h3>Registry and voyage</h3><span class="faint" style="font-size:12px">${link} · IMO ${esc(a.imo)}</span></div><dl class="kv"><dt>Registered as</dt><dd>${esc(a.name)} · ${esc(a.type||'—')} · ${esc(a.flag||'flag not known')}</dd><dt>Last position</dt><dd>${a.lat===null||a.lat===undefined?'No AIS position':`${Number(a.lat).toFixed(a.precision==='exact'?4:0)}°, ${Number(a.lng).toFixed(a.precision==='exact'?4:0)}°${a.precision==='exact'?'':' (approximate)'}`}${a.reported?' · reported '+esc(a.reported):''}</dd><dt>Heading to</dt><dd>${esc(a.destination||'No destination broadcast')}${a.destination&&!v.voyage?' (port not located, no route drawn)':''}</dd>${a.eta?`<dt>ETA</dt><dd>${esc(a.eta)}</dd>`:''}${mm}</dl></div>`;
+}
 function entityTip(e){
   const q=quad(e);
   const sub=e.kind==='org'
@@ -2982,9 +3018,9 @@ function entityTip(e){
     : e.kind==='person'
       ? `${esc(e.role)} · ${esc(e.residentialAddress||e.city||cname(e.a3))}`
       : `${esc(e.type)} · ${esc(e.flag)} flag`;
-  const extra=e.kind==='vessel'?`<div class="tt-row"><span>IMO</span><b class="mono">${e.imo}</b></div>${e._dark?'<div class="tt-row"><span>AIS</span><b style="color:var(--high-ink)">No signal · estimated</b></div>':''}`:(e.linked?'<div class="tt-row"><span>Relationship</span><b>Linked entity</b></div>':'');
+  const extra=e.kind==='vessel'?`<div class="tt-row"><span>IMO</span><b class="mono">${e.imo}</b></div>${aisTip(e)}${e._dark?'<div class="tt-row"><span>AIS</span><b style="color:var(--high-ink)">No signal · estimated</b></div>':''}`:(e.linked?'<div class="tt-row"><span>Relationship</span><b>Linked entity</b></div>':'');
   const coordInfo=e.ll ? `<div class="tt-row"><span>Location</span><b class="mono" style="color:var(--accent)">${e.ll[1].toFixed(3)}°, ${e.ll[0].toFixed(3)}°</b></div>` : '';
-  return `<div class="tt-name">${esc(e.name)}</div><div class="faint" style="font-size:12px;margin:-3px 0 6px">${sub}</div><div class="tt-row"><span>Route</span><span class="pill q-${q}">${Q[q].short}</span></div><div class="tt-row"><span>Risk · confidence</span><b class="mono">${e.risk} · ${e.conf}%</b></div>${coordInfo}${extra}`;
+  return `<div class="tt-name">${esc(e.name)}</div><div class="faint" style="font-size:12px;margin:-3px 0 6px">${sub}</div><div class="tt-row"><span>Route</span><span class="pill q-${q}">${Q[q].short}</span></div><div class="tt-row"><span>Risk · confidence</span><b class="mono">${e.risk} · ${e.conf}%</b></div>${e.pending?'<div class="tt-row"><span>Monitoring</span><b style="color:var(--mid-ink)">Pending approval</b></div>':''}${coordInfo}${extra}`;
 }
 
 /* ===================== selection ===================== */
@@ -3162,7 +3198,7 @@ function vesselDrawer(v){
   const chips=`<span class="pill q-${q}">${Q[q].short}</span><span class="chip">${ic('ship','sm')}${esc(v.type)}</span><span class="chip mono">IMO ${v.imo}</span>${v.chartered?'<span class="chip" style="color:var(--accent)">Chartered by you</span>':''}`;
   const tabs=[{k:'live',l:'Live'},{k:'signals',l:'Tide signals',n:v.signals.filter(s=>s.c==='bad').length||''},{k:'ownership',l:'Ownership'},{k:'decision',l:'Decision'}];
   let body='';
-  if(D.tab==='live')body=`${meters(v)}<div class="sec"><div class="sec-h"><h3>Live position</h3><span class="faint mono" style="font-size:11px" id="live-src">AIS</span></div><div class="live-grid"><div><small class="faint">Latitude</small><b id="live-lat">—</b></div><div><small class="faint">Longitude</small><b id="live-lon">—</b></div><div><small class="faint">Course</small><b id="live-cog">—</b></div><div><small class="faint">Speed</small><b id="live-sog">—</b></div><div><small class="faint">Flag</small><b>${esc(v.flag)}</b></div><div><small class="faint">MMSI</small><b>${v.mmsi}</b></div></div><dl class="kv"><dt>Heading to</dt><dd>${esc(v.dest)}</dd><dt>Built · deadweight</dt><dd>${v.built} · ${v.dwt} t</dd></dl></div>${routeCard(v)}${factorsHTML(v)}
+  if(D.tab==='live')body=`${meters(v)}<div class="sec"><div class="sec-h"><h3>Live position</h3><span class="faint mono" style="font-size:11px" id="live-src">AIS</span></div><div class="live-grid"><div><small class="faint">Latitude</small><b id="live-lat">—</b></div><div><small class="faint">Longitude</small><b id="live-lon">—</b></div><div><small class="faint">Course</small><b id="live-cog">—</b></div><div><small class="faint">Speed</small><b id="live-sog">—</b></div><div><small class="faint">Flag</small><b>${esc(v.flag)}</b></div><div><small class="faint">MMSI</small><b>${v.mmsi}</b></div></div><dl class="kv"><dt>Heading to</dt><dd>${esc(v.dest)}</dd><dt>Built · deadweight</dt><dd>${v.built} · ${v.dwt} t</dd></dl></div>${aisCard(v)}${routeCard(v)}${factorsHTML(v)}
     <div class="sec"><div class="sec-h"><h3>Name and flag history</h3></div><dl class="kv">${v.names.map(n=>`<dt class="mono">${n[0]}</dt><dd>${esc(n[1])}</dd>`).join('')}</dl><dl class="kv" style="margin-top:4px">${v.flags.map(n=>`<dt class="mono">${n[0]}</dt><dd>${esc(n[1])} flag</dd>`).join('')}</dl></div>
     ${v.links.length?`<div class="sec"><div class="sec-h"><h3>Owners, managers and operators</h3></div>${v.links.map(([id,role])=>{const o=ENT.get(id);const oq=quad(o);return `<button class="link-row" data-open="${o.id}" type="button">${ic('org')}<div class="lr-main"><div>${esc(o.name)}</div><small>${esc(role)} · ${esc(cname(o.a3))}</small></div><span class="pill q-${oq}">${Q[oq].short}</span></button>`;}).join('')}</div>`:''}`;
   else if(D.tab==='signals')body=`<div class="sec"><div class="sec-h"><h3>Signals</h3><span class="agent">Tide</span></div><ul class="timeline">${v.signals.map(s=>`<li class="${s.c}"><time>${esc(s.t)}</time>${esc(s.x)}</li>`).join('')}</ul></div><div class="hint">${ic('alert')}<p>AIS can be switched off or spoofed. Tide treats dark periods as a risk signal and lowers confidence when a position cannot be verified.</p></div>`;
@@ -3214,6 +3250,12 @@ function updateLive(){
   const brg=(Math.atan2(y,x)/RAD+360)%360;
   $('#live-cog').textContent=Math.round(brg).toString().padStart(3,'0')+'°';
   $('#live-sog').textContent=(v.kn+Math.sin(performance.now()/3000)*0.3).toFixed(1)+' kn';
+  /* a vessel read from VesselFinder shows what was reported, not a simulated track */
+  if(v.ais){
+    $('#live-src').textContent=v.ais.status==='found'?'VesselFinder'+(v.ais.reported?' · reported '+v.ais.reported:''):'Intake address · IMO not verified';
+    $('#live-cog').textContent=v.cog===null||v.cog===undefined?'—':Math.round(v.cog).toString().padStart(3,'0')+'°';
+    $('#live-sog').textContent=v.ais.status==='found'&&v.ais.speed!==null&&v.ais.speed!==undefined?v.kn.toFixed(1)+' kn':'—';
+  }
 }
 
 /* ===================== watchlist ===================== */
@@ -3227,7 +3269,7 @@ function renderWatch(){
   items.sort((a,b)=>Q[quad(a)].rank-Q[quad(b)].rank||b.risk-a.risk);
   let h='';
   if(S.wtab==='person')h+=`<div class="w-note">${ic('lock','sm')}<span>People are shown through the organisations they are linked to, never by personal location.</span></div>`;
-  h+=items.map(e=>{const qq=quad(e);return `<button class="w-item${S.sel&&S.sel.id===e.id?' on':''}" data-id="${e.id}" type="button"><span class="w-ico">${ic(kindIcon[e.kind],'sm')}</span><span style="min-width:0"><div class="w-name">${esc(e.name)}</div><div class="w-sub">${esc(entSub(e))}</div></span><span class="pill q-${qq}">${Q[qq].short}</span></button>`;}).join('');
+  h+=items.map(e=>{const qq=quad(e);return `<button class="w-item${S.sel&&S.sel.id===e.id?' on':''}" data-id="${e.id}" type="button"><span class="w-ico">${ic(kindIcon[e.kind],'sm')}</span><span style="min-width:0"><div class="w-name">${esc(e.name)}</div><div class="w-sub">${esc(entSub(e))}${e.pending?' · Pending approval':''}</div></span><span class="pill q-${qq}">${Q[qq].short}</span></button>`;}).join('');
   if(!items.length)h+=`<div class="dilly-state" style="padding:18px 12px">${dilly('neutral',96)}<p class="faint" style="margin:0;font-size:12.5px">Nothing matches that filter.</p></div>`;
   $('#wlist').innerHTML=h;
 }
@@ -3283,7 +3325,10 @@ $('#z-home').addEventListener('click',()=>{if(morphing)return;if(S.mode==='flat'
 let tick=0;
 function tickerHTML(a){const q=a.q;return `<button class="ticker-item" type="button" data-alert="${ALERTS.indexOf(a)}"><span class="agent">${esc(a.agent)}</span><span class="pill plain q-${q}" style="height:18px">${Q[q].short}</span><span class="t">${esc(a.x)}</span><time>${esc(a.t)}</time></button>`;}
 function runTicker(){
-  const tr=$('#ticker-track');const cur=tr.querySelector('.ticker-item:not(.out)');
+  const tr=$('#ticker-track');
+  if(!ALERTS.length){if(!tr.firstElementChild)tr.innerHTML='<div class="ticker-item"><span class="faint">No alerts yet</span></div>';return;}
+  if(tr.firstElementChild&&!tr.querySelector('[data-alert]'))tr.innerHTML='';
+  const cur=tr.querySelector('.ticker-item:not(.out)');
   const nx=document.createElement('div');nx.innerHTML=tickerHTML(ALERTS[tick%ALERTS.length]);const el=nx.firstElementChild;
   if(cur){el.classList.add('in');tr.appendChild(el);requestAnimationFrame(()=>requestAnimationFrame(()=>{cur.classList.add('out');el.classList.remove('in');}));setTimeout(()=>cur.remove(),700);}else tr.appendChild(el);
   ripple(ALERTS[(tick)%ALERTS.length]);
@@ -3651,7 +3696,8 @@ $('#thr').addEventListener('input',e=>{S.thr=+e.target.value;$('#thr-v').textCon
 const typeIcon={'API':'api','Data feed':'feed','Web':'web','PDF document':'doc','PDF':'doc'};
 function srcCard(s){
   const icon = typeIcon[s.type] || 'doc';
-  return `<div class="card src${s.health==='stale'?' warn':''}"><div class="src-top"><div class="dr-ico" style="width:36px;height:36px">${ic(icon)}</div><div style="min-width:0"><h3>${esc(s.label)}</h3><p>${esc(s.type)} · ${esc(s.how)}</p></div><span class="src-health pill ${s.health==='ok'?'q-monitor':'q-investigate'}">${s.health==='ok'?'Healthy':s.health==='new'?'Live':'Stale'}</span></div><dl class="kv"><dt>Covers</dt><dd>${esc(s.cover)}</dd><dt>Trust level</dt><dd>${esc(s.trust)}</dd>${(s.kv||[]).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl><div class="src-actions">${s.health==='stale'?`<button class="btn sm primary" data-src="retry" data-id="${s.id}" type="button">${ic('refresh','sm')}Retry now</button>`:''}<button class="btn sm" data-src="test" data-id="${s.id}" type="button">Test</button><button class="btn sm primary" data-src="view-records" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-doc"/></svg>Readable data</button><button class="btn sm ghost" data-src="reconvert" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-refresh"/></svg>Re-parse</button></div></div>`;
+  const locked = !!(s.config && s.config.locked);
+  return `<div class="card src${s.health==='stale'?' warn':''}"><div class="src-top"><div class="dr-ico" style="width:36px;height:36px">${ic(icon)}</div><div style="min-width:0"><h3>${esc(s.label)}</h3><p>${esc(s.type)} · ${esc(s.how)}</p></div><span class="src-health pill ${s.health==='ok'?'q-monitor':'q-investigate'}">${s.health==='ok'?'Healthy':s.health==='new'?'Live':'Stale'}</span></div><dl class="kv">${locked?`<dt>Status</dt><dd><span class="chip" style="color:var(--accent)">${ic('lock','sm')}Built in · default for ${esc(s.config.default_for||'screening')} · locked</span></dd>`:''}<dt>Covers</dt><dd>${esc(s.cover)}</dd><dt>Trust level</dt><dd>${esc(s.trust)}</dd>${(s.kv||[]).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl><div class="src-actions">${s.health==='stale'?`<button class="btn sm primary" data-src="retry" data-id="${s.id}" type="button">${ic('refresh','sm')}Retry now</button>`:''}<button class="btn sm" data-src="test" data-id="${s.id}" type="button">Test</button><button class="btn sm primary" data-src="view-records" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-doc"/></svg>Readable data</button>${locked?'':`<button class="btn sm ghost" data-src="reconvert" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-refresh"/></svg>Re-parse</button>`}</div></div>`;
 }
 
 function renderSources(){
@@ -4032,7 +4078,10 @@ function renderPolicies(){
     {id:'R5',sec:'§7.2',t:'A ship-to-ship transfer involving a vessel tied to a counterparty triggers a review within 2 business days.',hits:['aurora'],note:'STS transfer identified east of Johor'},
     {id:'R6',sec:'§6.1',t:'Re-screen every counterparty at least every 24 hours and on every list update.',hits:[],met:true,note:'Met for all monitored counterparties'}
   ];
-  const rules=[...defaultRules, ...CUSTOM_RULES];
+  /* clean workspace: no sample policy, only the rules compiled from what was uploaded */
+  const clean=!!window.DUEDILLY_NO_PLACEHOLDERS;
+  const rules=[...(clean?[]:defaultRules), ...CUSTOM_RULES];
+  const sample=document.querySelector('.pol-grid .doc-card');if(sample)sample.style.display=clean?'none':'';
   $('#pol-count').textContent=rules.length+' active';
   $('#rules').innerHTML=rules.map(r=>`<div class="rule"><span class="rid">${r.id}</span><div><h3>${esc(r.t)}</h3><p>${r.sec} of the policy${r.note?' · '+esc(r.note):''}</p>${r.hits.length?`<div class="dr-chips" style="margin-top:8px">${r.hits.filter(id=>ENT.has(id)).map(id=>{const e=ENT.get(id);return `<button class="chip" data-open="${id}" type="button" style="cursor:pointer">${ic(kindIcon[e.kind],'sm')}${esc(e.short||e.name)}</button>`;}).join('')}</div>`:''}</div><div class="rmeta">${r.met?'<span class="pill q-monitor">Met</span>':`<span class="pill q-investigate">${r.hits.length} flagged</span>`}<span class="faint mono" style="font-size:10.5px">Active</span></div></div>`).join('');
   $('#conflict-callout p').textContent=`§4.1 requires enhanced due diligence below CPI 40. Severny Agro Export LLC (Russia, CPI 2025: ${cpiOf('RUS')}) is subject to mandatory EDD escalation.`;
@@ -4050,7 +4099,7 @@ $('#upload-pol-file').addEventListener('change',e=>{
     id:'R'+(CUSTOM_RULES.length+7),
     sec:'§Custom',
     t:'Guideline ('+file.name+'): Enhanced verification covenants applied',
-    hits:['halcyon','kestrel'],
+    hits:window.DUEDILLY_NO_PLACEHOLDERS?[]:['halcyon','kestrel'],
     met:false,
     note:'Compiled by Policy Compiler from uploaded file '+file.name
   };
@@ -5366,6 +5415,30 @@ $('#test-api-btn').addEventListener('click', async ()=>{
 
 /* ===================== boot ===================== */
 let introCancelled=false;
+/* A vessel from the backend sits at its last reported position (VesselFinder, or the intake address when
+   the IMO could not be read). When it broadcasts a destination the route runs from there to the port. */
+const voyageKey = e => JSON.stringify([e.ll || null, e.route || null, e.ais ? e.ais.checked_at : null]);
+function applyVoyage(item, e){
+  const ais = e.ais || null;
+  const at = Array.isArray(e.ll) && isFinite(e.ll[0]) && isFinite(e.ll[1]) ? [Number(e.ll[0]), Number(e.ll[1])] : [103.8, 1.3];
+  const to = Array.isArray(e.route) && e.route.length > 1 ? e.route[e.route.length - 1].map(Number) : null;
+  item._voyageKey = voyageKey(e);
+  item.ais = ais;
+  item.voyage = Boolean(to);
+  item.ll = at;
+  item.route = [at, to || at];
+  item.R = prepRoute(item.route);
+  item.frac = 0;
+  item.dir = 1;
+  item.speed = 0;
+  item.ang = 0;
+  item.cur = posAt(item.R, 0);
+  item.kn = ais && isFinite(ais.speed) && ais.speed !== null ? Number(ais.speed) : 0;
+  item.cog = ais && isFinite(ais.course) && ais.course !== null ? Number(ais.course) : null;
+  item.mmsi = (ais && ais.mmsi) || e.mmsi || '—';
+  item.flag = (ais && ais.flag) || e.flag || cname(item.a3) || '—';
+  item.dest = ais && ais.status === 'found' ? (ais.destination ? ais.destination + (ais.eta ? ' · ETA ' + ais.eta : '') : 'No destination broadcast') : 'Not known';
+}
 async function syncFromBackend(){
   try {
     const res = await fetch('/api/entities');
@@ -5374,8 +5447,29 @@ async function syncFromBackend(){
     if (!data || !Array.isArray(data.entities)) return;
     
     let added = false;
+    // KYC pins follow the request: pending until approved, gone once rejected or no longer monitored
+    const live = new Set(data.entities.map(e => e.id));
+    for (const id of [...ENT.keys()]) {
+      if (!id.startsWith('kyc-') || live.has(id)) continue;
+      [ORGS, VESSELS, PEOPLE, CASES].forEach(list => { const i = list.findIndex(x => x.id === id); if (i >= 0) list.splice(i, 1); });
+      ENT.delete(id);
+      if (S.sel && S.sel.id === id) { S.sel = null; closeDrawer(); }
+      added = true;
+    }
     for (const e of data.entities) {
-      if (!ENT.has(e.id)) {
+      const known = ENT.get(e.id);
+      if (known && known.kind === 'vessel' && e.id.startsWith('kyc-') && voyageKey(e) !== known._voyageKey) {
+        applyVoyage(known, e);
+        added = true;
+      }
+      if (known && e.id.startsWith('kyc-')) {
+        const next = { pending: Boolean(e.pending), risk: e.risk || known.risk, conf: e.conf || known.conf, trigger: e.trigger || known.trigger, factors: e.factors || known.factors };
+        if (JSON.stringify(next) !== JSON.stringify({ pending: Boolean(known.pending), risk: known.risk, conf: known.conf, trigger: known.trigger, factors: known.factors })) {
+          Object.assign(known, next);
+          added = true;
+        }
+      }
+      if (!known) {
         const item = {
           id: e.id,
           kind: e.kind || 'org',
@@ -5392,6 +5486,7 @@ async function syncFromBackend(){
           trigger: e.trigger || e.trigger_event || 'Counterparty record',
           since: e.since || '2026',
           claimed: Boolean(e.claimed),
+          pending: Boolean(e.pending),
           tradingNames: e.tradingNames || '',
           operatingAddresses: e.operatingAddresses || '',
           controllers: e.controllers || '',
@@ -5407,19 +5502,14 @@ async function syncFromBackend(){
         };
         if (item.kind === 'vessel') {
           item.type = item.role;
-          item.imo = item.reg;
-          item.mmsi = '563000000';
-          item.flag = cname(item.a3) || 'Singapore';
-          const at = Array.isArray(e.ll) && isFinite(e.ll[0]) && isFinite(e.ll[1]) ? [Number(e.ll[0]), Number(e.ll[1])] : [103.8, 1.3];
-          item.route = [at, [at[0] + 0.4, at[1] + 0.1]];
-          item.R = prepRoute(item.route);
-          item.frac = 0.1;
-          item.dir = 1;
-          item.ang = 0;
-          item.cur = posAt(item.R, item.frac);
-          item.kn = 12;
+          item.imo = String(item.reg).replace(/^IMO\s*/i, '');
+          item.names = [];
+          item.flags = [];
           item.signals = [];
           item.links = [];
+          item.built = '—';
+          item.dwt = '—';
+          applyVoyage(item, e);
           VESSELS.unshift(item);
         } else if (item.kind === 'person') {
           item.lists = [];
@@ -5439,6 +5529,7 @@ async function syncFromBackend(){
       }
     }
     if (added) {
+      rebindVessels();
       rebindPins();
       renderWatch();
       renderReviews();
@@ -6120,12 +6211,15 @@ async function handleKycFormSubmit() {
     submitEl.disabled = false;
     const created = data.request;
 
-    toast(`KYC Request ${created.id} submitted! Policy RAG: ${created.ddq_required ? 'DDQ Triggered' : 'Clear'}`);
+    const vf = created.attributes && created.attributes.ais;
+    const vfNote = !vf ? '' : vf.status !== 'found' ? ' · IMO not verified (VesselFinder unreachable)' : ` · IMO verified as ${vf.name}${vf.destination ? ', heading to ' + vf.destination : ''}${(vf.mismatches || []).length ? ' · registry mismatch flagged' : ''}`;
+    toast(`KYC Request ${created.id} submitted! Policy RAG: ${created.ddq_required ? 'DDQ Triggered' : 'Clear'}${vfNote}`);
     $('#kyc-modal').hidden = true;
     await renderEmployeeWorkspace();
     if (isCompliance()) renderComplianceWorkspace();
     refreshKpis();
     if (monitoringPanel) monitoringPanel.reload();
+    if (created.ongoing_monitoring) syncFromBackend();
     if (created.ddq_required) openKycAuditModal(created);
   } catch (err) {
     console.error('Error submitting KYC request:', err);
@@ -6823,7 +6917,7 @@ async function submitTriage(id, action, notes = '') {
     toast(`${id}: ${data.request.request_status}${monitored ? ' · now monitored on the globe' : ''}`);
     $('#comp-triage-modal').hidden = true;
     renderComplianceWorkspace();
-    if (monitored) syncFromBackend();
+    if (data.request.ongoing_monitoring) syncFromBackend();
   } catch (err) {
     toast(`Triage error: ${err.message}`);
   }
@@ -7241,6 +7335,9 @@ function boot(){
   cSel.each(function(){this.style.fill=C['land-none'];});
   refreshStatus();
   syncFromBackend();
+  // Pins change when another session submits or decides a request: re-read while the tab is in view
+  setInterval(()=>{if(!document.hidden)syncFromBackend();},20000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncFromBackend();});
   runTicker();setInterval(runTicker,5200);
   $('#theme-btn use').setAttribute('href',isDark()?'#i-sun':'#i-moon');
   requestAnimationFrame(frame);
