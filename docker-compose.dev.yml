@@ -1,0 +1,29 @@
+# Local services for the DEV port (npm run dev). See docs/CLOUD_PLAN.md.
+#
+#   docker compose -f docker-compose.dev.yml up -d                      Pub/Sub emulator
+#   docker compose -f docker-compose.dev.yml --profile postgres up -d   also PostgreSQL 16
+#
+# PostgreSQL is behind a profile because the app still runs on SQLite (plan step 3a).
+# It is only needed once the Postgres data layer is approved (step 3b).
+services:
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: gcloud beta emulators pubsub start --project=duedilly-dev --host-port=0.0.0.0:8085
+    ports:
+      - "8085:8085"
+
+  postgres:
+    image: postgres:16
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_DB: duedilly_dev
+      POSTGRES_USER: duedilly
+      # Local development only. Never reuse this password anywhere else.
+      POSTGRES_PASSWORD: duedilly_dev_only
+    ports:
+      - "5432:5432"
+    volumes:
+      - duedilly_pgdata:/var/lib/postgresql/data
+
+volumes:
+  duedilly_pgdata:

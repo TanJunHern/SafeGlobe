@@ -31,13 +31,18 @@ app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Which environment is running and which Gemini backend answers. No secrets.
+const healthInfo = () => ({ env: config.appEnv || 'local', version: config.version, gemini: require('./services/geminiClient').backend() });
+app.get('/healthz', (req, res) => res.json(healthInfo()));
+
 // Container health check endpoint (Google Cloud Run & Kubernetes probes)
+// Carries the /healthz fields too: Cloud Run reserves some paths ending in "z", so /healthz may not be reachable there
 app.get('/api/health', (req, res) => {
   res.json({
+    ...healthInfo(),
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    service: 'Safe Globe Compliance Platform',
-    version: '1.0.0',
+    service: 'DueDilly Compliance Platform',
     dbType: config.dbType
   });
 });
@@ -64,6 +69,7 @@ app.use('/api/uploads', uploadsRouter);
 app.use('/api/places', placesRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/kyc', kycRouter);
+app.use('/api/monitoring', require('./routes/monitoring'));
 
 
 // Auth routes
@@ -84,13 +90,15 @@ app.get('/api/config/public', (req, res) => {
   res.json({
     googleClientId: config.googleClientId,
     googleMapsApiKey: mapsKey,
-    mapsEnabled: Boolean(mapsKey)
+    mapsEnabled: Boolean(mapsKey),
+    // Name of the company using DueDilly, shown in the top bar (WORKSPACE_NAME)
+    workspaceName: config.workspaceName
   });
 });
 
 app.post('/api/auth/switch-persona', (req, res) => {
   const { email, role, name, department } = req.body;
-  const targetEmail = (email || 'john.doe@safeglobe.com').toLowerCase().trim();
+  const targetEmail = (email || 'john.doe@duedilly.com').toLowerCase().trim();
   const targetRole = role || getRoleForEmail(targetEmail);
   res.json({
     success: true,
@@ -143,10 +151,13 @@ app.get('/saf-globe.html', (req, res) => {
 // Serve static directory for any static assets (PDFs, images, etc.)
 // Only these files are public. The repo root is NOT served: it holds the database, uploaded
 // counterparty documents, source code and config, none of which may be downloadable.
-const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js'];
+const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js', 'ddq-section-status.js', 'duck-tour.js', 'dilly-loader.js', 'monitoring-ui.js'];
 for (const file of PUBLIC_ASSETS) {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(config.staticDir, file)));
 }
+
+// UI assets (images, icons, fonts). Only this folder is mounted, never the repo root.
+app.use('/assets', express.static(path.join(config.staticDir, 'assets')));
 
 // Fallback 404 for unmatched API routes
 app.use('/api', (req, res) => {
@@ -169,21 +180,21 @@ function startServer(port = config.port) {
     require('./services/ddqTemplateService').ensureDefaultTemplate();
     require('./services/kycService').ensurePersonaSeed();
   } catch (err) {
-    console.error('[Safe Globe] Persona seed skipped:', err.message);
+    console.error('[DueDilly] Persona seed skipped:', err.message);
   }
   return new Promise((resolve) => {
     server = app.listen(port, config.host, () => {
-      console.log(`[Safe Globe] Server running on http://${config.host}:${port}`);
-      console.log(`[Safe Globe] Serving UI: http://localhost:${port}/safe-globe.html`);
-      console.log(`[Safe Globe] Ready for local testing and Google Cloud Run deployment.`);
+      console.log(`[DueDilly] Server running on http://${config.host}:${port}`);
+      console.log(`[DueDilly] Serving UI: http://localhost:${port}/safe-globe.html`);
+      console.log(`[DueDilly] Ready for local testing and Google Cloud Run deployment.`);
       resolve(server);
     });
 
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
-        console.error(`[Safe Globe] Error: Port ${port} is already in use by another running instance of the server.`);
+        console.error(`[DueDilly] Error: Port ${port} is already in use by another running instance of the server.`);
       } else {
-        console.error('[Safe Globe] Server startup error:', err);
+        console.error('[DueDilly] Server startup error:', err);
       }
     });
   });
@@ -204,17 +215,25 @@ function stopServer() {
 }
 
 if (require.main === module) {
+  // Refuse to start on a broken environment, and say exactly what is wrong
+  const problems = config.validateEnv();
+  if (problems.length) {
+    console.error(`[DueDilly] Cannot start${config.appEnv ? ` (APP_ENV=${config.appEnv})` : ''}. Fix these in ${config.envFile || 'the environment variables'}:`);
+    problems.forEach(p => console.error(`  - ${p}`));
+    process.exit(1);
+  }
+  console.log(`[DueDilly] Environment: ${config.appEnv || 'local'} · config from ${config.envFile || 'environment variables'} · Gemini: ${require('./services/geminiClient').backend()}`);
   startServer();
 
   // Cloud Run SIGTERM graceful shutdown
   process.on('SIGTERM', async () => {
-    console.log('[Safe Globe] Received SIGTERM signal, shutting down gracefully...');
+    console.log('[DueDilly] Received SIGTERM signal, shutting down gracefully...');
     await stopServer();
     process.exit(0);
   });
 
   process.on('SIGINT', async () => {
-    console.log('[Safe Globe] Received SIGINT signal, shutting down gracefully...');
+    console.log('[DueDilly] Received SIGINT signal, shutting down gracefully...');
     await stopServer();
     process.exit(0);
   });

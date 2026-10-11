@@ -5,9 +5,19 @@
  */
 const config = require('../config');
 
-function isConfigured() {
+/**
+ * Which backend answers Gemini calls right now: 'aistudio', 'vertex' or 'disabled'.
+ * GEMINI_BACKEND=vertex is accepted but the Vertex client is Phase 4 of docs/CLOUD_PLAN.md, so until
+ * then it reports 'disabled' rather than quietly using the AI Studio key in an environment meant for Vertex.
+ */
+function backend() {
+  if (config.geminiBackend === 'vertex') return 'disabled';
   const key = config.geminiApiKey || '';
-  return key.length > 20 && !/^YOUR_/i.test(key);
+  return key.length > 20 && !/^YOUR_/i.test(key) ? 'aistudio' : 'disabled';
+}
+
+function isConfigured() {
+  return backend() !== 'disabled';
 }
 
 // Model names are retired and quotas differ per model, so a rejected model falls through to the next
@@ -48,7 +58,7 @@ async function generate(parts, { json = false, temperature = 0.2, timeoutMs = 20
         }, systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}))
       });
       if (!resp.ok) {
-        console.error(`[Gemini] ${model}: ${resp.status} ${resp.statusText}`);
+        console.error(`[Feather-Weight] ${model}: ${resp.status} ${resp.statusText}`);
         if (resp.status === 503 && attempts[i + 1] === model) { await new Promise(r => setTimeout(r, 800)); continue; }
         if ([404, 429, 503].includes(resp.status)) { skip = model; coolDown(model, resp.status); continue; } // retired, over quota or overloaded
         return null;
@@ -58,7 +68,7 @@ async function generate(parts, { json = false, temperature = 0.2, timeoutMs = 20
       if (!text) return null;
       return withModel ? { text, model } : text;
     } catch (err) {
-      console.error(`[Gemini] ${model}: request failed:`, err.name === 'AbortError' ? 'timeout' : err.message);
+      console.error(`[Feather-Weight] ${model}: request failed:`, err.name === 'AbortError' ? 'timeout' : err.message);
       skip = model;
       coolDown(model, 'timeout');
     } finally {
@@ -78,7 +88,7 @@ async function generateJson(parts, opts = {}) {
   try {
     return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ''));
   } catch (err) {
-    console.error('[Gemini] could not parse JSON output');
+    console.error('[Feather-Weight] could not parse JSON output');
     return null;
   }
 }
@@ -93,9 +103,9 @@ async function generateJsonDetailed(parts, opts = {}) {
   try {
     return { data: JSON.parse(out.text.replace(/^```(?:json)?\s*|\s*```$/g, '')), model: out.model };
   } catch (err) {
-    console.error('[Gemini] could not parse JSON output');
+    console.error('[Feather-Weight] could not parse JSON output');
     return null;
   }
 }
 
-module.exports = { isConfigured, generateText, generateJson, generateJsonDetailed, modelChain };
+module.exports = { isConfigured, backend, generateText, generateJson, generateJsonDetailed, modelChain };

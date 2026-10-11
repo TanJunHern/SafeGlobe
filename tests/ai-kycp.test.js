@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const { runKycpCheck, tools, KYCP_INSTRUCTIONS } = require('../src/services/aiKycpService');
 
 test('AI KYCP - Instructions and Tools schema', () => {
-  assert(KYCP_INSTRUCTIONS.includes('Safe Globe Senior Compliance AI Analyst'));
+  assert(KYCP_INSTRUCTIONS.includes('DueDilly Senior Compliance AI Analyst'));
   assert(typeof tools.searchKnowledgeBase === 'function');
   assert(typeof tools.searchEntities === 'function');
   assert(typeof tools.getOwnershipGraph === 'function');

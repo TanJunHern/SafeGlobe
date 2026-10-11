@@ -216,7 +216,7 @@ async function handleApi({ sourceId, label, url = '', key = '', sampleData = nul
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
-      const headers = { 'User-Agent': 'SafeGlobe-Compliance-Engine/1.0', 'Accept': 'application/json' };
+      const headers = { 'User-Agent': 'DueDilly-Compliance-Engine/1.0', 'Accept': 'application/json' };
       if (key) headers['Authorization'] = `Bearer ${key}`;
 
       const res = await fetch(url, { signal: controller.signal, headers });
@@ -284,7 +284,7 @@ async function handleWebsite({ sourceId, label, url = '', content = '' }) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
-      const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'SafeGlobe-WebMonitor/1.0' } });
+      const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'DueDilly-WebMonitor/1.0' } });
       clearTimeout(timeoutId);
       if (res.ok) {
         html = await res.text();

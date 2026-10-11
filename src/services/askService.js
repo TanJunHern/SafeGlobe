@@ -134,7 +134,7 @@ function solveQuery(queryText) {
       res: matches.map(m => ({ id: m.id, sub: m.role || m.city })),
       hl: matches.map(m => m.id),
       sum: `Found ${matches.length} matching counterparty records in the screening registry.`,
-      src: 'Safe Globe Knowledge Base'
+      src: 'DueDilly Knowledge Base'
     };
   }
 

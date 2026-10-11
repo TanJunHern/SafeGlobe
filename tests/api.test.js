@@ -13,7 +13,7 @@ test('API Integration Tests', async (t) => {
     assert.equal(res.status, 200);
     const data = await res.json();
     assert.equal(data.status, 'healthy');
-    assert.equal(data.service, 'Safe Globe Compliance Platform');
+    assert.equal(data.service, 'DueDilly Compliance Platform');
   });
 
   await t.test('POST /v1/screen should screen counterparty', async () => {
@@ -158,7 +158,7 @@ test('API Integration Tests', async (t) => {
     const res = await fetch(`${BASE_URL}/`);
     assert.equal(res.status, 200);
     const text = await res.text();
-    assert.ok(text.includes('Safe Globe'));
+    assert.ok(text.includes('DueDilly'));
     assert.ok(text.includes('id="map"'));
   });
 
@@ -495,7 +495,7 @@ test('API Integration Tests', async (t) => {
     const res = await fetch(`${BASE_URL}/api/ai/instructions`);
     assert.equal(res.status, 200);
     const data = await res.json();
-    assert.ok(data.instructions.includes('Safe Globe Senior Compliance AI Analyst'));
+    assert.ok(data.instructions.includes('DueDilly Senior Compliance AI Analyst'));
   });
 
 

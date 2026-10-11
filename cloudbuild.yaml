@@ -1,4 +1,4 @@
-# Google Cloud Build pipeline for Safe Globe
+# Google Cloud Build pipeline for DueDilly
 # Builds Docker image and deploys to Google Cloud Run automatically
 
 steps:
