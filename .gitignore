@@ -8,6 +8,8 @@ data/test_safe_globe.db*
 # Accounts and the databases of created workspaces
 data/*.accounts.db*
 data/*.workspaces/
+# Page snapshots kept by the crawler agents when Cloud Storage is not connected
+data/*.objects/
 data/uploads/*
 # Local demo kit: scenario, sample files, DB backups, demo links (never pushed)
 demo-data/

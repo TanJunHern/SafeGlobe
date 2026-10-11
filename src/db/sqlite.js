@@ -285,6 +285,31 @@ class SqliteDatabase {
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // Phase 3. Ripples triage: a severity for sorting (not a risk score), one line on what changed, and duplicates merged
+    for (const col of ['severity TEXT', 'what_changed TEXT', 'merged_into INTEGER', 'triaged_by TEXT', 'rescreen TEXT']) {
+      try { this.db.exec(`ALTER TABLE alerts ADD COLUMN ${col}`); } catch (e) {}
+    }
+    // Events already handled (a redelivered event does nothing) and the extraction fixes Dilly has suggested
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS events_seen (
+        id TEXT PRIMARY KEY,
+        event TEXT NOT NULL,
+        handled_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS source_proposals (
+        id TEXT PRIMARY KEY,
+        source_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        problem TEXT,
+        old_instructions TEXT,
+        new_instructions TEXT,
+        test_json TEXT,
+        proposed_by TEXT,
+        decided_by TEXT,
+        decided_at TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     // Must run after the migration: older tables lack ddq_token until the ALTER above
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_kyc_token ON kyc_requests(ddq_token)');
 
@@ -669,7 +694,14 @@ class SqliteDatabase {
       agent: r.agent,
       x: r.text,
       q: r.quadrant,
-      country: Boolean(r.is_country)
+      country: Boolean(r.is_country),
+      // Ripples triage (Phase 3). severity is a sorting aid, never a risk score.
+      alertId: r.id,
+      severity: r.severity || null,
+      whatChanged: r.what_changed || null,
+      mergedInto: r.merged_into || null,
+      triagedBy: r.triaged_by || null,
+      rescreen: r.rescreen || null
     }));
   }
 
@@ -677,8 +709,46 @@ class SqliteDatabase {
     const now = new Date();
     const t = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ', ' +
               now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    this.db.prepare('INSERT INTO alerts (timestamp, agent, entity_id, text, quadrant, is_country) VALUES (?, ?, ?, ?, ?, ?)')
+    const info = this.db.prepare('INSERT INTO alerts (timestamp, agent, entity_id, text, quadrant, is_country) VALUES (?, ?, ?, ?, ?, ?)')
       .run(t, agent, entityId, text, quadrant, isCountry ? 1 : 0);
+    const alertId = Number(info.lastInsertRowid);
+    // The event bus listens here, so every alert raises "alert-raised" wherever it was added (src/events)
+    if (typeof SqliteDatabase.onAlertAdded === 'function') {
+      try { SqliteDatabase.onAlertAdded({ alertId, agent, entityId, text, quadrant, isCountry: Boolean(isCountry) }); } catch (e) { console.error('[Events] alert-raised not published:', e.message); }
+    }
+    return alertId;
+  }
+
+  getAlertRow(alertId) {
+    return this.db.prepare('SELECT * FROM alerts WHERE id = ?').get(alertId) || null;
+  }
+
+  /** Other alerts for the same counterparty, newest first, that have not been merged into another one. */
+  getRecentAlertRows(entityId, { excludeId = 0, limit = 8 } = {}) {
+    return this.db.prepare('SELECT * FROM alerts WHERE entity_id = ? AND id != ? AND merged_into IS NULL ORDER BY id DESC LIMIT ?').all(entityId, excludeId, limit);
+  }
+
+  setAlertTriage(alertId, { severity = null, whatChanged = null, mergedInto = null, triagedBy = null }) {
+    this.db.prepare('UPDATE alerts SET severity = ?, what_changed = ?, merged_into = ?, triaged_by = ? WHERE id = ?').run(severity, whatChanged, mergedInto, triagedBy, alertId);
+    return this.getAlertRow(alertId);
+  }
+
+  setAlertRescreen(alertId, state) {
+    this.db.prepare('UPDATE alerts SET rescreen = ? WHERE id = ?').run(state, alertId);
+  }
+
+  countMergedAlerts(alertId) {
+    return this.db.prepare('SELECT COUNT(*) AS n FROM alerts WHERE merged_into = ?').get(alertId).n;
+  }
+
+  // --- Events (src/events): an event is handled once, however often it is delivered ---
+  hasSeenEvent(id) {
+    return Boolean(this.db.prepare('SELECT 1 FROM events_seen WHERE id = ?').get(id));
+  }
+
+  markEventSeen(id, event) {
+    this.db.prepare('INSERT OR IGNORE INTO events_seen (id, event) VALUES (?, ?)').run(id, event);
+    this.db.prepare("DELETE FROM events_seen WHERE handled_at < datetime('now', '-14 days')").run();
   }
 
   // --- Sources ---
@@ -764,6 +834,49 @@ class SqliteDatabase {
     );
     if (previous && previous.cost_per_screen) this.setSourceCost(source.id, previous.cost_per_screen);
     return source;
+  }
+
+  /** Merges patch into a source's stored settings (its crawl state, extraction instructions, ticks). */
+  updateSourceConfig(id, patch) {
+    const row = this.db.prepare('SELECT config_json FROM sources WHERE id = ?').get(id);
+    if (!row) return null;
+    let current = {};
+    try {
+      const parsed = JSON.parse(row.config_json || '{}');
+      current = Array.isArray(parsed) ? { kv: parsed } : (parsed || {});
+    } catch (e) {}
+    const next = Object.assign({}, current, patch);
+    this.db.prepare('UPDATE sources SET config_json = ? WHERE id = ?').run(JSON.stringify(next), id);
+    return next;
+  }
+
+  getSourceById(id) {
+    return this.getSources().find(s => s.id === id) || null;
+  }
+
+  // --- Suggested extraction fixes (self-healing): proposed by the crawler agent, applied only by a person ---
+  addSourceProposal(p) {
+    this.db.prepare('INSERT INTO source_proposals (id, source_id, status, problem, old_instructions, new_instructions, test_json, proposed_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(p.id, p.source_id, 'pending', p.problem || '', p.old_instructions || '', p.new_instructions || '', JSON.stringify(p.test || {}), p.proposed_by || '');
+    return this.getSourceProposal(p.id);
+  }
+
+  getSourceProposal(id) {
+    const r = this.db.prepare('SELECT * FROM source_proposals WHERE id = ?').get(id);
+    if (!r) return null;
+    let test = {};
+    try { test = JSON.parse(r.test_json || '{}'); } catch (e) {}
+    return { id: r.id, sourceId: r.source_id, status: r.status, problem: r.problem, oldInstructions: r.old_instructions, newInstructions: r.new_instructions, test, proposedBy: r.proposed_by, decidedBy: r.decided_by, decidedAt: r.decided_at, createdAt: r.created_at };
+  }
+
+  getSourceProposals({ sourceId = null, status = null } = {}) {
+    const rows = this.db.prepare('SELECT id FROM source_proposals WHERE (? IS NULL OR source_id = ?) AND (? IS NULL OR status = ?) ORDER BY created_at DESC, rowid DESC').all(sourceId, sourceId, status, status);
+    return rows.map(r => this.getSourceProposal(r.id));
+  }
+
+  decideSourceProposal(id, status, decidedBy) {
+    this.db.prepare('UPDATE source_proposals SET status = ?, decided_by = ?, decided_at = ? WHERE id = ? AND status = ?').run(status, decidedBy || '', new Date().toISOString(), id, 'pending');
+    return this.getSourceProposal(id);
   }
 
   deleteSource(id) {
@@ -1173,7 +1286,7 @@ class SqliteDatabase {
       r.jurisdiction || 'GLB',
       r.reg_no || '',
       r.risk_level || 'Medium',
-      r.risk_score || 50,
+      r.risk_score == null ? 50 : r.risk_score,
       r.summary || '',
       typeof r.details_json === 'string' ? r.details_json : JSON.stringify(r.details_json || {}),
       r.raw_content || ''
@@ -1199,7 +1312,7 @@ class SqliteDatabase {
         r.jurisdiction || 'GLB',
         r.reg_no || '',
         r.risk_level || 'Medium',
-        r.risk_score || 50,
+        r.risk_score == null ? 50 : r.risk_score,
         r.summary || '',
         typeof r.details_json === 'string' ? r.details_json : JSON.stringify(r.details_json || {}),
         r.raw_content || ''

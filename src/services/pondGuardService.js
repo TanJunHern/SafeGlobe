@@ -24,7 +24,9 @@ const AGENTS = {
   vessel_behaviour: { label: 'Vessel behaviour', check: 'vessel_behaviour', categories: ['vessel_ais_dark', 'vessel_sts_transfer', 'vessel_flag_changes'] }
 };
 const BUILT_IN_LISTS = 'Built-in sanctions and PEP data';
-const norm = s => String(s || '').toLowerCase().replace(/[“”"'‘’]/g, '').replace(/\s+/g, ' ').trim();
+// Evidence is about sanctions only when it, or the source it comes from, says so
+const SANCTIONS_WORDS = /sanction|designat|\bsdn\b|ofac|ofsi|embargo|blocklist|block list|watchlist|watch list|restricted part|denied part|list match/i;
+const norm = s => String(s || '').toLowerCase().replace(/[“”"'‘’*_`]/g, '').replace(/\s+/g, ' ').trim();
 const digits = s => String(s || '').replace(/[^0-9a-z]/gi, '').toLowerCase();
 
 /** High / Medium / Low for a source name: the Sources tab when it is listed there, else by what kind of source it is. */
@@ -61,7 +63,15 @@ function gatherEvidence(db, entity, rules) {
   for (const r of db.searchSourceRecords(entity.name).slice(0, 8)) {
     const second = ownIds.length > 0 && ownIds.some(id => digits(r.reg_no).includes(id) || digits(r.raw_content).includes(id));
     const text = `${r.entity_name}${r.reg_no ? ` (${r.reg_no})` : ''}, ${r.jurisdiction || 'no country'}: ${r.summary || ''} Risk level in source: ${r.risk_level}.`;
-    const agent = /pep|politically exposed/i.test(`${r.summary} ${r.raw_content}`) ? 'pep' : /ais|vessel|imo|sts/i.test(`${r.summary} ${r.reg_no}`) && entity.kind === 'vessel' ? 'vessel_behaviour' : 'sanctions';
+    // Each record goes to the one agent it is about. A record that is about none of them (a routine notice) is
+    // handed to no agent: it stays in Readable Source Intelligence and adds nothing to the score.
+    const about = `${r.summary} ${r.raw_content}`;
+    const agent = /pep|politically exposed/i.test(about) ? 'pep'
+      : entity.kind === 'vessel' && /\bais\b|ship-to-ship|\bsts\b|dark period|without an ais|flag change/i.test(about) ? 'vessel_behaviour'
+      : SANCTIONS_WORDS.test(`${about} ${r.source_label}`) ? 'sanctions'
+      : /owner|shareholder|nominee|bearer share|holding|controlled by|ship manager|managed by/i.test(about) ? 'ownership'
+      : null;
+    if (!agent) continue;
     add(agent, r.source_label, text, { second_identifier_match: second, source_record_id: r.id });
   }
   for (const f of entity.findings || []) {
@@ -104,9 +114,9 @@ function gatherEvidence(db, entity, rules) {
  * Returns [{ raw: finding-to-record }] : every entry goes through the schema check in riskService.recordFindings,
  * so a rejected one is stored with its reason.
  */
-function vetAgentFindings(db, agent, event, evidence, { idPrefix, promptVersion }) {
+function vetAgentFindings(db, agent, event, evidence, { idPrefix, promptVersion, subject }) {
   const spec = AGENTS[agent];
-  const grounded = new Map((event.grounded_sources || []).map(g => [g.url, g]));
+  const grounded = new Map((event.grounded_sources || []).flatMap(g => [[g.ref, g], [g.url, g]]).filter(([k]) => k));
   const out = [];
   (event.findings || []).forEach((f, i) => {
     const base = {
@@ -119,15 +129,24 @@ function vetAgentFindings(db, agent, event, evidence, { idPrefix, promptVersion 
     if (!spec.categories.includes(f.category)) return reject(`The ${spec.label} agent may not report "${f.category}".`);
 
     if (agent === 'adverse_media') {
-      // The link must be one Google Search actually returned for this run, not one the model wrote
+      // The page must be one Google Search actually returned for this run, cited by its ref (G1, G2, ...), not a link the model wrote
       const hit = grounded.get(f.evidence_ref);
       if (!hit) return reject('The article link was not among the pages Google Search returned.');
+      const said = norm(`${(hit.segments || []).join(' ')} ${event.search_notes || ''}`);
+      if (said && !said.includes(norm(base.evidence_quote))) return reject('The quote is not in what Google Search returned.');
+      // Namesakes: the page must name this counterparty, and a vessel article must carry the same IMO number
+      const about = norm(`${base.evidence_quote} ${(hit.segments || []).join(' ')} ${hit.title || ''}`);
+      if (subject && subject.name && !about.includes(norm(subject.name))) return reject(`The article does not name ${subject.name}.`);
+      const imos = [...`${base.evidence_quote} ${base.summary}`.matchAll(/IMO[\s:#.]*(\d{7})/gi)].map(m => m[1]);
+      if (subject && subject.kind === 'vessel' && imos.length && !imos.includes(digits(subject.imo || subject.reg))) return reject(`The article is about a different vessel (IMO ${imos[0]}).`);
       return out.push(Object.assign(base, { source_name: hit.title || hit.domain || 'Web page', source_url: hit.url, source_trust: trustFor(db, hit.domain || 'news'), read_at: new Date().toISOString() }));
     }
 
     const item = evidence.items.get(f.evidence_ref);
     if (!item || item.agent !== agent) return reject('It cites evidence the agent was not given.');
     if (!norm(item.text).includes(norm(base.evidence_quote))) return reject('The quote is not in the cited evidence.');
+    // A sanctions finding must rest on evidence about sanctions: a notice that merely names the counterparty is not a match
+    if (agent === 'sanctions' && !SANCTIONS_WORDS.test(`${item.text} ${item.source_name}`)) return reject('The cited evidence does not mention sanctions or a sanctions list.');
     // Only a second identifier confirms a sanctions match. A name alone is a possible match at most.
     if (base.category === 'sanctions_confirmed' && !item.second_identifier_match) {
       base.category = 'sanctions_possible';
@@ -173,8 +192,12 @@ async function screenEntity(db, entityId, emit) {
   const entity = db.getEntityById(entityId);
   if (!entity) throw Object.assign(new Error('Counterparty not found'), { status: 404 });
   const rules = getRules(db);
-  const evidence = gatherEvidence(db, entity, rules);
   const m = mode(db);
+  // Website sources ticked "Run on every screening" are read first, so the agents see today's page (live runs only)
+  if (m.live) {
+    try { await require('./crawlerService').crawlAll(db, { onlyRunOnScreening: true, olderThanMs: 10 * 60 * 1000 }); } catch (err) { console.error('[Pond-Guard] sources not refreshed:', err.message); }
+  }
+  const evidence = gatherEvidence(db, entity, rules);
   emit({ type: 'started', entityId, name: entity.name, mode: m.live ? 'live' : 'offline', reason: m.reason, agents: evidence.kinds.map(k => ({ id: k, label: AGENTS[k].label })) });
   if (!m.live || !takeDailyBudget(db, 'pond_guard', config.pondGuardDailyCap)) return offlineRun(db, entity, evidence.kinds, emit, m.reason || 'Daily limit reached.');
 
@@ -189,7 +212,7 @@ async function screenEntity(db, entityId, emit) {
     }, event => {
       if (event.type === 'agent_started') return emit(Object.assign({ label: (AGENTS[event.agent] || {}).label || event.agent }, event));
       if (event.type === 'agent_done' && AGENTS[event.agent]) {
-        const vetted = event.ok ? vetAgentFindings(db, event.agent, event, evidence, { idPrefix, promptVersion: meta.prompt_version }) : [];
+        const vetted = event.ok ? vetAgentFindings(db, event.agent, event, evidence, { idPrefix, promptVersion: meta.prompt_version, subject: entity }) : [];
         raw.push(...vetted);
         ran[event.agent] = { ok: Boolean(event.ok), sources: [...new Set((evidence.briefs[event.agent].evidence || []).map(e => e.source_name))], grounded: (event.grounded_sources || []).length };
         const rules2 = rules.rowById;
@@ -226,6 +249,7 @@ async function screenEntity(db, entityId, emit) {
   const scored = riskService.rescoreEntity(db, entityId);
   const breakdown = riskService.assessEntity(db, entityId);
   db.addAlert('Pond-Guard', entityId, `${entity.name} screened by Pond-Guard: ${breakdown.risk} of ${breakdown.cap}, ${breakdown.routeLabel}`, breakdown.route);
+  require('../events/bus').publish('screening-completed', { entityId, risk: breakdown.risk, confidence: breakdown.confidence, route: breakdown.route, offline: false, modelId: meta.model_id || '' });
   emit({ type: 'scored', offline: false, breakdown, before: scored ? scored.before : null, modelId: meta.model_id || '' });
 }
 

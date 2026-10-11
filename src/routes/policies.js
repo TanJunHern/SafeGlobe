@@ -59,4 +59,17 @@ router.post('/compile', (req, res) => {
   });
 });
 
+// GET /api/policies/clauses   every policy clause with its text and where it was found (Agent Search or the offline fallback)
+router.get('/clauses', async (req, res) => {
+  const policySearch = require('../services/policySearch');
+  res.json({ status: policySearch.status(), clauses: await policySearch.allClauses(getDb()) });
+});
+
+// GET /api/policies/search?q=...   policy search (feature 12)
+router.get('/search', require('../middleware/rateLimit').aiRateLimit, async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (!q) return res.status(400).json({ error: 'Type a question or a few words to search the policies' });
+  res.json(Object.assign({ query: q.slice(0, 300) }, await require('../services/policySearch').search(getDb(), q)));
+});
+
 module.exports = router;

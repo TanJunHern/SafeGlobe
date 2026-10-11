@@ -67,6 +67,18 @@ async function ask(payload, { timeoutMs = 45000 } = {}) {
   try { return await res.json(); } finally { done(); }
 }
 
+/** Crawler agent (feature 3): the records one page names. { records: [{ name, kind, country, identifier, summary, quote }], note, model_id } */
+async function crawlerExtract(payload, { timeoutMs = 60000 } = {}) {
+  const { res, done } = await post('/crawler/extract', payload, timeoutMs);
+  try { return await res.json(); } finally { done(); }
+}
+
+/** Crawler agent (feature 9): new extraction instructions for a source whose extraction broke. { instructions, reason, model_id } */
+async function crawlerProposeFix(payload, { timeoutMs = 60000 } = {}) {
+  const { res, done } = await post('/crawler/propose-fix', payload, timeoutMs);
+  try { return await res.json(); } finally { done(); }
+}
+
 async function health({ timeoutMs = 5000 } = {}) {
   if (!config.agentsServiceUrl) return null;
   try {
@@ -77,4 +89,4 @@ async function health({ timeoutMs = 5000 } = {}) {
   }
 }
 
-module.exports = { configured, screen, ask, health };
+module.exports = { configured, screen, ask, crawlerExtract, crawlerProposeFix, health };

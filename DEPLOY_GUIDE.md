@@ -41,11 +41,11 @@ Leaving a block commented is always safe: the app uses the fallback written in t
 | Service | If you skip its step, the app… |
 | --- | --- |
 | Gemini (AI Studio or Vertex AI) | Uses "Gemini disabled" mode with labelled offline samples |
-| ADK agents service | Pond-Guard shows the stored findings as an "Offline sample"; Ask Dilly uses its built-in answers |
+| ADK agents service | Pond-Guard shows the stored findings as an "Offline sample"; Ask Dilly uses its built-in answers; crawler agents use the built-in pattern extractor |
 | BigQuery (not built yet) | Uses local tables; forecast and anomalies show labelled samples |
-| Pub/Sub, Cloud Scheduler (not built yet) | Handles events inside the app |
-| Cloud Storage (not built yet) | Stores files locally; on Cloud Run they reset when the app restarts |
-| Agent Search (not built yet) | Uses the built-in policy text |
+| Pub/Sub, Cloud Scheduler | Handles events inside the app; "Run now" in the Sources tab replaces the schedule |
+| Cloud Storage | Stores page snapshots locally; on Cloud Run they reset when the app restarts |
+| Agent Search | Uses the built-in policy text, labelled "Offline fallback" |
 | Document AI (not built yet) | Reads PDFs with Gemini directly, as today |
 | Gmail API (not built yet) | Shows the "copy link" button, as today |
 | Google sign-in | Shows "not set up" on the two Google options; the demo accounts work (with `DEMO_MODE=true`) |
@@ -159,10 +159,14 @@ GOOGLE_CLOUD_LOCATION=global
 VERTEX_GEMINI_MODEL=<the model you chose>
 VERTEX_GEMINI_FALLBACK_MODELS=<one or two more, comma separated>
 AGENTS_MODEL=<the model the ADK agents use>
+AGENTS_THINKING_LEVEL=LOW
 GOOGLE_GENAI_USE_VERTEXAI=TRUE
 ```
 - `VERTEX_GEMINI_MODEL` and its fallbacks are used by the app (document auto-fill, DDQ guide, copilot).
 - `AGENTS_MODEL` is used by the ADK agents (Pond-Guard, Ask Dilly). It must support Grounding with Google Search.
+- `AGENTS_THINKING_LEVEL` is optional: `MINIMAL`, `LOW`, `MEDIUM` or `HIGH`. Left out, the model uses its own
+  default. Measured on 12 Oct 2026 with `gemini-3.5-flash`: a Pond-Guard run took about 60 seconds on the default
+  and about 20 seconds on `LOW`, with the same findings and score for Aurora Venture.
 - `GOOGLE_GENAI_USE_VERTEXAI=TRUE` only matters when you run the agents on your computer (`npm run agents`);
   `scripts/deploy.sh agents-uat` sets it on Cloud Run for you.
 
@@ -173,13 +177,25 @@ Vertex AI is paid per token from your credit. Grounding with Google Search is bi
 
 ---
 
-## Step 5: Cloud Storage bucket (uploads, page snapshots, policy files)
+## Step 5: Cloud Storage bucket (page snapshots, policy files, uploads)
 
-**Not built yet (Phase 3).** The setup script already creates the bucket. Keep `DOCUMENT_STORAGE=local` (the
-default) for now; the Cloud Storage driver and its variables are added in Phase 3 and this step will be updated.
+**What it is for today:** the snapshot a crawler agent keeps of every page it reads, and the policy files that
+Agent Search indexes (step 8). DDQ uploads still stay on the instance until Phase 5.
 
-**Fallback (today's behaviour):** files are stored on the instance. On Cloud Run they are lost when the app
-restarts, and a banner says so.
+`scripts/gcp-setup.sh` (step 1) already created the bucket `duedilly-uat-safe-globe-compliance` and gave
+`duedilly-run` access to it. To use it, in `.env.uat`:
+```
+DOCUMENT_STORAGE=gcs
+GCS_BUCKET=duedilly-uat-safe-globe-compliance
+```
+Check the bucket exists (read-only): `gcloud storage buckets describe gs://duedilly-uat-safe-globe-compliance --format='value(name,location)'`
+
+Snapshots are saved under `snapshots/<workspace>/<source>/<time>.html`. A page is at most 2 MB, so a daily read of
+a few sites costs well under a cent a month.
+
+**Fallback:** with `DOCUMENT_STORAGE=local` (the default), or if a Cloud Storage call fails, snapshots are kept in
+a folder next to the database. On Cloud Run they are lost when the app restarts. The Sources tab shows which is in
+use ("Snapshots: Cloud Storage" or "local folder (offline fallback)").
 
 ---
 
@@ -192,22 +208,83 @@ Vertex AI, and the variables, are added in Phase 4 and this step will be updated
 
 ---
 
-## Step 7: Pub/Sub topics and the daily schedule
+## Step 7: Pub/Sub topics and the schedules
 
-**Not built yet (Phase 3).** The setup script already creates the topics and the job `duedilly-uat-rescreen-due`.
-Nothing listens to them until Phase 3 adds the push subscriptions and the variables.
+**What it does:** the app raises six events (`screening-requested`, `screening-completed`, `ddq-submitted`,
+`alert-raised`, `rescreen-due`, `source-changed`). With Pub/Sub on, each goes to the topic `uat-<event>` and comes
+back to the app at `POST /events/<event>`. Cloud Scheduler publishes `rescreen-due` every day at 06:00 and calls
+`POST /events/crawl-due` every day at 06:30 (Singapore time), which makes every crawler agent read its website.
 
-**Fallback:** events are handled inside the app.
+`scripts/gcp-setup.sh` (step 1) already created the topics and the 06:00 job. After the first deploy (step 13):
+
+1. Run, once:
+   ```
+   bash scripts/pubsub-subscriptions.sh
+   ```
+   It creates one push subscription per topic (`uat-<event>-push`) and the job `duedilly-uat-crawl-due`. Every
+   delivery is signed as `duedilly-run` and addressed to your app's link; the app refuses anything else.
+2. In `.env.uat`:
+   ```
+   PUBSUB_MODE=pubsub
+   ```
+   `PUBSUB_PUSH_AUDIENCE` (your app's link) and `PUBSUB_PUSH_SERVICE_ACCOUNT` (`duedilly-run@...`) are set on
+   Cloud Run by `scripts/deploy.sh`; you only need them in a settings file to test pushes on your own computer.
+3. Redeploy: `bash scripts/deploy.sh uat`
+4. Check (read-only): `bash scripts/pubsub-subscriptions.sh check`
+5. Try the crawl schedule without waiting for the morning:
+   `gcloud scheduler jobs run duedilly-uat-crawl-due --location asia-southeast1`
+
+Cost: Pub/Sub's first 10 GiB a month are free and these events are a few bytes each. Cloud Scheduler gives 3
+free jobs per billing account; this uses 2.
+
+**Fallback:** with `PUBSUB_MODE=inline` (the default) events are handled inside the app, and a failed publish is
+handled inside the app too, so no event is lost. Without the schedule, use **Run now** in the Sources tab.
+The Sources tab shows which is in use ("Events: Pub/Sub" or "handled inside the app (offline fallback)").
+
+**Crawler agents, the rules they keep** (in code, not adjustable): they obey `robots.txt` as `DueDillyBot`; a
+website is only read after someone ticks "I have checked that this site's terms allow automated reading"; a page
+that needs a sign-in is never read and no cookie is ever sent; one request at a time per site, 5 seconds apart;
+only public web addresses. `CRAWLER_DAILY_CAP` (default 50) and `TRIAGE_DAILY_CAP` (default 200) limit the AI
+calls per day.
 
 ---
 
 ## Step 8: Agent Search for policies (formerly Vertex AI Search)
 
-**Not built yet (Phase 3).** You do not need Firebase for this. In Phase 3 Gemini prepares the policy files and
-walks you through creating the data store `duedilly-policies` in the Cloud console; this step will then list the
-exact clicks and variable names.
+**What it does:** answers policy searches and finds the clause each route relied on, from a data store that
+indexes one file per policy clause, the CDDQ template and the demo policy PDF. You do not need Firebase.
 
-**Fallback:** the built-in policy text.
+1. Run:
+   ```
+   bash scripts/agent-search-setup.sh
+   ```
+   It builds the files in `docs/policies/` (`node scripts/build-policy-files.js`), uploads them to
+   `gs://duedilly-uat-safe-globe-compliance/policies/`, creates the data store **`duedilly-policies`** in
+   **`global`** (an unstructured-document search data store) and imports the files.
+2. Wait a few minutes for indexing, then check (read-only):
+   ```
+   bash scripts/agent-search-setup.sh check
+   ```
+   A result should name `policy-clause-5-4.txt`. You can also see the data store in the Cloud console under
+   AI Applications > Data stores.
+3. In `.env.uat`:
+   ```
+   AGENT_SEARCH_DATA_STORE=duedilly-policies
+   AGENT_SEARCH_LOCATION=global
+   ```
+4. Tell Gemini it is ready (the section 9.1 go-ahead), then redeploy: `bash scripts/deploy.sh uat`
+
+Cost, read on 12 Oct 2026 from the pricing page (check it again before you rely on it:
+https://cloud.google.com/generative-ai-app-builder/pricing): Search Standard Edition USD 1.50 per 1,000 searches,
+Enterprise Edition USD 4.00 per 1,000. The app asks for snippets only, which need no Enterprise feature. Whether a
+data store searched without an app is billed at the Standard rate was not confirmed in the docs. Index storage
+has a free allowance far above these eight small files. The app sends at most `AGENT_SEARCH_DAILY_CAP` searches a
+day (default 200, about USD 0.30 to 0.80 a day at most) and caches clause lookups for six hours.
+
+To change the policy text later: edit it in `src/services/policyRagService.js`, run the script again, redeploy.
+
+**Fallback:** with `AGENT_SEARCH_DATA_STORE` commented, over the daily cap, or if the call fails, the built-in
+policy text answers and the screen says "Offline fallback".
 
 ---
 
@@ -333,12 +410,15 @@ AGENTS_INTERNAL_TOKEN=<long random text, the same one the agents use>
    ```
 
 What the script sets, so you do not have to:
+- the app: `PUBSUB_PUSH_AUDIENCE` (the app's link) and `PUBSUB_PUSH_SERVICE_ACCOUNT` (`duedilly-run`), so pushes
+  from Pub/Sub and Cloud Scheduler can be checked (step 7);
 - the app: `APP_ENV=uat`, one instance at most (`--max-instances 1`, because the data is in SQLite on the
   instance), public access, the secrets from step 12, `AGENTS_SERVICE_URL`, and the non-secret lines of `.env.uat`;
 - the agents: no public access, only `duedilly-run` may call it, scales to zero, `GOOGLE_GENAI_USE_VERTEXAI=TRUE`,
-  `AGENTS_MODEL`, and `DUEDILLY_INTERNAL_URL` (the app's link, for Ask Dilly's read-only tools).
+  `AGENTS_MODEL`, `AGENTS_THINKING_LEVEL` when it is set, and `DUEDILLY_INTERNAL_URL` (the app's link, for Ask Dilly's read-only tools).
 
-Settings you can add to `.env.uat` (all optional): `POND_GUARD_DAILY_CAP` (default 30), `AI_RATE_LIMIT_MAX`
+Settings you can add to `.env.uat` (all optional): `CRAWLER_DAILY_CAP` (default 50), `TRIAGE_DAILY_CAP`
+(default 200), `AGENT_SEARCH_DAILY_CAP` (default 200), `POND_GUARD_DAILY_CAP` (default 30), `AI_RATE_LIMIT_MAX`
 (default 20) and `AI_RATE_LIMIT_WINDOW_MINUTES` (default 10), `WORKSPACE_NAME`, `CONFIDENCE_THRESHOLD`,
 `CORS_ORIGIN`, `VESSELFINDER_LOOKUP`.
 
@@ -357,6 +437,9 @@ container on your computer.
 3. Open the link in a private window, as a judge would.
 4. Open Aurora Venture and press **Screen with Pond-Guard**. Each agent should go from "Reading…" to its findings.
    If it says "Offline sample", the reason is written under it.
+5. Sources > **Crawler agents** > **Add the demo page**, then **Publish a change**. Within a few seconds the bell
+   shows a High ripple for Aurora Venture with "Screened again".
+6. Optional, for events through Pub/Sub and the daily schedules: step 7. For policy search on Agent Search: step 8.
 
 ---
 

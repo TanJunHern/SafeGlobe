@@ -47,6 +47,7 @@ if [ "$TARGET" = "agents-uat" ]; then
   put GOOGLE_CLOUD_PROJECT "$PROJECT_ID"
   put GOOGLE_CLOUD_LOCATION "$LOCATION"
   put AGENTS_MODEL "$MODEL"
+  put AGENTS_THINKING_LEVEL "$(setting AGENTS_THINKING_LEVEL)"
   put DUEDILLY_INTERNAL_URL "$APP_URL"
   [ -n "$APP_URL" ] || echo "NOTE: $APP_SERVICE is not deployed yet, so Ask Dilly's tools cannot reach it. Deploy uat, then run this again."
 
@@ -80,12 +81,17 @@ put GOOGLE_CLOUD_PROJECT "$PROJECT_ID"
 put GCP_PROJECT_ID "$PROJECT_ID"
 put AGENTS_SERVICE_URL "$AGENTS_URL"
 put PUBLIC_BASE_URL "$APP_URL"
+# Events (Phase 3). A push from Pub/Sub or Cloud Scheduler must carry a token made for this link, signed as the run service account.
+put PUBSUB_PUSH_AUDIENCE "$APP_URL"
+put PUBSUB_PUSH_SERVICE_ACCOUNT "$SA_EMAIL"
 # Everything else is copied from .env.uat when it is set there. No secret is in this list.
 for key in DEMO_MODE GOOGLE_CLOUD_LOCATION VERTEX_GEMINI_MODEL VERTEX_GEMINI_FALLBACK_MODELS GEMINI_MODEL GEMINI_FALLBACK_MODELS \
   GOOGLE_CLIENT_ID COMPLIANCE_OFFICER_EMAILS GOOGLE_MAPS_API_KEY WORKSPACE_NAME CONFIDENCE_THRESHOLD CORS_ORIGIN \
-  AI_RATE_LIMIT_MAX AI_RATE_LIMIT_WINDOW_MINUTES POND_GUARD_DAILY_CAP VESSELFINDER_LOOKUP DOCUMENT_STORAGE; do
+  AI_RATE_LIMIT_MAX AI_RATE_LIMIT_WINDOW_MINUTES POND_GUARD_DAILY_CAP VESSELFINDER_LOOKUP DOCUMENT_STORAGE GCS_BUCKET \
+  PUBSUB_MODE CRAWLER_DAILY_CAP TRIAGE_DAILY_CAP AGENT_SEARCH_DATA_STORE AGENT_SEARCH_LOCATION AGENT_SEARCH_DAILY_CAP; do
   put "$key" "$(setting "$key")"
 done
+if [ "$(setting PUBSUB_MODE)" = "pubsub" ] && [ -z "$APP_URL" ]; then echo "NOTE: PUBSUB_MODE=pubsub needs the app's link. Deploy once more after this run, then run scripts/pubsub-subscriptions.sh."; fi
 [ -n "$AGENTS_URL" ] || echo "NOTE: $AGENTS_SERVICE is not deployed yet, so Pond-Guard and Ask Dilly will use the offline fallback."
 
 echo "== Deploying $APP_SERVICE (public link, one instance, min instances $MIN_INSTANCES)"

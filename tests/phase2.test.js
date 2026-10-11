@@ -134,11 +134,33 @@ test('Pond-Guard: what an agent returns is checked before it counts', () => {
   assert.match(vet([f({ evidence_quote: 'words that are not there' })])[0]._reason, /quote is not in the cited evidence/);
   assert.match(vet([f({ category: 'vessel_ais_dark' })])[0]._reason, /may not report/);
 
-  // Adverse media: the link must be one Google Search returned in this run
-  const media = { findings: [f({ category: 'adverse_media_severe', evidence_ref: 'https://news.example/a', match_basis: 'strong_name' }), f({ category: 'adverse_media_other', evidence_ref: 'https://made-up.example/x' })], grounded_sources: [{ url: 'https://news.example/a', title: 'Example News', domain: 'news.example' }] };
-  const [real, invented] = pondGuard.vetAgentFindings(db, 'adverse_media', media, evidence, { idPrefix: 'T', promptVersion: 'v1' });
-  assert.equal(real.source_url, 'https://news.example/a');
+  // A notice that only names the counterparty is not a sanctions match, and is not handed to the sanctions agent at all
+  const notice = { id: 'rec_notice', source_id: 's_n', source_label: 'Port notices', source_type: 'website', entity_name: 'Arkady Zemtsov', entity_kind: 'person', summary: 'Arkady Zemtsov attended the port users meeting.', raw_content: 'Arkady Zemtsov attended the port users meeting.', risk_level: 'Unrated', risk_score: 0 };
+  db.addSourceRecord(notice);
+  const withNotice = pondGuard.gatherEvidence(db, db.getEntityById('zemtsov'), rules);
+  assert.equal(Object.values(withNotice.briefs).some(b => b.evidence.some(e => /port users meeting/.test(e.text))), false);
+  const plain = { ref: 'E900', agent: 'sanctions', source_name: 'Port notices', text: 'Arkady Zemtsov attended the port users meeting.', read_at: new Date().toISOString(), second_identifier_match: false };
+  withNotice.items.set('E900', plain);
+  const [notSanctions] = pondGuard.vetAgentFindings(db, 'sanctions', { findings: [f({ category: 'sanctions_possible', evidence_ref: 'E900', evidence_quote: 'attended the port users meeting', match_basis: 'strong_name' })], model_id: 'm' }, withNotice, { idPrefix: 'T', promptVersion: 'v1' });
+  assert.match(notSanctions._reason, /does not mention sanctions/);
+  db.deleteSourceRecordsBySourceId('s_n');
+
+  // Adverse media: the page must be one Google Search returned in this run, cited by its ref, and it must be about this counterparty
+  const page = { ref: 'G1', url: 'https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc', title: 'Example News', domain: 'news.example', segments: ['Arkady Zemtsov was charged with fraud in March 2026.'] };
+  const m = over => f(Object.assign({ category: 'adverse_media_severe', evidence_ref: 'G1', evidence_quote: 'Arkady Zemtsov was charged with fraud in March 2026.', match_basis: 'strong_name' }, over));
+  const vetMedia = (findings, subject) => pondGuard.vetAgentFindings(db, 'adverse_media', { findings, grounded_sources: [page, Object.assign({}, page, { ref: 'G2', url: 'https://x.example/2', segments: ['The tanker NEON (IMO 9183295) was added to a sanctions list.'] })], search_notes: 'Notes. The **King Loon** was detained.' }, evidence, { idPrefix: 'T', promptVersion: 'v1', subject });
+  const zemtsov = db.getEntityById('zemtsov');
+  const [real, invented, misquoted] = vetMedia([m({}), m({ evidence_ref: 'https://made-up.example/x' }), m({ evidence_quote: 'He was convicted.' })], zemtsov);
+  assert.equal(real._reason, undefined);
+  assert.equal(real.source_url, page.url); // the link is Google's, never one the model wrote
+  assert.equal(real.source_name, 'Example News');
   assert.match(invented._reason, /not among the pages Google Search returned/);
+  assert.match(misquoted._reason, /quote is not in what Google Search returned/);
+  // Namesakes are left out: another vessel's news never lands on this counterparty
+  const aurora = db.getEntityById('aurora');
+  const [otherShip, otherName] = vetMedia([m({ evidence_ref: 'G2', evidence_quote: 'The tanker NEON (IMO 9183295) was added to a sanctions list.' }), m({ evidence_ref: 'G2', evidence_quote: 'The King Loon was detained.' })], aurora);
+  assert.match(otherShip._reason, /does not name Aurora Venture|different vessel/);
+  assert.match(otherName._reason, /does not name Aurora Venture/);
 
   // A ruled-out finding is stored as rejected with its reason and adds no points
   const out = riskService.recordFindings(db, 'vet-case', [ok, vet([f({ evidence_ref: 'E999' })])[0]], { replace: true });

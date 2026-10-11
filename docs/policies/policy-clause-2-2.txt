@@ -1,0 +1,7 @@
+DueDilly Enterprise Compliance & Counterparty Risk Policy (v2026.1)
+Demo policy: written for the DueDilly demo. The company and its policy are fictional.
+
+Section: Contract Value & Financial Exposure Thresholds
+Clause 2.2
+
+Contracts exceeding SGD 500,000 require senior compliance officer sign-off and enhanced audited financial verification.

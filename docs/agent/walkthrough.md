@@ -185,6 +185,56 @@ agents' Gemini backend, Secret Manager or Cloud Run. The gate ("Pond-Guard scree
    server ignores it, but the buttons are not hidden there yet.
 6. The Screening tab in the drawer still shows the older agent cards. The new agent rows are on the first tab.
 
+### Live on Vertex AI (12 Oct 2026, from the user's computer)
+
+The user said go for Vertex AI. The agents (`APP_ENV=uat npm run agents`) and the app (`APP_ENV=uat`, a scratch
+database) were run on this computer against Gemini on Vertex AI. **Not yet done: the deploy to Cloud Run**, so the
+gate "live on UAT" is still open until the user runs the three deploy commands and the smoke test.
+
+What worked on the first call, with no change: the ADK coordinator and its parallel sub-agents, `output_schema`
+with `gemini-3.5-flash`, Grounding with Google Search, the Ask Dilly tools and the URL context tool, and the
+shared client on Vertex AI with a response schema.
+
+| Live check | Result |
+| --- | --- |
+| Pond-Guard, Aurora Venture | **85, High, Escalate**, confidence 92%. AIS dark +20, ship-to-ship +20, flag changes +10, Cameroon +20, ownership unclear +15. Same total as the offline sample (confidence 96% offline). |
+| Pond-Guard, Arkady Zemtsov | 100, Escalate, sanctions pose. Confirmed match from the UK list (name plus date of birth). 11 seconds. |
+| Pond-Guard, Kestrel Trading | 55, Medium, Investigate, confidence 65% (48% offline). 15 seconds. |
+| Ask Dilly, "Which counterparty is the riskiest and why?" | Used `search_counterparties` and `get_risk_breakdown`, linked the cases. 8 seconds. |
+| Ask Dilly, "Approve the Aurora Venture case" | Refused: "A person must approve or change a case". |
+| Ask Dilly, a pasted transparency.org link | Read the page with the URL context tool. 11 seconds. |
+| Shared client (`gemini-3.5-flash-lite`) | JSON with a response schema in 1.3 seconds; the KYCP report still takes its number from the points table. |
+
+Three things broke or were poor, and were fixed:
+
+1. **Every adverse media finding was rejected.** Google Search returns its own redirect links
+   (`vertexaisearch.cloud.google.com/grounding-api-redirect/...`), which the model never sees, so the link the model
+   wrote could never match. Now the search results are saved with a ref each (G1, G2, ...) and the statements
+   Google tied to each page; the formatter agent cites a ref; the app checks the ref, checks the quote against what
+   the search returned, and stores Google's link. (`agents/app/pond_guard.py`, `src/services/pondGuardService.js`)
+2. **Namesakes.** The first search for the fictional "Aurora Venture" returned news about real ships with other
+   IMO numbers. With fix 1 alone those would have counted. Now an article counts only when the page names the
+   counterparty, and for a vessel only when any IMO number in it is the same. The others are stored as "left out"
+   with the reason.
+3. **Speed and "too many requests".** A run took 62 seconds, and one direct call got a 429 from Vertex AI.
+   The agents now retry 429, 500 and 503 up to four times, and a new optional setting `AGENTS_THINKING_LEVEL`
+   (set to `LOW` in `.env.uat`) brings the Aurora Venture run to **22 seconds** with the same findings.
+   `.env.example`, `scripts/deploy.sh`, `scripts/agents-dev.sh` and `DEPLOY_GUIDE.md` step 4 carry the new setting.
+
+4. **The smoke test failed** on three checks: since the Accounts phase the scoring rules, the breakdown and the
+   Pond-Guard status need a sign-in. `scripts/smoke.sh` now signs in as the demo compliance officer when
+   `DEMO_MODE=true`, and otherwise checks that a sign-in is required. Run locally both ways: all checks pass.
+
+Tests after the fixes: `npm test` 187 pass; `npm run test:agents` 8 pass (one new, for the search-page refs).
+The adverse media test in `tests/phase2.test.js` was rewritten for refs and namesakes.
+
+Still not tested: an adverse media finding that is **accepted** live (the demo counterparties are fictional, so
+the web has nothing true about them; the accepting path is covered by the offline test only), the identity token
+between the two Cloud Run services, and `scripts/deploy.sh` itself.
+
+Cost: not measured. Each Pond-Guard run is six model calls and one grounded search; about ten runs and a few
+dozen small calls were made today.
+
 ---
 
 ## Accounts phase: roles, workspaces, sign-in, Settings (12 Oct 2026)
@@ -278,3 +328,137 @@ Start the app (`npm run dev`) and open `http://localhost:8080/login`.
 7. Deleting an account does not rewrite history: past records store names and emails as text.
 8. The Globe's country colours and the "Sample: 9 of 182 countries" legend still come from the page's built-in
    list in every workspace. That is reference data, but the wording is from the demo.
+
+---
+
+## Phase 3: events, crawler agents, self-healing, Ripples triage, policy search (12 Oct 2026)
+
+Built by Gemini Code, on this computer only. **Status: built and tested on fallbacks, and the parts that only
+need Gemini were run live on Vertex AI locally (already approved). Not yet live, and waiting for the section 9.1
+go-ahead: Pub/Sub, Cloud Scheduler, Cloud Storage, Agent Search. Not deployed: the UAT link still runs Phase 2.**
+
+Gate: "a changed page creates a ripple and a re-screen". **Met locally**, offline (in the tests) and live on Vertex
+AI (crawler agent, triage by Gemini, Pond-Guard re-screen: about 25 seconds from the change to the new score).
+
+### What changed
+
+| Area | Files |
+| --- | --- |
+| Event bus: six events, handled once each, per workspace; Pub/Sub publish over REST with an inline fallback | `src/events/bus.js`, `src/events/handlers.js` (new) |
+| Push endpoint for Pub/Sub and Cloud Scheduler, checked by Google-signed token | `src/routes/events.js` (new), `src/server.js` |
+| Crawler: robots.txt, terms tick, no sign-in pages, public addresses only, polite reading, snapshots, change detection, suggested fixes | `src/services/crawlerService.js` (new) |
+| Snapshot storage: local folder or Cloud Storage | `src/services/objectStorage.js` (new) |
+| The crawler agent and the fix-suggesting agent (ADK, no tools) | `agents/app/crawler.py` (new), `agents/app/main.py`, `agents/app/models.py`, `src/services/agentsClient.js` |
+| The fictional demo page and its two versions | `src/services/demoFixtures.js` (new), served at `/demo/port-notices` |
+| Ripples triage: severity, duplicates merged, "what changed", re-screen on High | `src/services/triageService.js` (new) |
+| Policy search and clause lookup: Agent Search or the built-in text | `src/services/policySearch.js` (new), `src/routes/policies.js` |
+| Crawler routes: status, Run now, settings, snapshot, suggestions, demo page | `src/routes/sources.js` |
+| Website sources now go through the crawler (they used to be fetched with no robots.txt check) | `src/services/sourceHandlers.js` |
+| Database: triage columns on `alerts`, tables `events_seen` and `source_proposals`, new helper methods | `src/db/sqlite.js`, `src/accounts/accountsStore.js` |
+| Pond-Guard: evidence routing, a sanctions guard, "check every category", sources ticked "Run on every screening" are read first, `screening-completed` published | `src/services/pondGuardService.js`, `agents/app/pond_guard.py` |
+| Screens: Crawler agents card, Ripples severity, clause text in "Why <score>?", Policy search | `safe-globe.html` |
+| Policy files and the demo policy PDF | `scripts/build-policy-files.js` (new), `docs/policies/` (8 files), `docs/test-docs/kyc_policy.pdf` |
+| Scripts you run | `scripts/pubsub-subscriptions.sh`, `scripts/agent-search-setup.sh` (new), `scripts/deploy.sh` |
+| Settings and guide | `src/config.js`, `.env.example` (9 new placeholder blocks), `DEPLOY_GUIDE.md` steps 5, 7, 8, 13, 14 |
+| Tests | `tests/phase3.test.js` (new, 18 tests and sub-tests), `tests/phase2.test.js`, `agents/tests/test_agents.py` (3 new) |
+
+New variables: `PUBSUB_MODE`, `PUBSUB_PUSH_AUDIENCE`, `PUBSUB_PUSH_SERVICE_ACCOUNT`, `CRAWLER_DAILY_CAP`,
+`TRIAGE_DAILY_CAP`, `AGENT_SEARCH_DATA_STORE`, `AGENT_SEARCH_LOCATION`, `AGENT_SEARCH_DAILY_CAP`, `GCS_BUCKET`;
+`DOCUMENT_STORAGE` gains the value `gcs`. No existing name was changed. No npm package was added.
+
+### How to see it (offline, today)
+
+Start the app (`npm run dev`), sign in as Grace Teo.
+
+1. **The gate, in three clicks.** Sources > **Crawler agents** > **Add the demo page** (a fictional port authority
+   notice board at `/demo/port-notices`) > **Publish a change**. The page gains a notice that names Aurora
+   Venture. Within seconds: the source shows "Read, the page changed" and 3 records; Readable Source Intelligence
+   lists them with the source and read time; the bell shows a **High** ripple for Aurora Venture with
+   "Screened again: 85 of 100, Escalate (offline sample)". **Reset the demo page** puts version 1 back.
+2. **A crawler's rules.** Add a website source (Add source > Web). It is not read until you tick "I have checked
+   that this site's terms allow automated reading" on its row, then **Run now**. The row shows the result:
+   Read, Read no change, Read the page changed, Blocked by robots.txt, Needs a sign-in, or Could not be read,
+   with the reason. **View snapshot** shows the page text as it was read.
+3. **Suggested fixes (self-healing).** Needs the agents service (below). When a page is read but extraction
+   breaks, the row shows "Dilly suggests a fix" with the instructions now, the suggested ones, and the test
+   result on the stored snapshot. **Approve** applies it and reads the snapshot again; **Dismiss** changes nothing.
+4. **Ripples.** The ticker and the bell now show a severity (High, Medium, Low), one line on what changed,
+   merged duplicates as a count, and whether a re-screen ran. Hover the severity: it is a sorting aid, not a score.
+5. **Policy clauses.** Open Aurora Venture: each row of "Why 85?" that has a clause shows the clause text and
+   "Found by Offline fallback" (or "Agent Search" once connected), and the route line lists the clauses relied on.
+6. **Policy search.** Policies > **Policy search**: ask "when is a vessel questionnaire required?".
+
+To see the live agents on your computer: `APP_ENV=uat npm run agents` in one terminal and
+`APP_ENV=uat PORT=8080 node src/server.js` in another. The Crawler agents card then says "Live agents".
+
+### How it was tested
+
+- `npm test`: **205 pass, 0 fail**, offline, Gemini disabled (187 before). `npm run test:agents`: **11 pass** (8 before).
+- The new tests cover: an event handled once and in its own workspace; a failed Pub/Sub publish handled inline;
+  the push endpoint (401 without a token, with a forged token, and from another service account; a redelivery
+  does nothing; Cloud Scheduler's message applied to each workspace); robots.txt (own group, longest rule, Allow
+  wins a tie, wildcards); private and metadata addresses refused, including a public name that resolves to a
+  private address; 401, 403, a redirect to a sign-in page and a password form all "needs a sign-in"; no cookie
+  sent; requests spaced out; the terms tick; baseline, unchanged, changed; records that do not quote the page
+  dropped; a suggested fix tested and never applied without approval; triage rules, merging, the cooldown, and
+  Gemini's answer checked; policy search offline, on Agent Search (stand-in), at the cap and when it fails; role
+  checks on every new route; and the gate end to end.
+- One existing test was extended (`tests/phase2.test.js`): a notice that only names a counterparty is not handed
+  to the sanctions agent, and a sanctions finding that cites it is rejected.
+- The app started with every setting blank: the smoke test passed, and the crawler, storage, events and policy
+  search each reported their fallback. Both container images build.
+- In Chrome, on the local server: the Crawler agents card, the demo page flow, the bell and ticker, the clause
+  text in "Why 85?", the policy search card.
+- **Live on Vertex AI, on this computer** (agents and app with `.env.uat`, a scratch database):
+
+| Live check | Result |
+| --- | --- |
+| Crawler agent reads the demo page | 1 record on version 1; on version 2 it added Aurora Venture (vessel, IMO 9304124, CMR) and Halcyon Marine Services, each with an exact quote. No record rejected. 4 to 7 seconds. |
+| Ripples triage by Gemini (`gemini-3.5-flash-lite`) | Both ripples rated High with a one-line "what changed". |
+| Re-screen by Pond-Guard after the High ripple | Aurora Venture **85, High, Escalate**, confidence 92%. About 25 seconds after the change. |
+| Fix-suggesting agent, called directly with a sample page | Returned sensible new instructions and the reason. |
+
+- **Not tested, because it needs a go-ahead or a deploy:** a real Pub/Sub publish and push, the Cloud Scheduler
+  job, a real Cloud Storage upload, a real Agent Search query (the request shape is from the API definition, the
+  serving config name `default_serving_config` is the one it documents), the two new scripts, and a crawl of
+  anyone else's website. The self-healing flow end to end with the live agent was not run (the parts were).
+
+### Faults the live run found, now fixed
+
+1. **A port notice became a "possible sanctions match" (+40) and Aurora Venture went to 100.** Any source record
+   that was not about a PEP or a vessel was handed to the sanctions agent by default. Now a record goes to the one
+   agent it is about, or to none; and a sanctions finding is rejected unless the evidence it cites, or its source,
+   is about sanctions. This also tightens Phase 2.
+2. **Gemini merged the new port notice into an older alert** from another origin, so no re-screen was asked for.
+   Now only an alert from the same origin can be a duplicate, in code.
+3. **One run in six, the vessel agent left out the ship-to-ship finding** (Aurora Venture scored 65). The agents
+   are now told to go through every allowed category. After the change: 12 runs of 12 returned all three.
+   Prompt version is now `pond-guard-2026-10-12b`.
+
+### Things you should know, and decide
+
+1. **Halcyon Marine drops to 0, Auto-clear, after a live re-screen.** The changed page names Halcyon, its ripple is
+   rated High, and the live agents find nothing against Halcyon itself, so its two demo findings (40 points) are
+   replaced. Offline it stays at 40. This matters for the demo story (step 5 sends Halcyon a DDQ). Options: leave
+   it; or do not re-screen a counterparty that is only named as the manager; or reword the demo notice so it does
+   not name Halcyon. Tell me which.
+2. **Defaults I used because questions 3 to 6 were not answered:** crawl daily at 06:30 Singapore time; a High
+   ripple asks for a re-screen inside the daily cap, at most once per counterparty every 6 hours; the 12-hour
+   policy text and the 24-hour scoring rule both left as they are; the demo page as the "changed page".
+3. **The offline extractor is crude.** It is the pattern extractor that was already in the app. It is labelled
+   "Offline sample" and it gives its records a "Medium" rating from its own rules. The live crawler agent gives
+   no rating ("Unrated").
+4. **Website sources added before today** (the demo's "MAS enforcement actions" and "Indonesia regulation
+   monitor") have no address stored, so no crawler reads them. They are demo cards.
+5. **"Run on every screening"** reads the ticked sources before a live Pond-Guard run, skipping any read in the
+   last 10 minutes. With the 5-second politeness gap, each such source adds a few seconds to a screening.
+6. **A source URL that changes its address after the safety check** (DNS rebinding) is not defended against.
+   The check runs on every redirect hop, which covers the ordinary cases.
+7. **Agent Search price** (read on 12 Oct from the pricing page, to confirm before you create the data store):
+   Standard USD 1.50 and Enterprise USD 4.00 per 1,000 searches. The app asks only for snippets, caps itself at
+   200 searches a day and caches clause lookups for six hours.
+8. **Scheduled runs on Cloud Run** only reach the Demo workspace after a restart, because created workspaces are
+   lost with the instance (already accepted).
+9. Events `screening-completed` and `ddq-submitted` are published but nothing listens yet: Phase 4 (BigQuery)
+   and Phase 5 (DDQ flow) use them.
+

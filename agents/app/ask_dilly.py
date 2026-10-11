@@ -13,6 +13,7 @@ from google.genai import types
 
 from . import settings
 from .models import AskRequest, AskResponse
+from .pond_guard import content_config, llm
 
 APP_NAME = "duedilly_ask_dilly"
 
@@ -79,13 +80,13 @@ INSTRUCTION = (
 
 def build_agent() -> LlmAgent:
   reader = LlmAgent(
-    name="read_link", model=settings.model(),
+    name="read_link", model=llm(), generate_content_config=content_config(),
     description="Reads the web page at a URL the user pasted and reports what it says.",
     instruction="Read the page at the URL you are given and summarise what it says in a few plain sentences. Quote key facts exactly. If the page cannot be read, say so.",
     tools=[url_context],
   )
   return LlmAgent(
-    name="ask_dilly", model=settings.model(), instruction=lambda ctx: INSTRUCTION,
+    name="ask_dilly", model=llm(), generate_content_config=content_config(), instruction=lambda ctx: INSTRUCTION,
     tools=[search_counterparties, get_case, list_alerts, get_risk_breakdown, AgentTool(agent=reader)],
   )
 

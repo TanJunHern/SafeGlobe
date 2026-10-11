@@ -280,20 +280,9 @@ async function handleWebsite({ sourceId, label, url = '', content = '' }) {
   let html = content || '';
   let fetchStatus = 'provided';
 
-  if (url && !content) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
-      const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'DueDilly-WebMonitor/1.0' } });
-      clearTimeout(timeoutId);
-      if (res.ok) {
-        html = await res.text();
-        fetchStatus = 'live_scraped';
-      }
-    } catch (e) {
-      fetchStatus = 'scrape_fallback';
-    }
-  }
+  // A page on the web is read by the source's crawler agent (services/crawlerService.js), which obeys robots.txt,
+  // the terms tick and the no-sign-in rule. This function only converts text that was handed to it.
+  if (url && !content) fetchStatus = 'read_by_crawler';
 
   // Clean HTML markup to extract plain text
   const cleanText = stripHtml(html) || `Monitored website: ${url || label}. Regulatory updates, notices and adverse findings.`;
@@ -384,6 +373,11 @@ async function convertAndStoreSource(source) {
       key,
       sampleData: cfg.sampleData || null
     });
+  } else if ((type.includes('web') || type.includes('page') || type.includes('site')) && url && !content) {
+    // Read by the crawler agent, which stores the records itself
+    const crawl = await require('./crawlerService').crawlSource(db, db.getSourceById(source.id) || source);
+    const records = db.getSourceRecordsBySource(source.id);
+    return { success: ['read', 'unchanged', 'changed'].includes(crawl.result), recordsCount: records.length, records, fetchStatus: crawl.result, crawl, summary: `Website "${source.label}": ${crawl.resultLabel}${crawl.reason ? `. ${crawl.reason}` : ''}` };
   } else if (type.includes('web') || type.includes('page') || type.includes('site')) {
     result = await handleWebsite({
       sourceId: source.id,
@@ -623,5 +617,7 @@ module.exports = {
   handleWebsite,
   convertAndStoreSource,
   stripHtml,
+  extractEntitiesFromText,
+  genRecordId,
   parseCsvLine
 };
