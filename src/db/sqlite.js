@@ -191,7 +191,7 @@ class SqliteDatabase {
         location_json TEXT,
         attachments_json TEXT,
         created_by_user_id TEXT DEFAULT 'EMP-1042',
-        created_by_email TEXT DEFAULT 'sarah.tan@safeglobe.internal',
+        created_by_email TEXT DEFAULT 'sarah.tan@duedilly.internal',
         created_by_department TEXT DEFAULT 'Procurement & Supply Chain',
         ip_address TEXT DEFAULT '127.0.0.1',
         client_timestamp TEXT,
@@ -241,13 +241,17 @@ class SqliteDatabase {
       'ddq_draft_json TEXT',
       'ddq_submitted_at TEXT',
       'agent_json TEXT',
-      'ddq_bounce_json TEXT'
+      'ddq_bounce_json TEXT',
+      'monitoring_json TEXT'
     ];
     for (const col of migrationCols) {
       try {
         this.db.exec(`ALTER TABLE kyc_requests ADD COLUMN ${col}`);
       } catch (e) {}
     }
+    // Ongoing monitoring: what a re-screen against each source costs, and app-wide settings
+    try { this.db.exec('ALTER TABLE sources ADD COLUMN cost_per_screen REAL DEFAULT 0'); } catch (e) {}
+    this.db.exec('CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)');
     // Must run after the migration: older tables lack ddq_token until the ALTER above
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_kyc_token ON kyc_requests(ddq_token)');
 
@@ -643,13 +647,42 @@ class SqliteDatabase {
         cover: r.cover,
         trust: r.trust,
         health: r.health,
+        cost_per_screen: Number(r.cost_per_screen) || 0,
         kv,
         config
       };
     });
   }
 
+  setSourceCost(id, cost) {
+    return this.db.prepare('UPDATE sources SET cost_per_screen = ? WHERE id = ?').run(cost, id).changes > 0;
+  }
+
+  getSetting(key, fallback = null) {
+    const row = this.db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key);
+    if (!row) return fallback;
+    try { return JSON.parse(row.value); } catch (e) { return fallback; }
+  }
+
+  setSetting(key, value) {
+    this.db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, JSON.stringify(value));
+    return value;
+  }
+
+  // Ongoing monitoring schedule of one KYC request (frequency, dates, sources, last / next run)
+  setKycMonitoring(id, monitoring, enabled) {
+    this.db.prepare('UPDATE kyc_requests SET monitoring_json = ?, ongoing_monitoring = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(monitoring ? JSON.stringify(monitoring) : null, enabled ? 1 : 0, id);
+    return this.getKycRequestById(id);
+  }
+
+  setKycRescreenResult(id, text) {
+    this.db.prepare('UPDATE kyc_requests SET re_screening_result = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(text, id);
+  }
+
   addSource(source) {
+    // INSERT OR REPLACE below would reset the cost a compliance officer has set
+    const previous = this.db.prepare('SELECT cost_per_screen FROM sources WHERE id = ?').get(source.id);
     const configData = source.config_json 
       ? (typeof source.config_json === 'string' ? source.config_json : JSON.stringify(source.config_json))
       : JSON.stringify({ kv: source.kv || [], ...(source.config || {}) });
@@ -667,6 +700,7 @@ class SqliteDatabase {
       source.health || 'new',
       configData
     );
+    if (previous && previous.cost_per_screen) this.setSourceCost(source.id, previous.cost_per_screen);
     return source;
   }
 
@@ -1138,7 +1172,7 @@ class SqliteDatabase {
           }),
           attachments_json: JSON.stringify(['severny_registry_extract.pdf', 'grain_export_licence.pdf']),
           created_by_user_id: 'EMP-1042',
-          created_by_email: 'sarah.tan@safeglobe.internal',
+          created_by_email: 'sarah.tan@duedilly.internal',
           created_by_department: 'Commodities Trading',
           ip_address: '10.0.4.12',
           client_timestamp: '2026-10-07T06:32:00.000Z',
@@ -1177,7 +1211,7 @@ class SqliteDatabase {
           }),
           attachments_json: JSON.stringify(['aurora_q88_charter.pdf']),
           created_by_user_id: 'EMP-2089',
-          created_by_email: 'marcus.lee@safeglobe.internal',
+          created_by_email: 'marcus.lee@duedilly.internal',
           created_by_department: 'Marine Logistics',
           ip_address: '10.0.8.44',
           client_timestamp: '2026-10-06T01:15:00.000Z',
@@ -1215,7 +1249,7 @@ class SqliteDatabase {
           }),
           attachments_json: JSON.stringify(['acra_bizfile_apex.pdf']),
           created_by_user_id: 'EMP-1042',
-          created_by_email: 'sarah.tan@safeglobe.internal',
+          created_by_email: 'sarah.tan@duedilly.internal',
           created_by_department: 'Procurement & Supply Chain',
           ip_address: '10.0.4.12',
           client_timestamp: '2026-10-05T08:40:00.000Z',
@@ -1253,7 +1287,7 @@ class SqliteDatabase {
           }),
           attachments_json: JSON.stringify(['passport_scan_zemtsov.pdf']),
           created_by_user_id: 'EMP-3011',
-          created_by_email: 'david.koh@safeglobe.internal',
+          created_by_email: 'david.koh@duedilly.internal',
           created_by_department: 'Strategic Corporate Development',
           ip_address: '10.0.2.88',
           client_timestamp: '2026-10-04T03:20:00.000Z',
@@ -1291,7 +1325,7 @@ class SqliteDatabase {
           }),
           attachments_json: JSON.stringify(['dubai_trade_licence.pdf', 'intermediary_ddq_signed.pdf']),
           created_by_user_id: 'EMP-1042',
-          created_by_email: 'sarah.tan@safeglobe.internal',
+          created_by_email: 'sarah.tan@duedilly.internal',
           created_by_department: 'Procurement & Supply Chain',
           ip_address: '10.0.4.12',
           client_timestamp: '2026-10-03T07:05:00.000Z',
@@ -1341,7 +1375,7 @@ class SqliteDatabase {
       typeof r.location_json === 'string' ? r.location_json : JSON.stringify(r.location_json || r.location || {}),
       typeof r.attachments_json === 'string' ? r.attachments_json : JSON.stringify(r.attachments_json || r.attachments || []),
       r.created_by_user_id || 'EMP-1042',
-      r.created_by_email || 'sarah.tan@safeglobe.internal',
+      r.created_by_email || 'sarah.tan@duedilly.internal',
       r.created_by_department || 'Procurement & Supply Chain',
       r.ip_address || '127.0.0.1',
       r.client_timestamp || new Date().toISOString(),
@@ -1566,12 +1600,14 @@ class SqliteDatabase {
     try { ddq_responses = JSON.parse(r.ddq_responses_json || '{}'); } catch(e){}
 
     // Template snapshot and draft are large; they are served by getKycDdqBundle() instead
-    const { ddq_template_json, ddq_draft_json, agent_json, ddq_bounce_json, ...rest } = r;
+    const { ddq_template_json, ddq_draft_json, agent_json, ddq_bounce_json, monitoring_json, ...rest } = r;
     r = rest;
     let agent = null;
     let ddq_bounce = null;
     try { agent = agent_json ? JSON.parse(agent_json) : null; } catch(e){}
     try { ddq_bounce = ddq_bounce_json ? JSON.parse(ddq_bounce_json) : null; } catch(e){}
+    let monitoring = null;
+    try { monitoring = monitoring_json ? JSON.parse(monitoring_json) : null; } catch(e){}
 
     return {
       ...r,
@@ -1583,6 +1619,7 @@ class SqliteDatabase {
       ddq_responses,
       agent,
       ddq_bounce,
+      monitoring,
       ddq_link: r.ddq_token ? `/ddq/portal?token=${r.ddq_token}` : null
     };
   }

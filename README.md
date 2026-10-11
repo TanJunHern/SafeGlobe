@@ -1,10 +1,10 @@
-# Safe Globe — AI-Native Global Screening Platform
+# DueDilly — AI-Native Global Screening Platform
 
 [![Tests](https://img.shields.io/badge/tests-17%20passed-brightgreen.svg)]()
 [![Google Cloud Run](https://img.shields.io/badge/Google%20Cloud-Cloud%20Run%20Ready-blue.svg)]()
 [![Firebase](https://img.shields.io/badge/Firebase-Hosting%20Ready-orange.svg)]()
 
-Safe Globe is an AI-native global screening platform built according to the **Product Requirements Document (PRD)**. It runs ongoing KYC and compliance screening on organisations, people, and vessels, surfaces risks on an interactive map and ownership graph, and gives screened organisations a voice through verified clarification statements.
+DueDilly is an AI-native global screening platform built according to the **Product Requirements Document (PRD)**. It runs ongoing KYC and compliance screening on organisations, people, and vessels, surfaces risks on an interactive map and ownership graph, and gives screened organisations a voice through verified clarification statements.
 
 ---
 
@@ -15,10 +15,10 @@ Safe Globe is an AI-native global screening platform built according to the **Pr
 - **Interactive Map Interface (1.4, Page 11):** Visual world map with Transparency International CPI 2025 country risk overlays, vessel tracks, dark period flags, and registered counterparty pins.
 - **AI Agent Team (Page 6–8):**
   - **Sentry:** Screens counterparties against 41 sanctions lists, PEP and fraud records; auto-clears false positives with written justification.
-  - **Radar:** Monitors regulatory gazettes and country legal changes; maps updates to affected counterparties with plain-language impact alerts.
+  - **Ripples:** Monitors regulatory gazettes and country legal changes; maps updates to affected counterparties with plain-language impact alerts.
   - **Web:** Multi-hop corporate ownership and control graph (detects shell companies and hidden links); drawn as animated arcs on the map.
   - **Tide:** Watches vessel AIS signals for dark periods, AIS spoofing, and ship-to-ship (STS) transfers.
-  - **Forecast:** Predictive risk weather (Beta) scoring 90-day risk probability based on sanctions momentum.
+  - **Forecast:** Pond forecast: predictive risk outlook (Beta) scoring 90-day risk probability based on sanctions momentum.
   - **Policy Compiler:** Compiles uploaded guidelines into automated rules; flags gaps and conflicts.
 - **Confidence Engine (Page 9–10):** Separates **Risk Level** (stakes) from **Confidence Level** (who acts). Routes cases into 4 quadrants:
   - `Escalate` (High risk, High confidence) → Senior reviewer decides
@@ -36,10 +36,23 @@ Safe Globe is an AI-native global screening platform built according to the **Pr
 
 ---
 
+## 🦆 Architecture names
+
+| Code name | What it is in this codebase |
+| --- | --- |
+| **Duck-Scanner** | Document auto-fill using Gemini multimodal. Google Document AI is planned, not connected (`src/services/documentParserService.js` is a placeholder). |
+| **Pond-Guard** | AI KYCP check plus the Policy RAG evaluator. |
+| **Feather-Weight** | Shared Gemini client (`src/services/geminiClient.js`): `gemini-flash-lite-latest` first, then `gemini-flash-latest`, then `gemini-3.1-flash-lite` on 404 / 429 / 503. |
+| **Duckling Trail** | Ownership tracing across registry, filings and news. |
+| **Ripples** | Ongoing monitoring alerts. |
+| **Quack-Back** | Smart DDQ: the questionnaire sent to the counterparty and the answers returned. |
+
+---
+
 ## 📁 Repository Structure
 
 ```text
-Safe Globe/
+DueDilly/
 ├── Final PRD.pdf             # Original Product Requirements Document
 ├── safe-globe.html           # Full interactive frontend interface
 ├── saf-globe.html            # Exact frontend alias
@@ -63,18 +76,18 @@ Safe Globe/
 │   │   ├── screening.js      # Sentry screening agent & quadrant calculation
 │   │   ├── truthCheck.js     # Truth Check AI statement verifier
 │   │   ├── ddqService.js     # Smart DDQ generator & answer verifier
-│   │   └── askService.js     # Ask the Globe graph query engine
+│   │   └── askService.js     # Ask Dilly graph query engine
 │   └── routes/
 │       ├── v1.js             # Public screening API (POST /v1/screen)
 │       ├── entities.js       # Counterparties & intake (POST /api/intake)
 │       ├── claims.js         # Phase 2 profile claims (POST /api/claim)
 │       ├── statements.js     # Phase 2 clarification statements (POST /api/statements)
 │       ├── ddq.js            # Smart DDQ endpoints (POST /api/ddq/answer)
-│       ├── alerts.js         # Radar & screening alerts (GET /api/alerts)
+│       ├── alerts.js         # Ripples & screening alerts (GET /api/alerts)
 │       ├── sources.js        # Custom data sources & test probe (POST /api/sources/test)
 │       ├── policies.js       # Policy compiler & rule evaluation
 │       ├── cases.js          # Review workflow & decision memo recording
-│       ├── ask.js            # Ask the Globe queries (POST /api/ask)
+│       ├── ask.js            # Ask Dilly queries (POST /api/ask)
 │       └── stats.js          # KPIs, calibration, and CPI country risk
 └── tests/
     ├── screening.test.js     # Screening and Truth Check unit tests
@@ -91,12 +104,35 @@ npm install
 ```
 
 ### 2. Run Tests
-The automated test suite runs 17 unit and integration tests verifying every PRD service and API route:
+The automated test suite runs 92 unit and integration tests verifying every PRD service and API route:
 ```bash
 npm test
 ```
 
-### 3. Launch the Server
+### 3. Two ports: DEV (offline) and UAT (online)
+
+| | DEV | UAT |
+| --- | --- | --- |
+| Command | `npm run dev` | `npm run uat` |
+| URL | http://localhost:8080 | http://localhost:8081 |
+| Runs | `node --watch` (restarts on every save) | the production Docker image, the same one Cloud Run runs |
+| Settings | `.env.dev` | `.env.uat` |
+| Needs internet | No | Yes |
+| Needs Docker | Only for the Pub/Sub emulator; the app starts without it | Yes |
+
+First time:
+```bash
+cp .env.example .env.dev      # or: cp .env .env.dev to keep your current settings
+cp .env.example .env.uat      # set APP_ENV=uat, your own JWT_SECRET, and GEMINI_BACKEND
+```
+- The server refuses to start, and lists what is wrong, if a required setting is missing. In UAT that is `JWT_SECRET`, `GEMINI_BACKEND`, and either `GEMINI_API_KEY` (aistudio) or `GOOGLE_CLOUD_PROJECT` + `GOOGLE_CLOUD_LOCATION` (vertex).
+- `GET /healthz` (and `GET /api/health`) reports `{ env, version, gemini }`, where `gemini` is `aistudio`, `vertex` or `disabled`.
+- `npm run uat` mounts your Application Default Credentials read-only when they exist (`gcloud auth application-default login`).
+- `npm test` is unchanged and runs offline with Gemini disabled.
+- Region: `asia-southeast1` for Cloud Run and Cloud Storage. The locations used for Document AI and Agent Search will be recorded here when those are set up.
+- The full cloud plan and the decisions taken are in [docs/CLOUD_PLAN.md](docs/CLOUD_PLAN.md).
+
+### 4. Launch the Server (no environment file)
 ```bash
 npm start
 ```

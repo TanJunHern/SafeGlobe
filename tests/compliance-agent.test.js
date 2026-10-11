@@ -11,8 +11,8 @@ const { startServer, stopServer } = require('../src/server');
 
 const TEST_PORT = 8095;
 const BASE_URL = `http://localhost:${TEST_PORT}`;
-const EMPLOYEE = { 'x-user-email': 'john.doe@safeglobe.com', 'x-user-role': 'employee' };
-const COMPLIANCE = { 'x-user-email': 'compliance@safeglobe.com', 'x-user-role': 'compliance_officer' };
+const EMPLOYEE = { 'x-user-email': 'john.doe@duedilly.com', 'x-user-role': 'employee' };
+const COMPLIANCE = { 'x-user-email': 'compliance@duedilly.com', 'x-user-role': 'compliance_officer' };
 
 const call = async (method, url, body, headers = {}) => {
   const res = await fetch(`${BASE_URL}${url}`, {
@@ -96,9 +96,15 @@ test('Compliance Agent', async (t) => {
 
   await t.test('stage 3: scores a weak questionnaire and recommends bouncing it back', async () => {
     template = (await call('GET', `/api/ddq/verify-token?token=${token}`)).body.template;
+    // Thin answers that the deterministic section check catches are rejected before the agent sees them
+    const thin = completeResponses(template);
+    thin.answers['1.14'] = { value: 'Yes', details: 'SGX' };
+    const rejected = await call('POST', '/api/ddq/submit', { token, responses: thin });
+    assert.equal(rejected.status, 400);
+    assert.match(rejected.body.message, /Question 1\.14/);
+
     const weak = completeResponses(template);
-    weak.answers['1.2'] = { value: 'n/a' };
-    weak.answers['1.14'] = { value: 'Yes', details: 'SGX' };
+    weak.answers['1.2'] = { value: 'tbc' };
     const res = await call('POST', '/api/ddq/submit', { token, responses: weak });
     assert.equal(res.status, 200);
     assert.equal(res.body.agent_review.recommendation, 'bounce_back');
@@ -112,7 +118,6 @@ test('Compliance Agent', async (t) => {
     assert.ok(review.score < 100);
     const byQuestion = Object.fromEntries(review.issues.map(i => [i.question_id, i]));
     assert.equal(byQuestion['1.2'].category, 'evasive answer');
-    assert.equal(byQuestion['1.14'].category, 'insufficient detail');
     assert.equal(byQuestion['documents'].category, 'missing documents');
     assert.ok(review.issues.every(i => i.fixable));
     assert.equal(review.sections.length, 7);
@@ -144,7 +149,7 @@ test('Compliance Agent', async (t) => {
     assert.equal(state.bounce.note, 'Please clarify two points.');
     assert.equal(state.bounce.issues.length, 2);
     // Earlier answers are kept so only the flagged points need changing
-    assert.equal(state.draft.answers['1.2'].value, 'n/a');
+    assert.equal(state.draft.answers['1.2'].value, 'tbc');
     assert.equal(state.draft.declaration.full_name, 'Ong Bee Lian');
     assert.ok(!('pep_declared' in state.draft));
 

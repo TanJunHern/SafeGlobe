@@ -52,7 +52,7 @@ async function authenticate(req, res, next) {
     // Default fallback to standard test persona if completely unauthenticated
     const anonymous = !email;
     if (anonymous) {
-      email = 'john.doe@safeglobe.com';
+      email = 'john.doe@duedilly.com';
       name = 'John Doe';
       userId = 'EMP-1042';
       department = 'Procurement & Logistics';

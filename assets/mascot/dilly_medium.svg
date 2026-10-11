@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 24 400 376" width="400" height="376" class="dl" data-state="medium"><style>
+.dl{--ink:#3A3541;--body:#F6DD8E;--belly:#FFF6DC;--shade:#E9C873;--bill:#EE8B3A;--billdk:#C9662A;--mouth:#8A3A1C;--drop:#9CCBE0;--rip:var(--teal,#1F6F6B);overflow:visible}
+.dl .tail,.dl .wing path{fill:var(--body);stroke:var(--ink);stroke-width:4;stroke-linejoin:round}
+.dl .fill-body{fill:var(--body)}.dl .fill-belly{fill:var(--belly)}.dl .fill-shade{fill:var(--shade);opacity:.45}
+.dl .outline{fill:none;stroke:var(--ink);stroke-width:4;stroke-linejoin:round}
+.dl .foot{fill:var(--bill);stroke:var(--ink);stroke-width:3}
+.dl .tuft{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round}
+.dl .brows path{stroke:var(--ink);stroke-width:3.6;stroke-linecap:round;fill:none}
+.dl .mouth{fill:var(--mouth);stroke:var(--ink);stroke-width:3;stroke-linejoin:round}
+.dl .bill{fill:var(--bill);stroke:var(--ink);stroke-width:3.2;stroke-linejoin:round}
+.dl .nostril{fill:var(--billdk)}.dl .bead{fill:var(--ink)}.dl .glint{fill:#fff}
+.dl .sparkles path{stroke:var(--bill);stroke-width:3.5;stroke-linecap:round;fill:none}
+.dl .drop{fill:var(--drop);stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
+.dl .rp{fill:none;stroke:var(--rip);stroke-width:2.5;opacity:0}
+.dl .pond-shadow{fill:var(--rip);opacity:.12}
+.dl .lid{fill:var(--body)}.dl .lid-line{stroke:var(--ink);stroke-width:3;stroke-linecap:round;fill:none}
+.dl .brows-angry path{stroke-width:4.6}
+.dl .alert-bg{fill:#E0A23A;stroke:var(--ink);stroke-width:3}.dl .alert-mark{stroke:#fff;stroke-width:4;stroke-linecap:round;fill:none}.dl .alert-dot{fill:#fff}
+.dl .puff{fill:#fff;stroke:var(--ink);stroke-width:1.6;stroke-linejoin:round}
+.dl .w-up,.dl .mouth,.dl .brows,.dl .sparkles,.dl .drop,.dl .lid,.dl .lid-line,.dl .alert,.dl .steam{display:none}
+
+/* pivot points: every moving part turns around its own joint */
+.dl .duck,.dl .wing,.dl .tail,.dl .foot,.dl .eye,.dl .eyes,.dl .rp,.dl .sparkles path,.dl .alert,.dl .puff{transform-box:fill-box}
+.dl .duck{transform-origin:50% 100%}.dl .wing-l{transform-origin:85% 8%}.dl .wing-r{transform-origin:15% 8%}
+.dl .tail{transform-origin:0% 60%}.dl .foot,.dl .eye,.dl .rp,.dl .sparkles path,.dl .alert,.dl .puff{transform-origin:50% 50%}
+
+/* working: screening or reading */
+.dl:is([data-state="screening"],[data-state="reading"]) .brows-focus{display:inline}
+.dl:is([data-state="screening"],[data-state="reading"]) .duck{animation:dl-bob 1.6s ease-in-out infinite}
+.dl:is([data-state="screening"],[data-state="reading"]) .rp{animation:dl-rip 1.6s ease-out infinite}
+.dl:is([data-state="screening"],[data-state="reading"]) .rp2{animation-delay:.8s}
+.dl:is([data-state="screening"],[data-state="reading"]) .wing-l{animation:dl-flap-l .8s ease-in-out infinite alternate}
+.dl:is([data-state="screening"],[data-state="reading"]) .wing-r{animation:dl-flap-r .8s ease-in-out infinite alternate}
+.dl:is([data-state="screening"],[data-state="reading"]) .tail{animation:dl-wag 1.2s ease-in-out infinite alternate}
+.dl:is([data-state="screening"],[data-state="reading"]) .foot{animation:dl-paddle .8s ease-in-out infinite alternate}
+.dl:is([data-state="screening"],[data-state="reading"]) .foot-r{animation-delay:-.4s}
+.dl[data-state="screening"] .eyes{animation:dl-scan 2.4s ease-in-out infinite}
+.dl[data-state="reading"] .eyes{animation:dl-read 2.8s linear infinite}
+.dl .eye{animation:dl-blink 4s infinite}
+
+/* done: one hop, sparkles, then a slow bob */
+.dl[data-state="done"] .w-down{display:none}
+.dl[data-state="done"] :is(.w-up,.mouth-happy,.sparkles){display:inline}
+.dl[data-state="done"] .duck{animation:dl-hop .7s cubic-bezier(.3,.7,.4,1) both,dl-bob 2.4s ease-in-out .7s infinite}
+.dl[data-state="done"] .sparkles path{animation:dl-pop .5s ease-out .2s both}
+
+/* error: the AI service failed. Cream Dilly, sweat drop, still apart from blinking */
+.dl[data-state="error"] :is(.brows-flag,.mouth-flag,.drop){display:inline}
+
+/* medium risk (Investigate, amber): orange Dilly, concerned, "!" pulses gently */
+.dl[data-state="medium"]{--body:#F6BE72;--belly:#FFEBD0;--shade:#EAA454;--bill:#E1712A;--billdk:#B5561C}
+.dl[data-state="medium"] :is(.brows-flag,.mouth-flag,.alert){display:inline}
+.dl[data-state="medium"] .alert{animation:dl-nudge 2.4s ease-in-out infinite}
+
+/* sanctions match (Escalate, red): red Dilly, angry, shakes, steam, red ripples */
+.dl[data-state="sanctions"]{--body:#EC8273;--belly:#FCDDD6;--shade:#D8604F;--bill:#F3B23F;--billdk:#C98A1E;--rip:#D9604F}
+.dl[data-state="sanctions"] :is(.brows-angry,.mouth-flag,.lid,.lid-line,.steam){display:inline}
+.dl[data-state="sanctions"] .duck{animation:dl-shake 1.8s ease-in-out infinite}
+.dl[data-state="sanctions"] .wing-l{transform:rotate(16deg)}.dl[data-state="sanctions"] .wing-r{transform:rotate(-16deg)}
+.dl[data-state="sanctions"] .rp{animation:dl-rip 1.6s ease-out infinite}.dl[data-state="sanctions"] .rp2{animation-delay:.8s}
+.dl[data-state="sanctions"] .puff{animation:dl-steam 1.6s ease-out infinite}.dl[data-state="sanctions"] .p2{animation-delay:.8s}
+
+@keyframes dl-bob{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-7px) rotate(1.5deg)}}
+@keyframes dl-rip{0%{transform:scale(.55);opacity:.8}100%{transform:scale(1.25);opacity:0}}
+@keyframes dl-flap-l{from{transform:rotate(0)}to{transform:rotate(12deg)}}
+@keyframes dl-flap-r{from{transform:rotate(0)}to{transform:rotate(-12deg)}}
+@keyframes dl-wag{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}
+@keyframes dl-paddle{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+@keyframes dl-scan{0%,100%{transform:translateX(-5px)}50%{transform:translateX(5px)}}
+@keyframes dl-read{0%{transform:translate(-7px,-2px)}40%{transform:translate(7px,-2px)}45%{transform:translate(-7px,2px)}85%{transform:translate(7px,2px)}90%,100%{transform:translate(-7px,-2px)}}
+@keyframes dl-blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.12)}}
+@keyframes dl-hop{0%{transform:translateY(0)}35%{transform:translateY(-20px)}65%{transform:translateY(3px)}100%{transform:translateY(0)}}
+@keyframes dl-pop{0%{transform:scale(0) rotate(-45deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes dl-nudge{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@keyframes dl-shake{0%,30%,100%{transform:translateX(0)}4%{transform:translateX(-4px) rotate(-1.5deg)}8%{transform:translateX(4px) rotate(1.5deg)}12%{transform:translateX(-4px) rotate(-1.5deg)}16%{transform:translateX(4px) rotate(1.5deg)}20%{transform:translateX(-2px)}24%{transform:translateX(0)}}
+@keyframes dl-steam{0%{transform:translateY(4px) scale(.5);opacity:0}30%{opacity:1}100%{transform:translateY(-16px) scale(1.1);opacity:0}}
+@media (prefers-reduced-motion:reduce){.dl,.dl *{animation:none!important}}
+</style><g class="ripples"><ellipse class="rp" cx="200" cy="364" rx="150" ry="20"/><ellipse class="rp rp2" cx="200" cy="364" rx="150" ry="20"/></g>
+<ellipse class="pond-shadow" cx="200" cy="366" rx="112" ry="10"/>
+<g class="duck">
+<path class="tail" d="M 316 312 C 346 312 360 290 356 268 C 346 284 334 292 312 294 Z"/>
+<g class="body"><defs><clipPath id="dlc"><path d="M 200 74 C 284 74 318 150 326 232 C 333 300 320 352 268 358 L 132 358 C 80 352 67 300 74 232 C 82 150 116 74 200 74 Z"/></clipPath></defs>
+<path class="fill-body" d="M 200 74 C 284 74 318 150 326 232 C 333 300 320 352 268 358 L 132 358 C 80 352 67 300 74 232 C 82 150 116 74 200 74 Z"/>
+<g clip-path="url(#dlc)"><ellipse class="fill-belly" cx="200" cy="282" rx="96" ry="84"/><path class="fill-shade" d="M 300 120 C 330 180 336 280 318 352 L 360 360 L 360 100 Z"/></g>
+<path class="outline" d="M 200 74 C 284 74 318 150 326 232 C 333 300 320 352 268 358 L 132 358 C 80 352 67 300 74 232 C 82 150 116 74 200 74 Z"/></g>
+<g class="wing wing-l"><path class="w-down" d="M 86 210 C 62 220 60 262 84 274 C 92 252 92 232 86 210 Z"/><path class="w-up" d="M 84 214 C 56 196 40 176 46 164 C 64 170 86 188 92 206 Z"/></g>
+<g class="wing wing-r"><path class="w-down" d="M 314 210 C 338 220 340 262 316 274 C 308 252 308 232 314 210 Z"/><path class="w-up" d="M 316 214 C 344 196 360 176 354 164 C 336 170 314 188 308 206 Z"/></g>
+<ellipse class="foot foot-l" cx="166" cy="358" rx="20" ry="8"/><ellipse class="foot foot-r" cx="234" cy="358" rx="20" ry="8"/>
+<path class="tuft" d="M 196 76 C 190 56 210 48 216 62"/>
+<g class="brows brows-focus"><path d="M 154 150 L 173 155"/><path d="M 227 155 L 246 150"/></g>
+<g class="brows brows-flag"><path d="M 154 154 L 173 148"/><path d="M 227 148 L 246 154"/></g>
+<g class="brows brows-angry"><path d="M 149 145 L 177 158"/><path d="M 223 158 L 251 145"/></g>
+<path class="mouth mouth-happy" d="M 188 192 Q 200 214.4 212 192 Z"/>
+<path class="mouth mouth-flag" d="M 188 192 Q 200 203.2 212 192 Z"/>
+<path class="bill" d="M 182 188 C 182 176 218 176 218 188 C 218 196 208 198 200 198 C 192 198 182 196 182 188 Z"/>
+<circle class="nostril" cx="194" cy="185" r="1.6"/><circle class="nostril" cx="206" cy="185" r="1.6"/>
+<g class="eyes"><g class="eye"><circle class="bead" cx="164" cy="168" r="6.8"/><circle class="glint" cx="161.8" cy="165.6" r="2"/><path class="lid" d="M 154 156 L 175 156 L 175 166 L 154 161 Z"/><path class="lid-line" d="M 154 161 L 175 166"/></g><g class="eye"><circle class="bead" cx="236" cy="168" r="6.8"/><circle class="glint" cx="233.8" cy="165.6" r="2"/><path class="lid" d="M 225 156 L 246 156 L 246 161 L 225 166 Z"/><path class="lid-line" d="M 225 166 L 246 161"/></g></g>
+<g class="sparkles"><path d="M 92 109 L 92 127 M 83 118 L 101 118"/><path d="M 312 109 L 312 127 M 303 118 L 321 118"/></g>
+<path class="drop" d="M 268 128 C 262 140 260 146 268 150 C 276 146 274 140 268 128 Z"/>
+<g class="alert"><circle class="alert-bg" cx="300" cy="100" r="16"/><path class="alert-mark" d="M 300 91 L 300 102"/><circle class="alert-dot" cx="300" cy="109" r="2.3"/></g>
+<g class="steam"><g transform="translate(136 90) scale(1.7)"><path class="puff" d="M -10 4 C -16 4 -16 -4 -10 -5 C -10 -12 -1 -13 1 -8 C 4 -13 13 -11 12 -4 C 18 -3 17 5 11 5 Z"/></g><g transform="translate(264 90) scale(1.7)"><path class="puff p2" d="M -10 4 C -16 4 -16 -4 -10 -5 C -10 -12 -1 -13 1 -8 C 4 -13 13 -11 12 -4 C 18 -3 17 5 11 5 Z"/></g></g>
+</g></svg>

@@ -1,6 +1,6 @@
-# Safe Globe — Google Cloud & Firebase Deployment Guide
+# DueDilly — Google Cloud & Firebase Deployment Guide
 
-This guide details how to run Safe Globe locally and deploy it to **Google Cloud (Cloud Run)** or **Firebase Hosting**.
+This guide details how to run DueDilly locally and deploy it to **Google Cloud (Cloud Run)** or **Firebase Hosting**.
 
 ---
 
@@ -15,7 +15,7 @@ This guide details how to run Safe Globe locally and deploy it to **Google Cloud
 # 1. Install dependencies
 npm install
 
-# 2. Run unit and integration tests (17 automated tests)
+# 2. Run unit and integration tests (92 automated tests)
 npm test
 
 # 3. Start local development server
@@ -32,7 +32,7 @@ The local SQLite database (`data/safe_globe.db`) initializes and auto-seeds all 
 
 ## 2. Deploying to Google Cloud Run
 
-Google Cloud Run runs the containerized Safe Globe backend and frontend with automatic scaling (scale-to-zero when idle, scale-up on demand), HTTPS termination, and zero server maintenance.
+Google Cloud Run runs the containerized DueDilly backend and frontend with automatic scaling (scale-to-zero when idle, scale-up on demand), HTTPS termination, and zero server maintenance.
 
 ### Step 1: Install & Initialize Google Cloud SDK (`gcloud`)
 ```bash
@@ -79,7 +79,7 @@ Use `cloudbuild.yaml` to trigger automated builds and deployments:
 gcloud artifacts repositories create safe-globe \
   --repository-format=docker \
   --location=asia-southeast1 \
-  --description="Safe Globe container images"
+  --description="DueDilly container images"
 
 # 2. Submit the build to Cloud Build
 gcloud builds submit --config=cloudbuild.yaml

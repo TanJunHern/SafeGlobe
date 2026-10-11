@@ -12,10 +12,10 @@ const config = require('../config');
 const gemini = require('./geminiClient');
 
 const CORPORATE_POLICY_DOCUMENT = `
-SAFEGLOBE ENTERPRISE COMPLIANCE & COUNTERPARTY RISK POLICY (v2026.1)
+DUEDILLY ENTERPRISE COMPLIANCE & COUNTERPARTY RISK POLICY (v2026.1)
 
 Section 1: General Principles
-All counterparties onboarded by SafeGlobe employees must undergo automated screening against sanctions, watchlists, adverse media, and jurisdictional risk before contract execution.
+All counterparties onboarded by DueDilly employees must undergo automated screening against sanctions, watchlists, adverse media, and jurisdictional risk before contract execution.
 
 Section 2: Contract Value & Financial Exposure Thresholds
 Clause 2.1: Any proposed engagement with anticipated contract value exceeding SGD 100,000 (one hundred thousand Singapore Dollars) mandates comprehensive vendor due diligence questionnaire (DDQ) verification and beneficial ownership audit.
@@ -50,7 +50,7 @@ async function evaluatePolicyRAG(counterpartyData) {
   if (isRealKey) {
     try {
       let model = config.geminiModel;
-      const prompt = `You are the SafeGlobe Compliance Policy Auditor.
+      const prompt = `You are the DueDilly Compliance Policy Auditor.
 Evaluate the following counterparty onboarding request against the corporate policy document provided below.
 
 POLICY DOCUMENT:
@@ -95,7 +95,7 @@ Respond strictly in valid JSON matching this schema:
         }
       }
     } catch (err) {
-      console.warn('[Policy RAG] Gemini RAG check fell back to deterministic engine:', err.message);
+      console.warn('[Pond-Guard · Policy RAG] Gemini RAG check fell back to deterministic engine:', err.message);
     }
   }
 
@@ -131,7 +131,7 @@ Respond strictly in valid JSON matching this schema:
     ddq_clause: triggered.join(' & ') || 'No mandatory DDQ triggered by corporate policy',
     triggered_clauses: triggered,
     policy_rationale: ddqRequired
-      ? `Mandatory compliance questionnaire triggered under SafeGlobe KYC Policy: ${triggered.join('; ')}.`
+      ? `Mandatory compliance questionnaire triggered under DueDilly KYC Policy: ${triggered.join('; ')}.`
       : 'Counterparty satisfies baseline thresholds. Contract value within standard operational tier; no elevated jurisdictional or PEP flags.',
     model: 'SafeGlobe-Policy-Engine'
   };
