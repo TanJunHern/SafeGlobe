@@ -23,6 +23,8 @@ const aiRouter = require('./routes/ai');
 const kycRouter = require('./routes/kyc');
 
 const app = express();
+// Cloud Run puts one proxy in front of the app; trusting it gives the rate limit the visitor's real address
+app.set('trust proxy', 1);
 
 // Initialize DB early
 getDb();
@@ -48,11 +50,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Who may call what (docs/agent/implementation_plan.md, Accounts phase). Every role is checked here on the server.
+// officerOnly: signed in and a compliance officer. authenticate: any signed-in account of the workspace.
+const { authenticate, officerOnly, optionalAuth, googleConfigured } = require('./middleware/auth');
+
 // Mount API routes
-app.use('/v1', v1Router);
-app.use('/api/entities', entitiesRouter);
-app.use('/api/claim', claimsRouter);
-app.use('/api/statements', statementsRouter);
+// /v1/screen stays open for the demo; a signed-in caller screens into their own workspace
+app.use('/v1', optionalAuth, v1Router);
+app.use('/api/entities', officerOnly, entitiesRouter);
+app.use('/api/claim', officerOnly, claimsRouter);
+app.use('/api/statements', officerOnly, statementsRouter);
+// The DDQ router guards itself: counterparty routes by their signed link, staff routes by role
 app.use('/api/ddq', ddqRouter);
 app.use('/api/ddq-templates', require('./routes/ddqTemplates'));
 
@@ -60,29 +68,29 @@ app.use('/api/ddq-templates', require('./routes/ddqTemplates'));
 app.get('/api/agent/compliance', (req, res) => {
   res.json(require('./agents/complianceAgent').describe());
 });
-app.use('/api/alerts', alertsRouter);
-app.use('/api/sources', sourcesRouter);
-app.use('/api/policies', policiesRouter);
-app.use('/api/cases', casesRouter);
-app.use('/api/ask', askRouter);
-app.use('/api/stats', statsRouter);
-app.use('/api/uploads', uploadsRouter);
+app.use('/api/alerts', officerOnly, alertsRouter);
+app.use('/api/sources', officerOnly, sourcesRouter);
+app.use('/api/policies', officerOnly, policiesRouter);
+app.use('/api/cases', officerOnly, casesRouter);
+app.use('/api/ask', authenticate, askRouter);
+app.use('/api/stats', officerOnly, statsRouter);
+app.use('/api/uploads', officerOnly, uploadsRouter);
+// Address lookup holds no workspace data and is also used by the counterparty DDQ page
 app.use('/api/places', placesRouter);
-app.use('/api/ai', aiRouter);
+app.use('/api/ai', officerOnly, aiRouter);
 app.use('/api/kyc', kycRouter);
 app.use('/api/monitoring', require('./routes/monitoring'));
+// Risk scoring: rules, recommended changes and the "Why <score>?" breakdown (src/risk)
+app.use('/api/risk', officerOnly, require('./routes/risk'));
+app.get('/risk/source', require('./routes/auth').pageSession, require('./routes/risk').sourcePage);
+// Pond-Guard screening and Ask Dilly through the ADK agents service, with the read-only tools that agent may call
+app.use('/api/pond-guard', require('./routes/pondGuard'));
+app.use('/internal/ask-tools', require('./routes/pondGuard').internalTools);
+// Settings: the accounts of the workspace, the invitations and the account change log
+app.use('/api/settings', officerOnly, require('./routes/settings'));
 
-
-// Auth routes
-const { authenticate, getRoleForEmail } = require('./middleware/auth');
-
-app.get('/api/auth/session', authenticate, (req, res) => {
-  res.json({
-    authenticated: true,
-    user: req.user,
-    googleClientId: config.googleClientId
-  });
-});
+// Auth routes: demo accounts, Google sign-in, "Create an account", the current session
+app.use('/api/auth', require('./routes/auth'));
 
 // Public, non-secret client configuration (never includes the Gemini key)
 app.get('/api/config/public', (req, res) => {
@@ -92,28 +100,19 @@ app.get('/api/config/public', (req, res) => {
     googleClientId: config.googleClientId,
     googleMapsApiKey: mapsKey,
     mapsEnabled: Boolean(mapsKey),
+    // Demo mode shows the persona picker. dataResets: the database lives on the container's disk and is lost on restart.
+    demoMode: config.demoMode,
+    // The demo accounts a visitor may pick with one click, and whether Google sign-in is set up
+    demoAccounts: config.demoMode ? require('./accounts/accountsStore').DEMO_ACCOUNTS.map(a => ({ key: a.key, name: a.name, email: a.email, role: a.role, department: a.department })) : [],
+    googleSignIn: googleConfigured(),
+    dataResets: config.isCloudRun && config.dbType === 'sqlite',
     // Name of the company using DueDilly, shown in the top bar (WORKSPACE_NAME)
     workspaceName: config.workspaceName
   });
 });
 
-app.post('/api/auth/switch-persona', (req, res) => {
-  const { email, role, name, department } = req.body;
-  const targetEmail = (email || 'john.doe@duedilly.com').toLowerCase().trim();
-  const targetRole = role || getRoleForEmail(targetEmail);
-  res.json({
-    success: true,
-    user: {
-      email: targetEmail,
-      role: targetRole,
-      name: name || (targetRole === 'compliance_officer' ? 'Grace Teo' : 'John Doe'),
-      department: department || (targetRole === 'compliance_officer' ? 'Compliance & Risk Governance' : 'Procurement & Logistics')
-    }
-  });
-});
-
 // Forward /api/intake to entities router
-app.post('/api/intake', (req, res, next) => {
+app.post('/api/intake', officerOnly, (req, res, next) => {
   req.url = '/intake';
   entitiesRouter(req, res, next);
 });
@@ -210,8 +209,7 @@ function stopServer() {
   return new Promise((resolve) => {
     if (server) {
       server.close(() => {
-        const db = getDb();
-        if (db && typeof db.close === 'function') db.close();
+        require('./db').closeAll();
         resolve();
       });
     } else {

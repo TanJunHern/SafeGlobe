@@ -23,6 +23,8 @@ const CPI_2025 = [
   { a3: "IDN", name: "Indonesia", score: 34, rank: 109 },
   { a3: "TUR", name: "Türkiye", score: 31, rank: 124 },
   { a3: "NGA", name: "Nigeria", score: 26, rank: 142 },
+  // Flag state of the demo vessel. CPI 2025: 26, rank 142 (transparency.org/en/cpi/2025; checked 12 Oct 2026)
+  { a3: "CMR", name: "Cameroon", score: 26, rank: 142 },
   { a3: "RUS", name: "Russia", score: 22, rank: 157 },
   { a3: "MMR", name: "Myanmar", score: 20, rank: 162 },
   { a3: "PRK", name: "North Korea", score: 17, rank: 172 },
@@ -207,9 +209,10 @@ const VESSELS = [
       { t: "Mar 2025", c: "warn", x: "Flag change: Gabon to Cameroon (2nd in 24 months)" }
     ],
     factors: [
-      ["+", "IMO number, past names and owners all match"],
+      ["+", "IMO number and past names match the registry"],
       ["+", "Dark period corroborated by satellite AIS gap"],
-      ["-", "Position during gap cannot be verified"]
+      ["-", "Position during gap cannot be verified"],
+      ["-", "Beneficial owner not disclosed: the registered owner is held through nominee shareholders"]
     ],
     raise: "Request voyage records and cargo documents from Halcyon"
   }

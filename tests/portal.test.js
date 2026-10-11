@@ -3,6 +3,13 @@ const assert = require('node:assert/strict');
 const ExcelJS = require('exceljs');
 const { startServer, stopServer } = require('../src/server');
 
+// Routes that used to be open now need a signed-in compliance officer (Accounts phase).
+// A call that names no persona acts as the demo compliance officer, except on routes that already checked the caller.
+const OFFICER_DEFAULT = { 'x-user-email': 'compliance@duedilly.com' };
+const fetch = (url, opts = {}) => globalThis.fetch(url, Object.assign({}, opts, {
+  headers: Object.assign(/\/api\/(kyc|monitoring|ddq-templates|config|health|auth)|\/v1\/|\/internal\//.test(url) ? {} : OFFICER_DEFAULT, opts.headers || {})
+}));
+
 const TEST_PORT = 8093;
 const BASE_URL = `http://localhost:${TEST_PORT}`;
 
@@ -52,7 +59,7 @@ test('Tri-Party Portal Tests', async (t) => {
     const res = await fetch(`${BASE_URL}/api/config/public`);
     assert.equal(res.status, 200);
     const body = await res.json();
-    assert.deepEqual(Object.keys(body).sort(), ['googleClientId', 'googleMapsApiKey', 'mapsEnabled', 'workspaceName']);
+    assert.deepEqual(Object.keys(body).sort(), ['dataResets', 'demoAccounts', 'demoMode', 'googleClientId', 'googleMapsApiKey', 'googleSignIn', 'mapsEnabled', 'workspaceName']);
   });
 
   await t.test('employee persona is seeded and only sees own rows, even with scope=all', async () => {

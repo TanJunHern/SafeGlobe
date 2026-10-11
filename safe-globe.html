@@ -572,6 +572,86 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 .callout b{font-size:13.5px}
 .callout p{margin:0;font-size:12.5px;color:var(--fg-2)}
 .demo-note{font-size:11.5px;color:var(--fg-3)}
+.rev-tabs{align-self:flex-start;flex-wrap:wrap;max-width:100%}
+.rev-tab-n{display:inline-grid;place-items:center;min-width:16px;height:16px;margin-left:6px;padding:0 4px;border-radius:8px;background:var(--mid);color:#fff;font-size:10px;font-weight:600}
+.rev-tab-n[hidden]{display:none}
+.rev-panes,.rev-pane-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+[data-rev-pane][hidden]{display:none}
+.card[data-rev-pane="matrix"] .card-b{max-width:560px}
+.pg{gap:8px}
+.pg-agent{padding:8px 10px;border-radius:10px;border:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
+.pg-agent.waiting{opacity:.55}
+.pg-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px}
+.pg-st{font-size:11px;padding:1px 7px;border-radius:9px;background:var(--surface-2);color:var(--fg-2)}
+.pg-st.run{background:var(--accent-soft);color:var(--accent);animation:pgpulse 1.2s ease-in-out infinite}
+.pg-st.bad{color:var(--high-ink)}
+.pg-st.ok{color:var(--low-ink)}
+@keyframes pgpulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.pg-st.run{animation:none}}
+.pg-f{padding:6px 8px;border-radius:8px;background:var(--surface-2);font-size:12px}
+.pg-f.no{opacity:.7}
+.pg-f span{font-weight:600}
+.pg-f p{margin:2px 0;color:var(--fg-2)}
+.pg-f blockquote{margin:4px 0;padding:3px 8px;border-left:3px solid var(--line-2);color:var(--fg-2)}
+.pg-f small{color:var(--fg-3)}
+.pg-f a{color:var(--accent)}
+.demo-flag{position:fixed;z-index:40;left:68px;bottom:8px;max-width:calc(100vw - 90px);padding:3px 10px;border-radius:9px;background:var(--surface);border:1px solid var(--line-2);font-size:11px;color:var(--fg-2);pointer-events:none}
+.demo-flag[hidden]{display:none}
+/* Risk scoring: pipeline strip, "Why <score>?" panel, scoring rules editor, recommendation alert */
+.pipe{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.pipe li{display:flex;flex-direction:column;gap:2px;padding:7px 6px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);min-width:0}
+.pipe li b{font-family:var(--f-mono);font-size:10px;color:var(--accent)}
+.pipe li span{font-size:11.5px;font-weight:600}
+.pipe li small{font-size:10.5px;color:var(--fg-3);overflow-wrap:anywhere}
+.why{gap:10px}
+.why-row{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:10px;border-radius:10px;border:1px solid var(--line)}
+.why-pts{font-family:var(--f-mono);font-size:14px;color:var(--high-ink);align-self:start}
+.why-row h4{margin:0;font-size:13px;font-weight:600}
+.why-row p{margin:2px 0 0;font-size:12.5px;color:var(--fg-2)}
+.why-row blockquote,.sugg blockquote{margin:6px 0;padding:5px 9px;border-left:3px solid var(--line-2);font-size:12px;color:var(--fg-2);background:var(--surface-2);border-radius:0 6px 6px 0}
+.why-row small{display:block;font-size:11.5px;color:var(--fg-3)}
+.why-row a{color:var(--accent)}
+.why-total{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding-top:8px;border-top:1px solid var(--line);font-size:13px}
+.why-total span{font-size:12px;color:var(--fg-2)}
+.why-route{margin:0;font-size:12.5px;color:var(--fg-2)}
+.why-audit{font-size:12px;color:var(--fg-2)}
+.why-audit summary{cursor:pointer}
+.why-audit ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.factors li.calc b{color:var(--accent);background:var(--accent-soft)}
+.factors li.calc-head{grid-template-columns:1fr}
+.rules{display:flex;flex-direction:column;gap:14px}
+.rules-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.rules-table th{text-align:left;font-weight:500;color:var(--fg-3);font-size:11.5px;padding:6px 8px;border-bottom:1px solid var(--line)}
+.rules-table td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.rules-table .num{text-align:right;white-space:nowrap}
+.rules-table tr.hl td,.rules-grid label.hl{background:color-mix(in srgb,var(--mid) 16%,transparent)}
+.rules-in{height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font:inherit;font-size:12.5px;width:76px;text-align:right}
+.rules-in.pol{width:150px;text-align:left}
+.rules-in:disabled{opacity:.6}
+.rules-changed{color:var(--mid-ink)}
+.rules-h{margin:4px 0 0;font-size:13px;font-weight:600}
+.rules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px 20px}
+.rules-grid.three{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.rules-grid h4{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--fg-2)}
+.rules-grid label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 6px;border-radius:8px}
+.rules-unit{display:flex;align-items:center;gap:8px;flex:none}
+.rules-unit small{font-size:11px;color:var(--fg-3);min-width:96px}
+.rules-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rules-add input[name=label]{flex:1;min-width:220px;width:auto;text-align:left}
+.rules-guard{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--fg-2)}
+.rules-guard li{display:flex;gap:8px;align-items:flex-start}
+.rules-foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:12px;border-top:1px solid var(--line)}
+.rules-foot #rules-reason{flex:1;min-width:220px;width:auto;text-align:left}
+.rules-foot #rules-preview{flex-basis:100%;font-size:12px;order:5}
+.rules-sugg{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--mid) 45%,transparent);background:color-mix(in srgb,var(--mid) 10%,transparent)}
+.rules-sugg h3{margin:0;font-size:13px;font-weight:600;display:flex;gap:6px;align-items:center}
+.rules-sugg>p{margin:0;font-size:12px}
+.sugg{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;padding:10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:12.5px}
+.sugg p{margin:2px 0 0;color:var(--fg-2)}
+.sugg-act{display:flex;gap:6px;flex:none}
+#rules-card.flash{box-shadow:0 0 0 3px var(--mid)}
+.rules-alert{position:fixed;z-index:9000;left:50%;top:14px;transform:translateX(-50%);max-width:min(720px,calc(100vw - 32px));display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--mid);box-shadow:0 8px 28px rgba(0,0,0,.18);font-size:12.5px}
+.rules-alert[hidden]{display:none}
 
 /* ---------- responsive ---------- */
 @media (max-width:1180px){
@@ -830,6 +910,23 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
 a.btn{text-decoration:none;color:inherit}
 a.btn.primary{color:var(--on-accent)}
 
+/* Login: three clearly separated ways in */
+#login-options{display:flex;flex-direction:column;gap:12px}
+.login-opt{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.login-opt h3{margin:0;font-size:14px;font-weight:600}
+.login-opt>p{margin:0;font-size:12px;color:var(--fg-3)}
+.login-msg{padding:10px 12px;border-radius:10px;font-size:12.5px;background:color-mix(in srgb,var(--mid) 14%,transparent);border:1px solid color-mix(in srgb,var(--mid) 40%,transparent)}
+.login-msg .btn{margin-top:8px}
+.login-note{margin:0;padding:8px 12px;border-radius:10px;font-size:12px;background:var(--accent-soft);color:var(--fg-2)}
+.gsi-slot:empty{display:none}
+.btn-google[disabled]{opacity:.55;cursor:not-allowed}
+/* Settings tables and empty states */
+.set-table td,.set-table th{vertical-align:middle}
+.set-table .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.set-table .acts .btn[disabled]{opacity:.5;cursor:not-allowed}
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px 16px;text-align:center;color:var(--fg-3);font-size:12.5px}
+.empty-state b{color:var(--fg);font-size:13.5px}
+.empty-state p{margin:0;max-width:46ch}
 /* Topbar Persistent Persona Badge */
 .persona-badge-wrap{display:flex;align-items:center;gap:8px;padding:3px 9px;border-radius:9px;background:var(--surface-2);border:1px solid var(--line);cursor:pointer;transition:all .15s}
 .persona-badge-wrap:hover{background:var(--surface-3);border-color:var(--line-2)}
@@ -987,6 +1084,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
     <button id="rail-ddq-manager" type="button" title="DDQ Manager: edit the questionnaire sent to counterparties"><svg class="ic"><use href="#i-doc"/></svg>DDQ</button>
     <button data-view="sources" type="button"><svg class="ic"><use href="#i-plug"/></svg>Sources</button>
     <button data-view="policies" type="button"><svg class="ic"><use href="#i-policy"/></svg>Policies</button>
+    <button data-view="settings" id="rail-settings" type="button" style="display:none" title="Settings: accounts and invitations (compliance officers only)"><svg class="ic"><use href="#i-user"/></svg>Settings</button>
     <div class="spacer"></div>
   </nav>
 
@@ -1015,7 +1113,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           </div>
         </div>
         <div class="watch-list" id="wlist"></div>
-        <div class="w-foot"><span>Demo subset of 1,284</span><span>Sorted by route</span></div>
+        <div class="w-foot"><span id="w-foot-subset">Demo subset of 1,284</span><span>Sorted by route</span></div>
       </aside>
 
       <div class="map-ctl" id="map-ctl">
@@ -1094,25 +1192,36 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           <div class="seg" id="rev-seg"><button class="on" data-f="open" type="button">Needs a person</button><button data-f="all" type="button">All cases</button></div>
         </div>
         <div class="stat-row" id="rev-stats"></div>
-        <div id="mon-host"></div>
-        <div class="rev-grid">
-          <div class="card">
+        <div class="seg rev-tabs" id="rev-tabs" role="tablist" aria-label="Reviews sections">
+          <button data-pane="monitoring" type="button" role="tab">Ongoing monitoring</button>
+          <button class="on" data-pane="queue" type="button" role="tab">Case queue</button>
+          <button data-pane="matrix" type="button" role="tab">Risk and confidence</button>
+          <button data-pane="calibration" type="button" role="tab">Calibration</button>
+          <button data-pane="rules" type="button" role="tab">Scoring rules<span class="rev-tab-n" id="rev-tab-rules-n" hidden></span></button>
+        </div>
+        <div id="mon-host" data-rev-pane="monitoring" hidden></div>
+        <div class="rev-panes">
+          <div class="card" data-rev-pane="queue">
             <div class="card-h"><h2>Case queue</h2><span class="faint" style="font-size:12px">Owner analyst → approving reviewer</span></div>
             <div class="table-wrap"><table class="cases" id="cases"></table></div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
-            <div class="card">
+          <div class="rev-pane-col">
+            <div class="card" data-rev-pane="matrix" hidden>
               <div class="card-h"><h2>Risk sets the stakes, confidence sets who acts</h2></div>
               <div class="card-b">
                 <svg class="matrix-svg" id="matrix" viewBox="0 0 360 300" role="img" aria-label="Risk and confidence matrix"></svg>
                 <div class="thr-ctl"><label for="thr">Confidence needed to auto-clear or escalate</label><b class="mono" id="thr-v">80%</b><input id="thr" type="range" min="60" max="95" step="1" value="80"><small>Set per customer to match risk appetite. Anything high-risk always goes to a person.</small></div>
               </div>
             </div>
-            <div class="card">
+            <div class="card" data-rev-pane="calibration" hidden>
               <div class="card-h"><h2>Calibration</h2><span class="pill q-monitor">Auto-clear on</span></div>
               <div class="card-b calib" id="calib"></div>
             </div>
           </div>
+        </div>
+        <div class="card" id="rules-card" data-rev-pane="rules" hidden>
+          <div class="card-h"><h2>Scoring rules: points table and confidence formula</h2><span class="chip" id="rules-badge">Defaults</span></div>
+          <div class="card-b rules" id="rules-body"></div>
         </div>
         <p class="demo-note">Demo data. Organisations, people, vessels, cases and alerts are fictional. Country scores are Transparency International's CPI 2025.</p>
       </div></div>
@@ -1189,6 +1298,35 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
     </section>
 
     <!-- POLICIES -->
+    <!-- SETTINGS (compliance officers only; the server checks the role on every call) -->
+    <section class="view" id="view-settings" aria-label="Settings">
+      <div class="page"><div class="page-in">
+        <div class="page-head">
+          <div><div class="eyebrow">Accounts</div><h1>Settings</h1><p>Decide who can get into <b id="set-ws-name">this workspace</b>. Invite employees, change roles and remove access. Every change is recorded below.</p></div>
+        </div>
+        <div class="hint" id="set-demo-note" hidden><svg class="ic sm"><use href="#i-alert"/></svg><p><b>Demo workspace.</b> You can invite people and change roles to try it out. Everything here resets when the app restarts, and accounts cannot be deleted.</p></div>
+        <div class="card">
+          <div class="card-h"><h2>Invite an employee</h2><span class="faint" style="font-size:12px">They join as Employee</span></div>
+          <div class="card-b">
+            <form id="set-invite-form" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+              <div class="field" style="flex:1;min-width:240px"><label for="set-invite-email">Work email (the Google account they will sign in with)</label><input id="set-invite-email" type="email" placeholder="name@company.com" autocomplete="off" required></div>
+              <button class="btn primary" type="submit" id="set-invite-btn"><svg class="ic sm"><use href="#i-send"/></svg>Invite</button>
+            </form>
+            <p class="faint" style="font-size:12px;margin:8px 0 0">The invitation is accepted when that person signs in with Google using the same email.</p>
+            <div class="hint" id="set-invite-result" hidden style="margin-top:10px"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h2>Accounts</h2><span class="faint" style="font-size:12px" id="set-count"></span></div>
+          <div class="card-b"><div class="table-wrap"><table class="rules-table set-table" id="set-accounts"></table></div><p class="faint" id="set-msg" style="font-size:12.5px;margin:8px 0 0" role="status"></p></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h2>Account changes</h2><span class="faint" style="font-size:12px">Who, what, when</span></div>
+          <div class="card-b"><div class="table-wrap"><table class="rules-table set-table" id="set-log"></table></div></div>
+        </div>
+      </div></div>
+    </section>
+
     <section class="view" id="view-policies" aria-label="Policies">
       <div class="page"><div class="page-in">
         <div class="page-head">
@@ -2107,9 +2245,9 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
   <div class="sheet" style="max-width:480px" role="dialog" aria-modal="true" aria-label="Switch User Persona">
     <div class="sheet-head">
       <div style="flex:1">
-        <div class="eyebrow">Authentication & RBAC</div>
-        <h2>Dual Hackathon Persona Switcher</h2>
-        <p class="faint">Switch between employee submission view and compliance triage workspace.</p>
+        <div class="eyebrow">Your account</div>
+        <h2 id="persona-modal-title">Account</h2>
+        <p class="faint" id="persona-modal-sub">Signed in.</p>
       </div>
       <button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
     </div>
@@ -2118,18 +2256,18 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         <div class="persona-card" id="persona-opt-employee" data-persona="employee">
           <div class="p-avatar">JD</div>
           <div class="p-meta">
-            <b>The Company Employee</b>
+            <b>John Doe · Employee</b>
             <small>john.doe@duedilly.com · Procurement & Logistics</small>
           </div>
-          <span class="p-badge">Scoped View</span>
+          <span class="p-badge">Demo</span>
         </div>
         <div class="persona-card" id="persona-opt-compliance" data-persona="compliance">
           <div class="p-avatar comp">GT</div>
           <div class="p-meta">
-            <b>The Compliance Officer</b>
-            <small>compliance@duedilly.com · Compliance Admin</small>
+            <b>Grace Teo · Compliance officer</b>
+            <small>compliance@duedilly.com · Compliance & Risk Governance</small>
           </div>
-          <span class="p-badge" style="color:var(--high-ink)">Global Triage</span>
+          <span class="p-badge">Demo</span>
         </div>
       </div>
     </div>
@@ -2165,46 +2303,73 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
     <!-- Right: Authentication Card -->
     <div class="login-card">
       <div class="login-header">
-        <div class="eyebrow" style="color:var(--accent)">Enterprise Security · Approach A</div>
+        <div class="eyebrow" style="color:var(--accent)">Sign in</div>
         <h1>DueDilly KYC Login</h1>
-        <p>Select your persona to enter the workspace, or authenticate via Google One-Tap.</p>
+        <p>Choose how you want to get in.</p>
       </div>
+      <p class="login-note" id="login-reset-note" hidden>Demo version: accounts and data are not saved after the app restarts.</p>
+      <div class="login-msg" id="login-msg" role="alert" hidden></div>
 
-      <!-- Dual Hackathon Persona Switcher -->
-      <div class="persona-cards">
-        <div class="persona-card" id="login-persona-emp" data-persona="employee">
-          <div class="p-avatar">JD</div>
-          <div class="p-meta">
-            <b>The Company Employee</b>
-            <small>john.doe@duedilly.com · Procurement & Logistics</small>
+      <div id="login-options">
+        <!-- 1. Demo accounts: one click, no Google sign-in. Shown only when DEMO_MODE=true -->
+        <div class="login-opt persona-cards-wrap" id="login-opt-demo">
+          <h3>Try a demo account</h3>
+          <p>One click, no sign-up. Both accounts share the Demo workspace with fictional data.</p>
+          <div class="persona-cards">
+            <div class="persona-card" id="login-persona-comp" data-persona="compliance">
+              <div class="p-avatar comp">GT</div>
+              <div class="p-meta">
+                <b>Grace Teo · Compliance officer</b>
+                <small>Everything, including Settings and final decisions</small>
+              </div>
+              <span class="p-badge">Demo</span>
+            </div>
+            <div class="persona-card" id="login-persona-emp" data-persona="employee">
+              <div class="p-avatar">JD</div>
+              <div class="p-meta">
+                <b>John Doe · Employee</b>
+                <small>Day-to-day KYC requests, without Settings</small>
+              </div>
+              <span class="p-badge">Demo</span>
+            </div>
           </div>
-          <span class="p-badge">/portal/employee</span>
         </div>
-        <div class="persona-card" id="login-persona-comp" data-persona="compliance">
-          <div class="p-avatar comp">GT</div>
-          <div class="p-meta">
-            <b>The Compliance Officer</b>
-            <small>compliance@duedilly.com · Compliance Admin</small>
-          </div>
-          <span class="p-badge" style="color:var(--high-ink)">/portal/compliance</span>
+
+        <!-- 2. Google sign-in for an existing account or an invitation -->
+        <div class="login-opt">
+          <h3>Sign in with Google</h3>
+          <p>For people who already have an account or an invitation.</p>
+          <div class="gsi-slot" id="login-google-signin"></div>
+          <button class="btn-google" id="login-google-btn" type="button">
+            <svg class="ic"><use href="#i-google"/></svg>
+            <span>Sign in with Google</span>
+          </button>
         </div>
+
+        <!-- 3. A new, empty workspace -->
+        <div class="login-opt">
+          <h3>Create an account</h3>
+          <p>Starts a new, empty workspace for your organisation. You become its compliance officer.</p>
+          <div class="gsi-slot" id="login-google-signup"></div>
+          <button class="btn-google" id="login-signup-btn" type="button">
+            <svg class="ic"><use href="#i-google"/></svg>
+            <span>Create an account with Google</span>
+          </button>
+        </div>
+        <small class="faint" id="login-google-off" style="font-size:11.5px" hidden>Google sign-in is not set up on this server yet. Use a demo account.</small>
       </div>
 
-      <div style="display:flex;align-items:center;gap:12px;margin:2px 0">
-        <hr style="flex:1;border:0;border-top:1px solid var(--line)">
-        <span class="faint" style="font-size:11px;text-transform:uppercase">Or corporate login</span>
-        <hr style="flex:1;border:0;border-top:1px solid var(--line)">
-      </div>
-
-      <!-- Google Sign In Button -->
-      <button class="btn-google" id="login-google-btn" type="button">
-        <svg class="ic"><use href="#i-google"/></svg>
-        <span>Sign in with Google</span>
-      </button>
-
-      <div style="text-align:center">
-        <small class="faint" style="font-size:11px">Protected by DueDilly Zero-Trust Token Engine & Google Identity Services</small>
-      </div>
+      <!-- Shown after Google has confirmed who is creating the account -->
+      <form class="login-opt" id="signup-form" hidden>
+        <h3>Create your workspace</h3>
+        <p>Signed in with Google as <b id="signup-email"></b>. Your workspace starts empty.</p>
+        <div class="field"><label for="signup-name">Your name</label><input id="signup-name" type="text" maxlength="100" required></div>
+        <div class="field"><label for="signup-org">Organisation name</label><input id="signup-org" type="text" maxlength="100" required></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn ghost" id="signup-cancel" type="button">Back</button>
+          <button class="btn primary" id="signup-submit" type="submit">Create workspace</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -2213,6 +2378,8 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
   <div class="pop-head"><h3>Alerts</h3><button class="dr-close" id="alerts-close" type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button></div>
   <div class="pop-list" id="alerts-list"></div>
 </div>
+<div class="rules-alert" id="rules-alert" role="alert" hidden></div>
+<div class="demo-flag" id="demo-flag" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -2246,6 +2413,7 @@ const CPI_2025 = [
   { a3: "IDN", name: "Indonesia",            score: 34, rank: 109 },
   { a3: "TUR", name: "Türkiye",              score: 31, rank: 124 },
   { a3: "NGA", name: "Nigeria",              score: 26, rank: 142 },
+  { a3: "CMR", name: "Cameroon",             score: 26, rank: 142 },
   { a3: "RUS", name: "Russia",               score: 22, rank: 157 }
 ];
 
@@ -2310,7 +2478,7 @@ const VESSELS = [
     names:[["2005","Pacific Dawn"],["2021","Ocean Lyra"],["2024","Aurora Venture"]],flags:[["2005","Panama"],["2024","Gabon"],["2025","Cameroon"]],
     links:[["halcyon","Ship manager"],["kestrel","Cargo counterparty"]],
     signals:[{t:"06 Oct 2026, 09:42",c:"bad",x:"Tide linked the dark period to the ship-to-ship transfer below"},{t:"02 Oct 2026",c:"bad",x:"Ship-to-ship transfer, 38 nm east of Johor"},{t:"24–25 Sep 2026",c:"bad",x:"AIS dark for 31 h in the Arabian Sea; resumed west of India"},{t:"22 Sep 2026",c:"warn",x:"Loaded off Fujairah; draught increased 6.1 m"},{t:"Mar 2025",c:"warn",x:"Flag change: Gabon to Cameroon (2nd in 24 months)"}],
-    factors:[["+","IMO number, past names and owners all match"],["+","Dark period corroborated by satellite AIS gap"],["-","Position during gap cannot be verified"]],
+    factors:[["+","IMO number and past names match the registry"],["+","Dark period corroborated by satellite AIS gap"],["-","Position during gap cannot be verified"],["-","Beneficial owner not disclosed: the registered owner is held through nominee shareholders"]],
     raise:"Request voyage records and cargo documents from Halcyon"}
 ];
 
@@ -2357,6 +2525,13 @@ const BUILTIN = [
   ["Law and regulation feeds","Gazettes and regulators, read in local languages"],["Vessel data","IMO and MMSI registries, AIS positions, flag and ownership history"]
 ];
 
+/* A workspace someone created starts empty: the built-in demo story belongs to the Demo workspace only.
+   The session is read here, before any demo list is used; signing in to a different kind of workspace reloads the page. */
+const SESSION_WORKSPACE_EMPTY = (() => {
+  try { const s = JSON.parse(localStorage.getItem('safeglobe.session') || 'null'); return Boolean(s && s.workspace && s.workspace.isDemo === false); } catch (e) { return false; }
+})();
+if (SESSION_WORKSPACE_EMPTY) window.DUEDILLY_NO_PLACEHOLDERS = true;
+
 /* Clean workspace (npm run demo:clean): the server sets this flag and the built-in demo story is dropped,
    so the globe, watchlist, alerts and sources show only what is in the database. */
 if (window.DUEDILLY_NO_PLACEHOLDERS) {
@@ -2384,6 +2559,8 @@ const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isPhone=()=>innerWidth<=760;
 const initials=n=>n.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
 let toastT=null;
+/* Empty screens say what will appear there and how to add the first item */
+function emptyState(title,text,size=96){return `<div class="empty-state">${dilly('neutral',size)}<b>${esc(title)}</b><p>${text}</p></div>`;}
 function toast(msg){const t=$('#toast');t.innerHTML=ic('check','sm')+'<span>'+esc(msg)+'</span>';t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3200);}
 
 /* ===================== state ===================== */
@@ -2398,11 +2575,17 @@ const Q={
   gaps:{label:'Fill the gaps',short:'Fill gaps',rank:2,color:'var(--slate)',action:'Request missing documents and data. Routine analyst review.'},
   monitor:{label:'Auto-clear and monitor',short:'Auto-cleared',rank:3,color:'var(--low)',action:'Cleared with a written reason. Sample-checked and kept on the watchlist.'}
 };
-const quad=e=>{const hi=e.risk>=50,cf=e.conf>=S.thr;return hi?(cf?'escalate':'investigate'):(cf?'monitor':'gaps');};
+// Risk scoring state, filled from /api/risk (rules, scores, "Why <score>?" breakdowns). See loadRisk().
+const RISK={rules:null,scores:new Map(),bd:new Map(),pending:new Set(),sugg:[],log:[],offline:false,draft:null,alertSeen:-1,pg:new Map()};
+// Levels come from the scoring rules; these are the same defaults, used until the rules have loaded
+const DEFAULT_LEVELS=[{id:'low',label:'Low',min:0,max:49},{id:'medium',label:'Medium',min:50,max:74},{id:'high',label:'High',min:75,max:100}];
+const riskLevelOf=r=>{const L=RISK.rules?RISK.rules.levels:DEFAULT_LEVELS;return L.find(l=>r>=l.min&&r<=l.max)||L[L.length-1];};
+// A confirmed sanctions match always escalates, whatever the confidence
+const quad=e=>{const sc=RISK.scores.get(e.id);if(sc&&sc.confirmedSanctions)return 'escalate';const hi=e.risk>=50,cf=e.conf>=S.thr;return hi?(cf?'escalate':'investigate'):(cf?'monitor':'gaps');};
 const confBand=c=>c>=85?'High':c>=60?'Medium':'Low';
-const riskLabel=r=>r>=50?'High':r>=30?'Medium':'Low';
-const riskCls=r=>r>=50?'b-high':r>=30?'b-mid':'b-low';
-const riskVar=r=>r>=50?'var(--high)':r>=30?'var(--mid)':'var(--low)';
+const riskLabel=r=>riskLevelOf(r).label;
+const riskCls=r=>({high:'b-high',medium:'b-mid',low:'b-low'})[riskLevelOf(r).id];
+const riskVar=r=>({high:'var(--high)',medium:'var(--mid)',low:'var(--low)'})[riskLevelOf(r).id];
 const kindIcon={org:'org',vessel:'ship',person:'person',country:'globe'};
 
 /* ===================== countries ===================== */
@@ -3060,6 +3243,7 @@ function renderDrawer(){
   requestAnimationFrame(()=>$$('.bar i[data-w]',b).forEach(i=>i.style.width=i.dataset.w+'%'));
 }
 drawer.addEventListener('click',ev=>{
+  if(ev.target.closest('[data-pg="screen"]')){runPondGuard(D.id);return;}
   const tab=ev.target.closest('[data-tab]');if(tab){D.tab=tab.dataset.tab;renderDrawer();$('#dr-body').scrollTop=0;return;}
   const op=ev.target.closest('[data-open]');if(op){const id=op.dataset.open;if(op.dataset.kind==='country'){const f=COUNTRY.get(id);if(f)selectCountry(f);}else select(id);return;}
   const act=ev.target.closest('[data-act]');if(!act)return;
@@ -3089,9 +3273,9 @@ function miniMatrix(e){
   return `<svg class="mini-matrix" viewBox="0 0 76 76" aria-hidden="true">${r('investigate',x0,x0,tx-x0-1,ty-x0-1)}${r('escalate',tx+1,x0,x0+s-tx-1,ty-x0-1)}${r('gaps',x0,ty+1,tx-x0-1,x0+s-ty-1)}${r('monitor',tx+1,ty+1,x0+s-tx-1,x0+s-ty-1)}<circle cx="${(x0+e.conf/100*s).toFixed(1)}" cy="${(x0+(1-e.risk/100)*s).toFixed(1)}" r="4" style="fill:var(--fg);stroke:var(--surface);stroke-width:1.5"/></svg>`;
 }
 /* Sanctions-caused escalation: only person records carry a structured list match (`lists`) */
-const sanctionsMatch=e=>Array.isArray(e.lists)&&e.lists.length>0;
+const sanctionsMatch=e=>(Array.isArray(e.lists)&&e.lists.length>0)||Boolean((RISK.scores.get(e.id)||{}).confirmedSanctions);
 function routeCard(e){const q=quad(e);const pose=DillyLoader.poseImg(q,sanctionsMatch(e));return `<div class="route-card"${pose?' style="grid-template-columns:76px 1fr 56px"':''}>${miniMatrix(e)}<div><div class="eyebrow">Route</div><h4 style="color:${Q[q].color}">${Q[q].label}</h4><p>${Q[q].action}</p></div>${pose}</div>`;}
-function factorsHTML(e){if(!e.factors||!e.factors.length)return '';return `<div class="sec"><div class="sec-h"><h3>What drives the confidence</h3></div><ul class="factors">${e.factors.map(([s,t])=>`<li class="${s==='+'?'up':'down'}"><b>${s==='+'?'+':'−'}</b><span>${esc(t)}</span></li>`).join('')}</ul>${e.raise&&e.conf<85?`<div class="hint">${ic('spark')}<p><b>Raise confidence:</b> ${esc(e.raise)}</p></div>`:''}</div>`;}
+function factorsHTML(e){const calc=confPartsHTML(e);if(!calc&&(!e.factors||!e.factors.length))return '';return `<div class="sec"><div class="sec-h"><h3>What drives the confidence</h3></div><ul class="factors">${calc}${(e.factors||[]).map(([s,t])=>`<li class="${s==='+'?'up':'down'}"><b>${s==='+'?'+':'−'}</b><span>${esc(t)}</span></li>`).join('')}</ul>${e.raise&&e.conf<85?`<div class="hint">${ic('spark')}<p><b>Raise confidence:</b> ${esc(e.raise)}</p></div>`:''}</div>`;}
 function scaleHTML(s){
   const h=S.th.high,l=S.th.low;
   return `<div class="scale"><div class="track"><i style="width:${h}%;background:linear-gradient(90deg,var(--high),var(--high-soft))"></i><i style="width:${l-h}%;background:linear-gradient(90deg,var(--mid),var(--mid-soft))"></i><i style="width:${100-l}%;background:linear-gradient(90deg,var(--low-soft),var(--low))"></i></div><span class="avg" style="left:42%"></span><span class="lbl" style="left:42%">avg 42</span><span class="mark" style="left:${s}%"></span><span class="lbl" style="left:${clamp(s,6,94)}%;top:-13px;color:var(--fg);font-weight:500">${s}</span></div>`;
@@ -3183,7 +3367,7 @@ function orgDrawer(e){
   const chips=`<span class="pill q-${q}">${Q[q].short}</span><span class="chip">${ic('org','sm')}Organisation</span>${e.linked?'<span class="chip">Linked entity</span>':''}<span class="chip mono">${esc(e.reg)}</span>${e.claimed?'<span class="chip" style="color:var(--accent)">Claimed profile</span>':''}`;
   const tabs=[{k:'overview',l:'Overview'},{k:'screening',l:'Screening',n:open||''},{k:'ownership',l:'Ownership'},{k:'statements',l:'Statements',n:e.claimed?'1':''},{k:'decision',l:'Decision'}];
   let body='';
-  if(D.tab==='overview')body=`${meters(e)}${routeCard(e)}${e.ddqPending?`<div class="hint" style="background:color-mix(in srgb,var(--mid) 14%,transparent);border:1px solid color-mix(in srgb,var(--mid) 35%,transparent);align-items:center"><svg class="ic" style="color:var(--mid-ink)"><use href="#i-doc"/></svg><p style="margin:0"><b>Due diligence questionnaire pending.</b> Awaiting counterparty submission.</p><button class="btn sm primary" data-act="answer-ddq" data-id="${e.id}" type="button" style="margin-left:auto">${ic('check','sm')}Answer DDQ</button></div>`:''}${factorsHTML(e)}<div class="sec"><div class="sec-h"><h3>Profile</h3></div><dl class="kv"><dt>Role</dt><dd>${esc(e.role)}</dd><dt>Registered in</dt><dd>${esc(e.city)}, ${esc(cname(e.a3))}</dd>${e.tradingNames?`<dt>Trading names</dt><dd>${esc(e.tradingNames)}</dd>`:''}${e.operatingAddresses?`<dt>Operating address</dt><dd>${esc(e.operatingAddresses)}${e.ll ? `<br><small class="mono faint" style="color:var(--accent)">📍 Plotted on globe: ${e.ll[1].toFixed(4)}°N, ${e.ll[0].toFixed(4)}°E</small>` : ''}</dd>`:''}${e.controllers?`<dt>Controllers & UBOs</dt><dd>${esc(e.controllers)}</dd>`:''}${e.since?`<dt>Customer since</dt><dd>${e.since}</dd>`:''}<dt>Trigger</dt><dd>${esc(e.trigger)}</dd><dt>Owner</dt><dd>${esc(e.owner)}</dd><dt>Last re-screen</dt><dd>Today, 06:00 SGT</dd></dl></div>${ctxHTML(e.a3)}`;
+  if(D.tab==='overview')body=`${meters(e)}${whyHTML(e)}${routeCard(e)}${e.ddqPending?`<div class="hint" style="background:color-mix(in srgb,var(--mid) 14%,transparent);border:1px solid color-mix(in srgb,var(--mid) 35%,transparent);align-items:center"><svg class="ic" style="color:var(--mid-ink)"><use href="#i-doc"/></svg><p style="margin:0"><b>Due diligence questionnaire pending.</b> Awaiting counterparty submission.</p><button class="btn sm primary" data-act="answer-ddq" data-id="${e.id}" type="button" style="margin-left:auto">${ic('check','sm')}Answer DDQ</button></div>`:''}${factorsHTML(e)}<div class="sec"><div class="sec-h"><h3>Profile</h3></div><dl class="kv"><dt>Role</dt><dd>${esc(e.role)}</dd><dt>Registered in</dt><dd>${esc(e.city)}, ${esc(cname(e.a3))}</dd>${e.tradingNames?`<dt>Trading names</dt><dd>${esc(e.tradingNames)}</dd>`:''}${e.operatingAddresses?`<dt>Operating address</dt><dd>${esc(e.operatingAddresses)}${e.ll ? `<br><small class="mono faint" style="color:var(--accent)">📍 Plotted on globe: ${e.ll[1].toFixed(4)}°N, ${e.ll[0].toFixed(4)}°E</small>` : ''}</dd>`:''}${e.controllers?`<dt>Controllers & UBOs</dt><dd>${esc(e.controllers)}</dd>`:''}${e.since?`<dt>Customer since</dt><dd>${e.since}</dd>`:''}<dt>Trigger</dt><dd>${esc(e.trigger)}</dd><dt>Owner</dt><dd>${esc(e.owner)}</dd><dt>Last re-screen</dt><dd>Today, 06:00 SGT</dd></dl></div>${ctxHTML(e.a3)}`;
   else if(D.tab==='screening')body=`<div class="sec"><div class="sec-h"><h3>Findings</h3><span class="faint" style="font-size:12px">${fs.length} from ${new Set(fs.map(f=>f.agent)).size} agent${new Set(fs.map(f=>f.agent)).size>1?'s':''}</span></div>${fs.map(findingHTML).join('')}</div><div class="sec"><div class="sec-h"><h3>Sources used</h3></div><div class="dr-chips">${sourcesFor(e).map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div></div>`;
   else if(D.tab==='ownership')body=`<div class="sec"><div class="sec-h"><h3>Ownership and control</h3><span class="agent">Web</span></div>${graphHTML(e.id)}<p class="faint" style="margin:0;font-size:12px">Select a node to open it. Links from news carry lower confidence than registry links.</p></div>`;
   else if(D.tab==='statements')body=`<div class="sec"><div class="sec-h"><h3>Clarification statements</h3><span class="agent">Truth check</span></div>${statementHTML(e)}</div>`;
@@ -3198,7 +3382,7 @@ function vesselDrawer(v){
   const chips=`<span class="pill q-${q}">${Q[q].short}</span><span class="chip">${ic('ship','sm')}${esc(v.type)}</span><span class="chip mono">IMO ${v.imo}</span>${v.chartered?'<span class="chip" style="color:var(--accent)">Chartered by you</span>':''}`;
   const tabs=[{k:'live',l:'Live'},{k:'signals',l:'Tide signals',n:v.signals.filter(s=>s.c==='bad').length||''},{k:'ownership',l:'Ownership'},{k:'decision',l:'Decision'}];
   let body='';
-  if(D.tab==='live')body=`${meters(v)}<div class="sec"><div class="sec-h"><h3>Live position</h3><span class="faint mono" style="font-size:11px" id="live-src">AIS</span></div><div class="live-grid"><div><small class="faint">Latitude</small><b id="live-lat">—</b></div><div><small class="faint">Longitude</small><b id="live-lon">—</b></div><div><small class="faint">Course</small><b id="live-cog">—</b></div><div><small class="faint">Speed</small><b id="live-sog">—</b></div><div><small class="faint">Flag</small><b>${esc(v.flag)}</b></div><div><small class="faint">MMSI</small><b>${v.mmsi}</b></div></div><dl class="kv"><dt>Heading to</dt><dd>${esc(v.dest)}</dd><dt>Built · deadweight</dt><dd>${v.built} · ${v.dwt} t</dd></dl></div>${aisCard(v)}${routeCard(v)}${factorsHTML(v)}
+  if(D.tab==='live')body=`${meters(v)}${whyHTML(v)}${routeCard(v)}${factorsHTML(v)}<div class="sec"><div class="sec-h"><h3>Live position</h3><span class="faint mono" style="font-size:11px" id="live-src">AIS</span></div><div class="live-grid"><div><small class="faint">Latitude</small><b id="live-lat">—</b></div><div><small class="faint">Longitude</small><b id="live-lon">—</b></div><div><small class="faint">Course</small><b id="live-cog">—</b></div><div><small class="faint">Speed</small><b id="live-sog">—</b></div><div><small class="faint">Flag</small><b>${esc(v.flag)}</b></div><div><small class="faint">MMSI</small><b>${v.mmsi}</b></div></div><dl class="kv"><dt>Heading to</dt><dd>${esc(v.dest)}</dd><dt>Built · deadweight</dt><dd>${v.built} · ${v.dwt} t</dd></dl></div>${aisCard(v)}${routeCard(v)}${factorsHTML(v)}
     <div class="sec"><div class="sec-h"><h3>Name and flag history</h3></div><dl class="kv">${v.names.map(n=>`<dt class="mono">${n[0]}</dt><dd>${esc(n[1])}</dd>`).join('')}</dl><dl class="kv" style="margin-top:4px">${v.flags.map(n=>`<dt class="mono">${n[0]}</dt><dd>${esc(n[1])} flag</dd>`).join('')}</dl></div>
     ${v.links.length?`<div class="sec"><div class="sec-h"><h3>Owners, managers and operators</h3></div>${v.links.map(([id,role])=>{const o=ENT.get(id);const oq=quad(o);return `<button class="link-row" data-open="${o.id}" type="button">${ic('org')}<div class="lr-main"><div>${esc(o.name)}</div><small>${esc(role)} · ${esc(cname(o.a3))}</small></div><span class="pill q-${oq}">${Q[oq].short}</span></button>`;}).join('')}</div>`:''}`;
   else if(D.tab==='signals')body=`<div class="sec"><div class="sec-h"><h3>Signals</h3><span class="agent">Tide</span></div><ul class="timeline">${v.signals.map(s=>`<li class="${s.c}"><time>${esc(s.t)}</time>${esc(s.x)}</li>`).join('')}</ul></div><div class="hint">${ic('alert')}<p>AIS can be switched off or spoofed. Tide treats dark periods as a risk signal and lowers confidence when a position cannot be verified.</p></div>`;
@@ -3218,7 +3402,7 @@ function personDrawer(p){
     ${p.idDoc?`<dt>ID / Passport</dt><dd>${esc(p.idDoc)}</dd>`:''}
     ${p.residentialAddress?`<dt>Residential address</dt><dd>${esc(p.residentialAddress)}${p.ll ? `<br><small class="mono faint" style="color:var(--accent)">📍 Plotted on globe: ${p.ll[1].toFixed(4)}°N, ${p.ll[0].toFixed(4)}°E</small>` : ''}</dd>`:''}
   </dl></div>` : '';
-  const body=`${p.ll ? `<div class="hint" style="background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);"><svg class="ic sm" style="color:var(--accent)"><use href="#i-pin"/></svg><span>Plotted on globe at verified address: <b>${p.ll[1].toFixed(4)}°N, ${p.ll[0].toFixed(4)}°E</b></span></div>` : `<div class="privacy">${ic('lock')}<span>People are never tracked by location. ${esc(p.name.split(' ')[0]==='T.'?p.name:p.name.split(' ')[0])} appears on the map only through linked organisations, in line with PDPA and GDPR.</span></div>`}${meters(p)}${routeCard(p)}${personProfile}
+  const body=`${p.ll ? `<div class="hint" style="background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);"><svg class="ic sm" style="color:var(--accent)"><use href="#i-pin"/></svg><span>Plotted on globe at verified address: <b>${p.ll[1].toFixed(4)}°N, ${p.ll[0].toFixed(4)}°E</b></span></div>` : `<div class="privacy">${ic('lock')}<span>People are never tracked by location. ${esc(p.name.split(' ')[0]==='T.'?p.name:p.name.split(' ')[0])} appears on the map only through linked organisations, in line with PDPA and GDPR.</span></div>`}${meters(p)}${whyHTML(p)}${routeCard(p)}${factorsHTML(p)}${personProfile}
   <div class="sec"><div class="sec-h"><h3>Screening</h3><span class="agent">Sentry</span></div><p style="margin:0;font-size:13px;color:var(--fg-2)">${esc(p.note)}</p>${p.lists.map(l=>`<div class="finding"><div class="finding-top"><span class="agent">Sentry</span><span class="pill plain q-investigate">Open</span></div><h4>${esc(l.list)}</h4><p>Matched on ${esc(l.match.toLowerCase())}.</p><div class="finding-meta">${confHTML(l.conf)}</div></div>`).join('')}</div>
   <div class="sec"><div class="sec-h"><h3>Linked organisations</h3></div>${links.map(o=>{const oq=quad(o);return `<button class="link-row" data-open="${o.id}" type="button">${ic('org')}<div class="lr-main"><div>${esc(o.name)}</div><small>${esc(o.city)}, ${esc(cname(o.a3))}</small></div><span class="pill q-${oq}">${Q[oq].short}</span></button>`;}).join('')}</div>
   <div class="sec"><div class="sec-h"><h3>Ownership and control</h3><span class="agent">Web</span></div>${graphHTML(p.id)}</div>`;
@@ -3270,7 +3454,9 @@ function renderWatch(){
   let h='';
   if(S.wtab==='person')h+=`<div class="w-note">${ic('lock','sm')}<span>People are shown through the organisations they are linked to, never by personal location.</span></div>`;
   h+=items.map(e=>{const qq=quad(e);return `<button class="w-item${S.sel&&S.sel.id===e.id?' on':''}" data-id="${e.id}" type="button"><span class="w-ico">${ic(kindIcon[e.kind],'sm')}</span><span style="min-width:0"><div class="w-name">${esc(e.name)}</div><div class="w-sub">${esc(entSub(e))}${e.pending?' · Pending approval':''}</div></span><span class="pill q-${qq}">${Q[qq].short}</span></button>`;}).join('');
-  if(!items.length)h+=`<div class="dilly-state" style="padding:18px 12px">${dilly('neutral',96)}<p class="faint" style="margin:0;font-size:12.5px">Nothing matches that filter.</p></div>`;
+  if(!all.length)h+=emptyState('Your watchlist is empty','The organisations, people and vessels you screen will be listed here and pinned on the globe. Press <b>Intake</b> at the top to add the first one.');
+  else if(!items.length)h+=`<div class="dilly-state" style="padding:18px 12px">${dilly('neutral',96)}<p class="faint" style="margin:0;font-size:12.5px">Nothing matches that filter.</p></div>`;
+  const wf=$('#w-foot-subset');if(wf)wf.textContent=window.DUEDILLY_NO_PLACEHOLDERS?`${all.length} on the watchlist`:'Demo subset of 1,284';
   $('#wlist').innerHTML=h;
 }
 $('#wlist').addEventListener('click',e=>{const b=e.target.closest('.w-item');if(!b)return;if(isPhone())view.classList.add('watch-closed');select(b.dataset.id);});
@@ -3326,7 +3512,7 @@ let tick=0;
 function tickerHTML(a){const q=a.q;return `<button class="ticker-item" type="button" data-alert="${ALERTS.indexOf(a)}"><span class="agent">${esc(a.agent)}</span><span class="pill plain q-${q}" style="height:18px">${Q[q].short}</span><span class="t">${esc(a.x)}</span><time>${esc(a.t)}</time></button>`;}
 function runTicker(){
   const tr=$('#ticker-track');
-  if(!ALERTS.length){if(!tr.firstElementChild)tr.innerHTML='<div class="ticker-item"><span class="faint">No alerts yet</span></div>';return;}
+  if(!ALERTS.length){if(!tr.firstElementChild)tr.innerHTML='<div class="ticker-item"><span class="faint">No alerts yet. A ripple appears here when something changes for a counterparty you monitor. Add one with Intake.</span></div>';return;}
   if(tr.firstElementChild&&!tr.querySelector('[data-alert]'))tr.innerHTML='';
   const cur=tr.querySelector('.ticker-item:not(.out)');
   const nx=document.createElement('div');nx.innerHTML=tickerHTML(ALERTS[tick%ALERTS.length]);const el=nx.firstElementChild;
@@ -3343,7 +3529,10 @@ function ripple(a){
 }
 function openAlert(i){const a=ALERTS[i];if(!a)return;$('#alerts-pop').hidden=true;if(a.country){const f=COUNTRY.get(a.id);if(f){if(!S.layers.wx){S.layers.wx=true;$('#ly-wx').checked=true;dirty=true;}selectCountry(f);}}else select(a.id);}
 $('#ticker-track').addEventListener('click',e=>{const b=e.target.closest('[data-alert]');if(b)openAlert(+b.dataset.alert);});
-function renderAlerts(){$('#alerts-list').innerHTML=ALERTS.map((a,i)=>`<button class="alert-item" data-alert="${i}" type="button"><div class="ai-top"><span class="agent">${esc(a.agent)}</span><span style="display:flex;gap:8px;align-items:center"><span class="pill plain q-${a.q}" style="height:18px">${Q[a.q].short}</span><time>${esc(a.t)}</time></span></div><p>${esc(a.x)}</p></button>`).join('');}
+function renderAlerts(){
+  $('#bell-count').textContent=ALERTS.length;if(!ALERTS.length)$('#bell-count').style.display='none';
+  if(!ALERTS.length){$('#alerts-list').innerHTML=emptyState('No alerts yet','Alerts from screening and ongoing monitoring will be listed here. They start once you add a counterparty with Intake.',72);return;}
+  $('#alerts-list').innerHTML=ALERTS.map((a,i)=>`<button class="alert-item" data-alert="${i}" type="button"><div class="ai-top"><span class="agent">${esc(a.agent)}</span><span style="display:flex;gap:8px;align-items:center"><span class="pill plain q-${a.q}" style="height:18px">${Q[a.q].short}</span><time>${esc(a.t)}</time></span></div><p>${esc(a.x)}</p></button>`).join('');}
 $('#alerts-list').addEventListener('click',e=>{const b=e.target.closest('[data-alert]');if(b)openAlert(+b.dataset.alert);});
 const togglePop=()=>{const p=$('#alerts-pop');p.hidden=!p.hidden;if(!p.hidden)$('#bell-count').style.display='none';};
 $('#bell').addEventListener('click',togglePop);$('#ticker-all').addEventListener('click',togglePop);$('#alerts-close').addEventListener('click',()=>$('#alerts-pop').hidden=true);
@@ -3463,7 +3652,7 @@ function renderAskHistory(box,item,h){
 /* Top strip: every figure is counted from the KYC requests on record (GET /api/stats) */
 async function refreshKpis(){
   try{
-    const k=(await (await fetch('/api/stats')).json()).kpis;
+    const k=(await (await apiFetch('/api/stats')).json()).kpis;
     const set=(id,v)=>{const el=$(id);if(el)el.innerHTML=v;};
     const n=v=>Number(v||0).toLocaleString('en-SG');
     set('#k-screened',n(k.screened.total));
@@ -3499,7 +3688,7 @@ function openKycRequestForm(){
 
 let askRun=0;
 async function kycpRequest(query){
-  const res = await fetch('/api/ai/kycp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) });
+  const res = await apiFetch('/api/ai/kycp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) });
   if (!res.ok) throw new Error('The screening service did not answer. Please try again.');
   return res.json();
 }
@@ -3525,6 +3714,25 @@ async function runAsk(item,prefetched){
       const h=hr.ok?await hr.json():null;
       if(run!==askRun)return;
       if(h&&h.answered){renderAskHistory(box,item,h);return;}
+    }catch(e){}
+  }
+
+  // Free questions go to the Ask Dilly agent (Google ADK, read-only tools) when it is connected
+  if(!prefetched&&item.k==='free'){
+    try{
+      box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div><div class="answer-body"><p class="faint">Dilly is looking that up…</p></div>`;
+      const ar=await apiFetch('/api/pond-guard/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:item.q})});
+      const a=ar.ok?await ar.json():null;
+      if(run!==askRun)return;
+      if(a&&a.mode==='live'){
+        box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div>
+          <div class="answer-body"><div class="ask-avatar">${dilly('three_quarter',28,'Dilly')}</div>
+          <p class="answer-sum" style="white-space:pre-wrap">${esc(a.answer)}</p>
+          ${a.links.length?`<div class="dr-chips">${a.links.map(l=>`<button class="btn sm" data-ask-open="${esc(l.id)}" type="button">Open ${esc(l.name)}</button>`).join('')}</div>`:''}
+          <p class="faint" style="font-size:11.5px;margin:8px 0 0">Answered by the Ask Dilly agent (Google ADK on Gemini), which can only read DueDilly data${a.toolsUsed.length?`. Looked up: ${esc(a.toolsUsed.join(', '))}`:''}.</p></div>`;
+        box.querySelectorAll('[data-ask-open]').forEach(b=>b.addEventListener('click',()=>{if(ENT.has(b.dataset.askOpen))select(b.dataset.askOpen);}));
+        return;
+      }
     }catch(e){}
   }
 
@@ -3665,11 +3873,14 @@ function dueOf(q){return {escalate:'Today, 17:00',investigate:'8 Oct',gaps:'13 O
 function renderReviews(){
   const counts={escalate:0,investigate:0,gaps:0,monitor:0};CASES.forEach(c=>counts[quad(c)]++);
   const needs=counts.escalate+counts.investigate+counts.gaps;
-  $('#rev-stats').innerHTML=`<div class="stat"><small>Needs a person</small><b>${needs}</b><small>${counts.investigate} investigate · ${counts.gaps} fill the gaps</small></div><div class="stat"><small>Escalated</small><b style="color:var(--high-ink)">${counts.escalate}</b><small>Senior reviewer decides</small></div><div class="stat"><small>Auto-cleared</small><b style="color:var(--low-ink)">${counts.monitor}</b><small>Each with a written reason</small></div><div class="stat"><small>Analyst hours per review</small><b>1.4 h</b><small>vs 5.2 h manual screening</small></div>`;
+  $('#rev-stats').innerHTML=`<div class="stat"><small>Needs a person</small><b>${needs}</b><small>${counts.investigate} investigate · ${counts.gaps} fill the gaps</small></div><div class="stat"><small>Escalated</small><b style="color:var(--high-ink)">${counts.escalate}</b><small>Senior reviewer decides</small></div><div class="stat"><small>Auto-cleared</small><b style="color:var(--low-ink)">${counts.monitor}</b><small>Each with a written reason</small></div><div class="stat"><small>Analyst hours per review</small>${window.DUEDILLY_NO_PLACEHOLDERS?'<b>–</b><small>Shown once reviews have been decided</small>':'<b>1.4 h</b><small>vs 5.2 h manual screening</small>'}</div>`;
   $('#rail-count').textContent=counts.escalate;$('#rail-count').style.display=counts.escalate?'':'none';
   const rows=CASES.filter(c=>S.rev==='all'||quad(c)!=='monitor').sort((a,b)=>Q[quad(a)].rank-Q[quad(b)].rank||b.risk-a.risk);
   $('#cases').innerHTML=`<thead><tr><th>Case</th><th>Counterparty</th><th>Trigger</th><th>Risk</th><th>Confidence</th><th>Route</th><th>Owner → reviewer</th><th>Due</th></tr></thead><tbody>${rows.map(c=>{const q=quad(c);return `<tr data-id="${c.id}"><td class="mono faint" style="white-space:nowrap">${c.caseId}</td><td><div class="c-name"><span class="w-ico">${ic(kindIcon[c.kind],'sm')}</span><div><b>${esc(c.short||c.name)}</b><small>${esc(c.kind==='org'?cname(c.a3):c.kind==='vessel'?'IMO '+c.imo:'Person')}</small></div></div></td><td style="min-width:150px;max-width:210px">${esc(c.trigger)}</td><td><span class="pill plain ${riskCls(c.risk)}">${c.risk}</span></td><td>${confHTML(c.conf)} <span class="faint" style="font-size:11px">${confBand(c.conf)}</span></td><td><span class="pill q-${q}">${Q[q].short}</span></td><td><span class="who"><i>${initials(c.owner)}</i></span> ${ic('arrow','sm')} <span class="who"><i style="background:var(--accent-soft);color:var(--accent)">GT</i></span></td><td class="mono" style="white-space:nowrap">${dueOf(q)}</td></tr>`;}).join('')}</tbody>`;
+  if(!CASES.length)$('#cases').innerHTML=`<tbody><tr><td>${emptyState('No reviews yet','Every screening that needs a person opens a case here, with its risk, confidence and route. Add a counterparty with <b>Intake</b>, or wait for an employee to submit a KYC request.')}</td></tr></tbody>`;
+  const dn=document.querySelector('#view-reviews .demo-note');if(dn)dn.hidden=SESSION_WORKSPACE_EMPTY;
   renderMatrix();
+  renderRulesCard();
 }
 function renderMatrix(){
   const x0=46,x1=344,y0=14,y1=258,X=c=>x0+(c/100)*(x1-x0),Y=r=>y1-(r/100)*(y1-y0);
@@ -3701,7 +3912,7 @@ function srcCard(s){
 }
 
 function renderSources(){
-  $('#src-grid').innerHTML=SOURCES.map(srcCard).join('');
+  $('#src-grid').innerHTML=SOURCES.map(srcCard).join('')+(SOURCES.some(s=>s.id!=='vesselfinder')?'':`<div class="card">${emptyState('No custom sources yet','Your own lists, feeds, APIs, websites and PDF documents will appear here next to the built-in data. Press <b>Add source</b> or <b>Upload PDF document</b> to connect the first one.')}</div>`);
   $('#builtin').innerHTML=`<dl class="kv">${BUILTIN.map(([k,v])=>`<dt>${esc(k)}</dt><dd style="font-weight:400">${esc(v)}</dd>`).join('')}</dl>`;
   fetchKbRecords();
 }
@@ -3712,7 +3923,7 @@ let kbTypeFilter = 'all';
 
 async function fetchKbRecords() {
   try {
-    const res = await fetch('/api/sources/records');
+    const res = await apiFetch('/api/sources/records');
     const data = await res.json();
     if (data && Array.isArray(data.records)) {
       KB_RECORDS = data.records;
@@ -3742,7 +3953,9 @@ function renderKbRecords() {
   if ($('#kb-display-count')) $('#kb-display-count').textContent = `${filtered.length} record${filtered.length === 1 ? '' : 's'}`;
 
   if (filtered.length === 0) {
-    listEl.innerHTML = `<div style="padding:24px;text-align:center" class="faint">No readable records match the current filter.</div>`;
+    listEl.innerHTML = KB_RECORDS.length
+      ? `<div style="padding:24px;text-align:center" class="faint">No readable records match the current filter.</div>`
+      : emptyState('No readable records yet', 'When you add a source, the organisations, people and vessels Dilly reads from it are listed here with the source and the time it was read. Add a source above to start.');
     return;
   }
 
@@ -3851,7 +4064,7 @@ $('#src-grid').addEventListener('click', e => {
   if (b.dataset.src === 'retry') {
     b.disabled = true;
     b.innerHTML = ic('loader', 'sm') + 'Reading…';
-    fetch('/api/sources/' + s.id + '/retry', { method: 'POST' }).catch(() => {});
+    apiFetch('/api/sources/' + s.id + '/retry', { method: 'POST' }).catch(() => {});
     setTimeout(() => {
       s.health = 'ok';
       s.kv = [['Last successful read', 'Just now'], ['Field mapping', 'Re-learned from new layout'], ['Affected findings', 'Confidence restored']];
@@ -3861,7 +4074,7 @@ $('#src-grid').addEventListener('click', e => {
   } else if (b.dataset.src === 'test') {
     toast(`${s.label}: test passed, connection healthy`);
   } else if (b.dataset.src === 'view-records') {
-    fetch('/api/sources/' + s.id + '/records')
+    apiFetch('/api/sources/' + s.id + '/records')
       .then(r => r.json())
       .then(data => {
         if (data && data.records) {
@@ -3871,7 +4084,7 @@ $('#src-grid').addEventListener('click', e => {
   } else if (b.dataset.src === 'reconvert') {
     b.disabled = true;
     b.innerHTML = ic('loader', 'sm') + 'Parsing…';
-    fetch('/api/sources/' + s.id + '/convert', { method: 'POST' })
+    apiFetch('/api/sources/' + s.id + '/convert', { method: 'POST' })
       .then(r => r.json())
       .then(data => {
         b.disabled = false;
@@ -4049,11 +4262,12 @@ $('#src-modal').addEventListener('click',e=>{
     toast(`“${st.label}” saved to backend & live`);
 
     try{
-      fetch('/api/sources',{
+      apiFetch('/api/sources',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify(payload)
       }).then(r=>r.json()).then(data=>{
+        if(data&&data.scoringSuggestions&&data.scoringSuggestions.length)loadRisk();
         if(data&&data.source){
           const idx=SOURCES.findIndex(s=>s.id===localItem.id);
           if(idx!==-1){
@@ -4080,10 +4294,14 @@ function renderPolicies(){
   ];
   /* clean workspace: no sample policy, only the rules compiled from what was uploaded */
   const clean=!!window.DUEDILLY_NO_PLACEHOLDERS;
-  const rules=[...(clean?[]:defaultRules), ...CUSTOM_RULES];
+  // A created workspace keeps the built-in policy rules (they are part of the app), without the demo counterparties
+  const builtIn=SESSION_WORKSPACE_EMPTY?defaultRules.map(r=>({id:r.id,sec:r.sec,t:r.t,hits:[],note:''})):(clean?[]:defaultRules);
+  const rules=[...builtIn, ...CUSTOM_RULES];
   const sample=document.querySelector('.pol-grid .doc-card');if(sample)sample.style.display=clean?'none':'';
   $('#pol-count').textContent=rules.length+' active';
   $('#rules').innerHTML=rules.map(r=>`<div class="rule"><span class="rid">${r.id}</span><div><h3>${esc(r.t)}</h3><p>${r.sec} of the policy${r.note?' · '+esc(r.note):''}</p>${r.hits.length?`<div class="dr-chips" style="margin-top:8px">${r.hits.filter(id=>ENT.has(id)).map(id=>{const e=ENT.get(id);return `<button class="chip" data-open="${id}" type="button" style="cursor:pointer">${ic(kindIcon[e.kind],'sm')}${esc(e.short||e.name)}</button>`;}).join('')}</div>`:''}</div><div class="rmeta">${r.met?'<span class="pill q-monitor">Met</span>':`<span class="pill q-investigate">${r.hits.length} flagged</span>`}<span class="faint mono" style="font-size:10.5px">Active</span></div></div>`).join('');
+  if(!rules.length)$('#rules').innerHTML=emptyState('No policy rules yet','Rules compiled from your policies will be listed here and checked against every counterparty. Press <b>Upload policy</b> to add the first one.');
+  else if(SESSION_WORKSPACE_EMPTY&&!CUSTOM_RULES.length)$('#rules').insertAdjacentHTML('beforeend',`<p class="faint" style="font-size:12.5px;margin:10px 0 0">These are the built-in rules. No policy of your own has been uploaded yet: press <b>Upload policy</b> to add one.</p>`);
   $('#conflict-callout p').textContent=`§4.1 requires enhanced due diligence below CPI 40. Severny Agro Export LLC (Russia, CPI 2025: ${cpiOf('RUS')}) is subject to mandatory EDD escalation.`;
 }
 $('#rules').addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(b)select(b.dataset.open);});
@@ -4110,7 +4328,7 @@ $('#upload-pol-file').addEventListener('change',e=>{
   const reader = new FileReader();
   reader.onload = ev => {
     try{
-      fetch('/api/policies/compile',{
+      apiFetch('/api/policies/compile',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
@@ -4120,7 +4338,7 @@ $('#upload-pol-file').addEventListener('change',e=>{
           mimeType: file.type || 'application/pdf',
           content: ev.target.result
         })
-      }).catch(()=>{});
+      }).then(r=>r.json()).then(d=>{if(d&&d.scoringSuggestions&&d.scoringSuggestions.length)loadRisk();}).catch(()=>{});
     }catch(err){}
   };
   if(/\.txt$/i.test(file.name) || file.type === 'text/plain') {
@@ -4134,6 +4352,7 @@ $('#upload-pol-file').addEventListener('change',e=>{
 function showView(v, updateUrl = true){
   if(v==='compliance'&&!isCompliance())v='employee';
   else if(v==='employee'&&isCompliance())v='compliance';
+  if(v==='settings'&&!isCompliance())v='globe';
   S.view=v;$$('.rail button[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   $$('.view').forEach(s=>s.classList.toggle('on',s.id==='view-'+v));
   if(v==='globe'){requestAnimationFrame(()=>{relayout(false);dirty=true;});}
@@ -4141,6 +4360,7 @@ function showView(v, updateUrl = true){
   if(v==='employee')renderEmployeeWorkspace();
   if(v==='compliance')renderComplianceWorkspace();
   if(v==='ddq')renderDdqGuestView();
+  if(v==='settings')renderSettings();
   $('#alerts-pop').hidden=true;hideTip();
 
   if(updateUrl && window.history && window.history.pushState){
@@ -4193,7 +4413,7 @@ $('#claim-submit').addEventListener('click', async ()=>{
   
   // Try sending to server if running
   try {
-    fetch('/api/claim', {
+    apiFetch('/api/claim', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id: e.id, email, signatory, role: e.role })
@@ -4274,7 +4494,7 @@ $('#stmt-submit').addEventListener('click', async ()=>{
   });
 
   try {
-    fetch('/api/statements', {
+    apiFetch('/api/statements', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id: e.id, text, remediation: rem })
@@ -4322,7 +4542,7 @@ $('#ans-ddq-submit').addEventListener('click', ()=>{
   });
 
   try {
-    fetch('/api/ddq/answer', {
+    apiFetch('/api/ddq/answer', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id: e.id })
@@ -5321,7 +5541,7 @@ $('#intake-submit').addEventListener('click', async ()=>{
 
   // Call server if available
   try {
-    fetch('/api/intake', {
+    apiFetch('/api/intake', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -5368,7 +5588,7 @@ $('#test-api-btn').addEventListener('click', async ()=>{
   
   const t0 = performance.now();
   try {
-    const res = await fetch('/v1/screen', {
+    const res = await apiFetch('/v1/screen', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -5441,7 +5661,7 @@ function applyVoyage(item, e){
 }
 async function syncFromBackend(){
   try {
-    const res = await fetch('/api/entities');
+    const res = await apiFetch('/api/entities');
     if (!res.ok) return;
     const data = await res.json();
     if (!data || !Array.isArray(data.entities)) return;
@@ -5539,7 +5759,7 @@ async function syncFromBackend(){
 
     // Sync sources from backend
     try {
-      const sRes = await fetch('/api/sources');
+      const sRes = await apiFetch('/api/sources');
       if (sRes.ok) {
         const sData = await sRes.json();
         if (sData && Array.isArray(sData.sources)) {
@@ -5979,7 +6199,7 @@ async function handleKycDocumentUpload(file) {
     const result = await DillyLoader.run($('#kyc-modal-body'), {
       task: 'document', variant: 'overlay', errorHost: $('#kyc-dropzone'),
       request: async () => {
-        const resp = await fetch('/api/kyc/extract-document', {
+        const resp = await apiFetch('/api/kyc/extract-document', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -6228,6 +6448,86 @@ async function handleKycFormSubmit() {
 }
 
 /* =====================================================================
+   SETTINGS · accounts, invitations and the account change log
+   Compliance officers only. The page hides the tab; the server refuses everyone else.
+===================================================================== */
+const fmtWhen = iso => iso ? new Date(iso).toLocaleString('en-SG', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+let settingsData = null;
+async function settingsCall(method, path, body) {
+  const res = await apiFetch(`/api/settings${path}`, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || 'That could not be done.');
+  return data;
+}
+async function copyText(text, done) {
+  try { await navigator.clipboard.writeText(text); toast(done); }
+  catch (e) { toast('Copy this link: ' + text); }
+}
+async function renderSettings() {
+  if (!isCompliance()) return;
+  $('#set-ws-name').textContent = (session.workspace && session.workspace.name) || 'this workspace';
+  try { settingsData = await settingsCall('GET', '/accounts'); }
+  catch (err) { $('#set-accounts').innerHTML = `<tbody><tr><td><div class="empty-state"><b>Settings could not be loaded</b><p>${esc(err.message)}</p></div></td></tr></tbody>`; return; }
+  const d = settingsData;
+  $('#set-demo-note').hidden = !d.workspace.isDemo;
+  const active = d.accounts.filter(a => a.status === 'active').length;
+  $('#set-count').textContent = `${active} active · ${d.accounts.length - active} invited`;
+  $('#set-accounts').innerHTML = `<thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last sign-in</th><th></th></tr></thead><tbody>${d.accounts.map(a => {
+    const del = `<button class="btn sm" data-set="delete" data-id="${esc(a.id)}" type="button" style="color:var(--high-ink)" ${d.deleteAllowed ? '' : `disabled title="${esc(d.deleteNote)}"`}>Delete account</button>${d.deleteAllowed ? '' : `<small class="faint" style="align-self:center">${esc(d.deleteNote)}</small>`}`;
+    const acts = a.status === 'invited'
+      ? `<button class="btn sm" data-set="copy" data-id="${esc(a.id)}" type="button">Copy invite link</button><button class="btn sm" data-set="resend" data-id="${esc(a.id)}" type="button">Resend</button><button class="btn sm" data-set="cancel" data-id="${esc(a.id)}" type="button">Cancel invite</button>`
+      : `<button class="btn sm" data-set="role" data-id="${esc(a.id)}" data-role="${a.role === 'employee' ? 'compliance_officer' : 'employee'}" type="button">${a.role === 'employee' ? 'Make compliance officer' : 'Make employee'}</button>${del}`;
+    return `<tr><td><b>${esc(a.name || 'Not signed in yet')}</b>${a.isYou ? ' <span class="chip">You</span>' : ''}${a.isDemo ? ' <span class="chip">Demo</span>' : ''}</td><td>${esc(a.email)}</td><td>${esc(a.roleLabel)}</td><td><span class="chip">${esc(a.statusLabel)}</span></td><td>${a.lastSignInAt ? esc(fmtWhen(a.lastSignInAt)) : '<span class="faint">Never</span>'}</td><td><div class="acts">${acts}</div></td></tr>`;
+  }).join('')}</tbody>`;
+  $('#set-log').innerHTML = d.log.length
+    ? `<thead><tr><th>When</th><th>Who</th><th>What</th><th>About</th><th>Details</th></tr></thead><tbody>${d.log.map(l => `<tr><td>${esc(fmtWhen(l.at))}</td><td>${esc(l.actorName || l.actorEmail)}</td><td><b>${esc(l.action)}</b></td><td>${esc(l.targetName || l.targetEmail)}${l.targetName && l.targetEmail ? `<br><small class="faint">${esc(l.targetEmail)}</small>` : ''}</td><td>${esc(l.detail)}</td></tr>`).join('')}</tbody>`
+    : `<tbody><tr><td><div class="empty-state"><b>No account changes yet</b><p>Invitations, role changes and deletions will be listed here with who made them and when. Invite your first employee above.</p></div></td></tr></tbody>`;
+}
+function showInviteResult(out, email) {
+  const box = $('#set-invite-result');
+  box.innerHTML = `<svg class="ic sm"><use href="#i-${out.delivery.sent ? 'check' : 'link'}"/></svg><p><b>${out.delivery.sent ? `Invitation emailed to ${esc(email)}.` : `${esc(email)} is invited.`}</b> ${out.delivery.sent ? '' : esc(out.delivery.reason)}</p><button class="btn sm" id="set-copy-latest" type="button">Copy invite link</button>`;
+  box.hidden = false;
+  $('#set-copy-latest').addEventListener('click', () => copyText(out.delivery.link, 'Invite link copied'));
+}
+function initSettings() {
+  $('#set-invite-form').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const email = $('#set-invite-email').value.trim();
+    $('#set-msg').textContent = '';
+    try {
+      const out = await settingsCall('POST', '/invites', { email });
+      $('#set-invite-email').value = '';
+      showInviteResult(out, out.account.email);
+      renderSettings();
+    } catch (err) { $('#set-invite-result').hidden = true; $('#set-msg').textContent = err.message; toast(err.message); }
+  });
+  $('#set-accounts').addEventListener('click', async ev => {
+    const btn = ev.target.closest('button[data-set]');
+    if (!btn || btn.disabled) return;
+    const id = btn.dataset.id;
+    const account = settingsData.accounts.find(a => a.id === id);
+    if (!account) return;
+    $('#set-msg').textContent = '';
+    try {
+      if (btn.dataset.set === 'copy') { await copyText(account.inviteLink, 'Invite link copied'); return; }
+      if (btn.dataset.set === 'delete' && !btn.dataset.armed) {
+        // Two clicks to delete: the first one asks
+        btn.dataset.armed = '1'; btn.textContent = `Confirm: remove ${account.name || account.email}`;
+        setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = 'Delete account'; } }, 5000);
+        return;
+      }
+      if (btn.dataset.set === 'resend') showInviteResult(await settingsCall('POST', `/invites/${encodeURIComponent(id)}/resend`), account.email);
+      if (btn.dataset.set === 'cancel') { await settingsCall('DELETE', `/invites/${encodeURIComponent(id)}`); toast('Invitation cancelled'); }
+      if (btn.dataset.set === 'role') { await settingsCall('PUT', `/accounts/${encodeURIComponent(id)}/role`, { role: btn.dataset.role }); toast(`${account.name || account.email} is now ${ROLE_LABELS[btn.dataset.role]}`); }
+      if (btn.dataset.set === 'delete') { await settingsCall('DELETE', `/accounts/${encodeURIComponent(id)}`); toast(`${account.name || account.email} no longer has access`); }
+      // Changing your own role or deleting yourself ends your officer session
+      if (account.isYou && (btn.dataset.set === 'role' || btn.dataset.set === 'delete')) { if (btn.dataset.set === 'delete') { sessionEnded(); return; } session.role = btn.dataset.role; saveSession(session); location.href = '/portal/employee'; return; }
+      renderSettings();
+    } catch (err) { $('#set-msg').textContent = err.message; toast(err.message); renderSettings(); }
+  });
+}
+
+/* =====================================================================
    SESSION, PERSONAS & ROUTING
    - Hackathon persona switcher + Google Identity Services sign-in
    - Role-aware navigation (/portal/employee, /portal/compliance, /ddq/portal)
@@ -6243,7 +6543,8 @@ let publicConfig = { googleClientId: '', googleMapsApiKey: '', mapsEnabled: fals
 let googleReady = false;
 
 function loadSession() {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; }
+  // A session saved before accounts existed has no token: it is dropped, and the person signs in again
+  try { const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); return s && (s.token || s.idToken) ? s : null; } catch (e) { return null; }
 }
 function saveSession(s) {
   session = s;
@@ -6258,8 +6559,8 @@ function isCompliance() { return Boolean(session && session.role === 'compliance
 function apiFetch(url, opts = {}) {
   const headers = Object.assign({}, opts.headers || {});
   if (session) {
-    if (session.idToken) {
-      headers['Authorization'] = `Bearer ${session.idToken}`;
+    if (session.token || session.idToken) {
+      headers['Authorization'] = `Bearer ${session.token || session.idToken}`;
     } else {
       headers['x-user-email'] = session.email;
       headers['x-user-name'] = session.name;
@@ -6269,8 +6570,20 @@ function apiFetch(url, opts = {}) {
     }
   }
   headers['x-client-timestamp'] = new Date().toISOString();
-  return fetch(url, Object.assign({}, opts, { headers }));
+  const sent = session;
+  return fetch(url, Object.assign({}, opts, { headers })).then(res => {
+    // The session ended (12 hours passed, or the account was removed): back to the login page
+    if (res.status === 401 && sent && sent.token && session === sent) sessionEnded();
+    return res;
+  });
 }
+function sessionEnded() {
+  saveSession(null);
+  try { sessionStorage.setItem('duedilly.loginMsg', 'Your session has ended. Please sign in again.'); } catch (e) {}
+  location.href = '/login';
+}
+const ROLE_LABELS = { compliance_officer: 'Compliance officer', employee: 'Employee' };
+const isDemoSession = () => Boolean(session && (session.demoAccount || !session.workspace || session.workspace.isDemo));
 
 function applySession() {
   if (!session) return;
@@ -6281,11 +6594,26 @@ function applySession() {
   $('#top-user-avatar').textContent = initials;
   $('#top-user-avatar').classList.toggle('comp', comp);
   $('#top-user-name').textContent = session.name;
-  $('#top-user-role').textContent = comp ? 'Compliance Officer' : `Employee · ${session.department}`;
+  $('#top-user-role').textContent = (ROLE_LABELS[session.role] || 'Employee') + (isDemoSession() ? ' · Demo' : '');
   $('.rail button[data-view="employee"]').style.display = 'none'; // employees use /portal/employee
   $('.rail button[data-view="compliance"]').style.display = comp ? '' : 'none';
+  // Settings is for compliance officers; the server checks the role again on every Settings call
+  $('#rail-settings').style.display = comp ? '' : 'none';
   $('#persona-opt-employee').classList.toggle('active', !comp && session.email === PERSONAS.employee.email);
-  $('#persona-opt-compliance').classList.toggle('active', comp);
+  $('#persona-opt-compliance').classList.toggle('active', comp && session.email === PERSONAS.compliance.email);
+  applyAccountSheet();
+  // Who may edit the scoring rules depends on the role
+  renderRulesCard();renderRulesAlert();
+}
+
+// The account sheet offers the other demo account only to a demo account, while demo mode is on
+function applyAccountSheet() {
+  if (!session) return;
+  const demoSwitch = isDemoSession() && publicConfig.demoMode !== false;
+  $('#persona-modal .persona-cards').hidden = !demoSwitch;
+  $('#persona-modal-title').textContent = demoSwitch ? 'Demo accounts' : 'Account';
+  $('#persona-modal-sub').textContent = `${session.name} · ${session.email} · ${ROLE_LABELS[session.role] || 'Employee'}${session.workspace ? ' · ' + session.workspace.name + (session.workspace.isDemo ? ' (Demo workspace)' : '') : ''}`;
+  applyWorkspaceName();
 }
 
 function showLogin() {
@@ -6299,57 +6627,133 @@ function hideLogin() {
 }
 function signIn(user) {
   saveSession(user);
-  if (!isCompliance()) { location.href = '/portal/employee'; return; }
-  applySession();
-  hideLogin();
-  $('#persona-modal').hidden = true;
-  kycRequestsCache = [];
-  compRequestsCache = [];
-  showView(isCompliance() ? 'compliance' : 'employee');
-  toast(`Signed in as ${user.name} · ${isCompliance() ? 'Compliance Officer' : 'Employee'}`);
+  // Each kind of account gets its own page, loaded fresh so it shows that workspace's data and nothing else
+  location.href = isCompliance() ? '/portal/compliance' : '/portal/employee';
 }
 function signOut() {
   saveSession(null);
+  fetch('/api/auth/signout', { method: 'POST' }).catch(() => {});
+  // A created workspace is shown without the demo story, so the page is loaded again for the next person
+  if (SESSION_WORKSPACE_EMPTY) { location.href = '/login'; return; }
   $$('.modal').forEach(m => { m.hidden = true; });
   showLogin();
 }
 
-async function onGoogleCredential(resp) {
+/* ----- The three ways in: a demo account, Google for an existing account or invitation, and a new workspace ----- */
+let googleIntent = 'signin';      // which Google button was pressed: 'signin' or 'signup'
+let pendingCredential = null;     // the Google ID token waiting for the "Create your workspace" form
+function loginMessage(text, { offerSignup = false } = {}) {
+  const el = $('#login-msg');
+  if (!text) { el.hidden = true; el.innerHTML = ''; return; }
+  el.innerHTML = `<div>${esc(text)}</div>${offerSignup ? '<button class="btn sm" id="login-msg-signup" type="button">Create your own workspace</button>' : ''}`;
+  el.hidden = false;
+  const btn = $('#login-msg-signup');
+  if (btn) btn.addEventListener('click', () => showSignupForm(pendingCredential));
+}
+async function postAuth(path, body) {
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+async function demoSignIn(key) {
+  loginMessage('');
   try {
-    const res = await fetch('/api/auth/session', { headers: { Authorization: `Bearer ${resp.credential}` } });
-    const data = await res.json();
-    if (!res.ok || !data.user || data.user.anonymous) throw new Error('Google token was not accepted');
-    signIn(Object.assign({}, data.user, { idToken: resp.credential }));
+    const { ok, data } = await postAuth('/api/auth/demo', { account: key });
+    if (!ok) { loginMessage(data.message || 'That demo account is not available.'); return; }
+    signIn(Object.assign({}, data.user, { token: data.token }));
   } catch (err) {
-    toast(`Google Sign-In failed: ${err.message}`);
+    loginMessage('The server could not be reached. Please try again.');
+  }
+}
+function googleProfile(credential) {
+  try {
+    const part = credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(decodeURIComponent(escape(atob(part))));
+  } catch (e) { return {}; }
+}
+function showSignupForm(credential) {
+  if (!credential) return;
+  pendingCredential = credential;
+  const profile = googleProfile(credential);
+  loginMessage('');
+  $('#signup-email').textContent = profile.email || 'your Google account';
+  $('#signup-name').value = profile.name || '';
+  $('#signup-org').value = '';
+  $('#login-options').hidden = true;
+  $('#signup-form').hidden = false;
+  ($('#signup-name').value ? $('#signup-org') : $('#signup-name')).focus();
+}
+function hideSignupForm() {
+  $('#signup-form').hidden = true;
+  $('#login-options').hidden = false;
+}
+async function submitSignup(ev) {
+  ev.preventDefault();
+  const btn = $('#signup-submit');
+  btn.disabled = true;
+  try {
+    const { ok, data } = await postAuth('/api/auth/signup', { credential: pendingCredential, name: $('#signup-name').value, organisation: $('#signup-org').value });
+    if (!ok) { hideSignupForm(); loginMessage(data.message || 'The workspace could not be created.'); return; }
+    signIn(Object.assign({}, data.user, { token: data.token }));
+  } catch (err) {
+    loginMessage('The server could not be reached. Please try again.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+async function onGoogleCredential(resp) {
+  const intent = googleIntent;
+  googleIntent = 'signin';
+  pendingCredential = resp.credential;
+  if (intent === 'signup') { showSignupForm(resp.credential); return; }
+  try {
+    const { ok, data } = await postAuth('/api/auth/google', { credential: resp.credential });
+    if (ok) { signIn(Object.assign({}, data.user, { token: data.token })); return; }
+    // No account and no invitation: nothing is created; the person may start their own workspace
+    loginMessage(data.message || 'Google sign-in was not accepted.', { offerSignup: data.code === 'no_access' });
+  } catch (err) {
+    loginMessage('The server could not be reached. Please try again.');
   }
 }
 
 function initGoogleSignIn() {
   const clientId = publicConfig.googleClientId;
-  if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(clientId) || /^YOUR_/.test(clientId)) return;
+  if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(clientId) || /^YOUR_/.test(clientId)) {
+    // Offline fallback: Google sign-in is not set up, so only the demo accounts work
+    $('#login-google-off').hidden = false;
+    $('#login-google-btn').disabled = true;
+    $('#login-signup-btn').disabled = true;
+    return;
+  }
   const s = document.createElement('script');
   s.src = 'https://accounts.google.com/gsi/client';
   s.async = true;
   s.onload = () => {
     google.accounts.id.initialize({ client_id: clientId, callback: onGoogleCredential, auto_select: false });
     googleReady = true;
-    if (!session && !IS_GUEST) google.accounts.id.prompt(); // One-Tap
+    // Google's own buttons; each one notes which option was chosen before Google answers
+    const button = (slot, fallback, intent, text) => {
+      google.accounts.id.renderButton($(slot), { type: 'standard', theme: 'outline', size: 'large', shape: 'pill', text, width: 320, click_listener: () => { googleIntent = intent; loginMessage(''); } });
+      $(fallback).hidden = true;
+    };
+    button('#login-google-signin', '#login-google-btn', 'signin', 'signin_with');
+    button('#login-google-signup', '#login-signup-btn', 'signup', 'signup_with');
   };
   document.head.appendChild(s);
 }
 
 function initSessionControls() {
   $$('.persona-card[data-persona]').forEach(card => {
-    card.addEventListener('click', () => signIn(Object.assign({}, PERSONAS[card.dataset.persona])));
+    card.addEventListener('click', () => demoSignIn(card.dataset.persona));
   });
+  $('#signup-form').addEventListener('submit', submitSignup);
+  $('#signup-cancel').addEventListener('click', hideSignupForm);
   $('#top-persona-btn').addEventListener('click', () => { $('#persona-modal').hidden = false; });
   $('#persona-logout-btn').addEventListener('click', signOut);
   $('#rail-ddq-manager').addEventListener('click', () => { location.href = '/portal/ddq-manager'; });
-  $('#login-google-btn').addEventListener('click', () => {
-    if (googleReady) google.accounts.id.prompt();
-    else toast('Google Sign-In is not configured (set GOOGLE_CLIENT_ID) — pick a demo persona');
-  });
+  // Shown only until Google's own buttons have loaded
+  $('#login-google-btn').addEventListener('click', () => { googleIntent = 'signin'; if (googleReady) google.accounts.id.prompt(); });
+  $('#login-signup-btn').addEventListener('click', () => { googleIntent = 'signup'; if (googleReady) google.accounts.id.prompt(); });
   window.addEventListener('popstate', routeFromLocation);
 }
 
@@ -6369,11 +6773,27 @@ function routeFromLocation() {
   }
 }
 
+// The top bar shows the workspace of the signed-in person (the Demo workspace keeps its WORKSPACE_NAME)
+function applyWorkspaceName() {
+  const name = (session && session.workspace && session.workspace.name) || publicConfig.workspaceName;
+  if (name) $$('#ws-name, [data-ws-name]').forEach(el => { el.textContent = name; });
+}
+// Messages carried to the login page: an ended session, or an invitation link
+function showLoginNotices() {
+  if (session) return;
+  let msg = '';
+  try { msg = sessionStorage.getItem('duedilly.loginMsg') || ''; sessionStorage.removeItem('duedilly.loginMsg'); } catch (e) {}
+  const invited = new URLSearchParams(location.search).get('invite');
+  if (!msg && invited) msg = `You have been invited to DueDilly. Choose "Sign in with Google" and use ${invited} to accept.`;
+  if (msg) loginMessage(msg);
+}
+
 async function bootSession() {
   initSessionControls();
   initAiPopover();
   initComplianceControls();
   initDdqGuestControls();
+  initSettings();
   if (IS_GUEST) {
     document.body.classList.add('guest-mode');
   } else {
@@ -6384,7 +6804,30 @@ async function bootSession() {
   try {
     const res = await fetch('/api/config/public');
     if (res.ok) publicConfig = await res.json();
-    if (publicConfig.workspaceName) $$('#ws-name, [data-ws-name]').forEach(el => { el.textContent = publicConfig.workspaceName; });
+    applyWorkspaceName();
+    // The demo accounts are a demo feature; outside DEMO_MODE the only way in is Google sign-in
+    if (publicConfig.demoMode === false) { $$('.persona-cards').forEach(el => { el.hidden = true; }); $('#login-opt-demo').hidden = true; }
+    // On Cloud Run nothing is kept across a restart: say so before anyone signs in
+    $('#login-reset-note').hidden = !publicConfig.dataResets;
+    applyAccountSheet();
+    // The role is kept on the server: if it was changed in Settings, this page follows
+    if (session && session.token && !IS_GUEST) {
+      const check = await apiFetch('/api/auth/session');
+      if (check.ok) {
+        const { user } = await check.json();
+        const was = session.role;
+        saveSession(Object.assign({}, session, user));
+        if (user.role !== was) { location.replace(isCompliance() ? '/portal/compliance' : '/portal/employee'); return; }
+      }
+    }
+    const flag = $('#demo-flag');
+    // "Fictional" is only true of the Demo workspace; "resets" is true of every workspace on Cloud Run
+    const fictional = publicConfig.demoMode && (!session || isDemoSession());
+    if (flag && (fictional || publicConfig.dataResets)) {
+      flag.textContent = [fictional ? 'Demo: all organisations, people and vessels are fictional.' : '', publicConfig.dataResets ? 'Demo version: data and accounts reset when the app restarts.' : ''].filter(Boolean).join(' ');
+      flag.hidden = false;
+    }
+    showLoginNotices();
   } catch (e) {}
   initGoogleSignIn();
 }
@@ -6861,6 +7304,10 @@ async function renderComplianceWorkspace() {
     if (q) rows = rows.filter(r => [r.id, r.counterparty_name, r.created_by_email, r.country, r.ddq_clause].some(v => String(v || '').toLowerCase().includes(q)));
 
     $('#comp-count-summary').textContent = `Showing ${rows.length} of ${all.length} requests · sorted by triage priority`;
+    if (all.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="12">${emptyState('No KYC requests yet', 'Requests your employees submit will queue here for triage, with the screening result and any DDQ. Invite employees in <b>Settings</b>; they submit requests from their own page.')}</td></tr>`;
+      return;
+    }
     if (rows.length === 0) {
       tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:36px;color:var(--fg-3)"><div class="dilly-state">${dilly('neutral',96)}No requests match this filter.</div></td></tr>`;
       return;
@@ -7326,6 +7773,254 @@ function renderAuditDdqActions(r) {
   });
 }
 
+/* ===================== Risk scoring: "Why <score>?", scoring rules, recommended changes ===================== */
+// Scores, rules and breakdowns come from /api/risk (src/risk). The page never adds up a score itself.
+async function loadRisk(){
+  try{
+    const [r1,r2]=await Promise.all([apiFetch('/api/risk/rules'),apiFetch('/api/risk/scores')]);
+    if(!r1.ok||!r2.ok)throw new Error('risk api');
+    const rd=await r1.json(),sd=await r2.json();
+    const before=RISK.sugg.length;
+    RISK.rules=rd.rules;RISK.sugg=rd.suggestions||[];RISK.log=rd.log||[];RISK.offline=false;
+    if(RISK.sugg.length>before)RISK.alertSeen=-1;
+    RISK.scores=new Map(sd.scores.map(s=>[s.entityId,s]));
+    for(const s of sd.scores){const e=ENT.get(s.entityId);if(e){e.risk=s.risk;e.conf=s.confidence;}}
+    S.thr=rd.rules.confidence.threshold;
+    const thr=$('#thr');if(thr){thr.value=S.thr;$('#thr-v').textContent=S.thr+'%';}
+    renderReviews();refreshStatus();renderWatch();dirty=true;
+    if(drawerOpen())renderDrawer();
+  }catch(err){RISK.offline=true;renderRulesCard();}
+  renderRulesAlert();
+}
+function getBreakdown(id){
+  if(RISK.bd.has(id))return RISK.bd.get(id);
+  if(!RISK.pending.has(id)){
+    RISK.pending.add(id);
+    apiFetch('/api/risk/breakdown/'+encodeURIComponent(id))
+      .then(r=>r.status===404?null:r.ok?r.json().then(d=>d.breakdown):Promise.reject(new Error('risk api')))
+      .then(b=>RISK.bd.set(id,b)).catch(()=>RISK.bd.set(id,{error:true}))
+      .finally(()=>{RISK.pending.delete(id);if(drawerOpen()&&D.id===id)renderDrawer();});
+  }
+  return undefined;
+}
+const readWhen=t=>{const d=new Date(t);return isNaN(d)?'':d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});};
+const levelCls=id=>({high:'b-high',medium:'b-mid',low:'b-low'})[id]||'b-low';
+/* The 6-step strip and the "Why <score>?" panel, shown under the risk card */
+/* Pond-Guard: one row per agent, live while they run, then what each found */
+function pondGuardHTML(e){
+  const run=RISK.pg.get(e.id);
+  const btn=`<button class="btn sm ${run&&run.done?'':'primary'}" data-pg="screen" type="button"${run&&!run.done?' disabled':''}>${ic('spark','sm')}${run?(run.done?'Screen again':'Screening…'):'Screen with Pond-Guard'}</button>`;
+  if(!run)return `<div class="sec pg"><div class="sec-h"><h3>Pond-Guard agents</h3>${btn}</div><p class="faint" style="margin:0;font-size:12px">Sanctions, PEP, adverse media, ownership${e.kind==='vessel'?' and vessel behaviour':''} agents read the sources and return findings. The points table gives the score.</p></div>`;
+  const state=a=>a.state==='running'?'<span class="pg-st run">Reading…</span>':a.ok===false?'<span class="pg-st bad">No answer</span>':`<span class="pg-st ok">${a.findings.filter(f=>f.accepted).length} finding${a.findings.filter(f=>f.accepted).length===1?'':'s'}</span>`;
+  const rows=run.agents.map(a=>`<div class="pg-agent ${a.state}"><div class="pg-top"><b>${esc(a.label)}</b>${state(a)}</div>
+    ${a.state==='done'&&a.error?`<small class="faint">${esc(a.error)}</small>`:''}${a.note?`<small class="faint">${esc(a.note)}</small>`:''}
+    ${(a.findings||[]).map(f=>`<div class="pg-f${f.accepted?'':' no'}"><span>${esc(f.accepted?f.short||'Finding':'Not counted')}</span><p>${esc(f.summary||'')}</p>${f.quote?`<blockquote>“${esc(f.quote)}”</blockquote>`:''}<small>${f.accepted?(f.sourceUrl?`<a href="${esc(f.sourceUrl)}" target="_blank" rel="noopener">${esc(f.sourceName)}</a>`:esc(f.sourceName||'')):esc(f.reason||'')}</small></div>`).join('')}</div>`).join('');
+  const note=run.mode==='offline'?`<div class="hint">${ic('alert')}<p style="margin:0"><b>Offline sample.</b> ${esc(run.reason||'The live agents are not connected.')} These are the stored findings; nothing was changed.</p></div>`:run.done?`<p class="faint" style="margin:0;font-size:11.5px">Live run by the Google ADK agents on Gemini${run.modelId?` (${esc(run.modelId)})`:''}. Every finding was checked against its source before it counted.</p>`:'';
+  return `<div class="sec pg"><div class="sec-h"><h3>Pond-Guard agents</h3>${btn}</div>${run.message?`<p class="faint" style="margin:0;font-size:12px">${esc(run.message)}</p>`:''}${rows}${note}</div>`;
+}
+async function runPondGuard(id){
+  const run={done:false,mode:'',reason:'',agents:[],message:''};
+  RISK.pg.set(id,run);
+  const redraw=()=>{if(drawerOpen()&&D.id===id)renderDrawer();};
+  redraw();
+  const onEvent=ev=>{
+    if(ev.type==='started'){run.mode=ev.mode;run.reason=ev.reason;run.agents=ev.agents.map(a=>({id:a.id,label:a.label,state:'waiting',findings:[]}));}
+    else if(ev.type==='agent_started'){const a=run.agents.find(x=>x.id===ev.agent);if(a)a.state='running';}
+    else if(ev.type==='agent_done'){const a=run.agents.find(x=>x.id===ev.agent);if(a)Object.assign(a,{state:'done',ok:ev.ok,error:ev.error||'',note:ev.note||'',findings:ev.findings||[]});}
+    else if(ev.type==='scored'){if(ev.offline){run.mode='offline';run.reason=ev.reason||run.reason;}run.modelId=ev.modelId||'';}
+    else if(ev.type==='error'){run.message=ev.message;}
+    redraw();
+  };
+  try{
+    const res=await apiFetch('/api/pond-guard/'+encodeURIComponent(id)+'/screen',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.message||d.error||'Screening could not start');}
+    const reader=res.body.getReader(),dec=new TextDecoder();let buf='';
+    for(;;){const {value,done}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let nl;while((nl=buf.indexOf('\n'))>=0){const line=buf.slice(0,nl).trim();buf=buf.slice(nl+1);if(line)onEvent(JSON.parse(line));}}
+  }catch(err){run.message=err.message;run.mode=run.mode||'offline';}
+  run.done=true;run.agents.forEach(a=>{if(a.state!=='done'){a.state='done';a.ok=false;}});
+  RISK.bd.delete(id);
+  await loadRisk();
+  redraw();
+}
+function whyHTML(e){return pondGuardHTML(e)+whyPanelHTML(e);}
+function whyPanelHTML(e){
+  const b=getBreakdown(e.id);
+  if(b===undefined)return `<div class="sec why"><p class="faint" style="margin:0;font-size:12.5px">Reading how this score was reached…</p></div>`;
+  if(b===null)return `<div class="hint">${ic('alert')}<p style="margin:0">This record has not been scored from findings yet. Screen it to see how its score is reached.</p></div>`;
+  if(b.error)return `<div class="hint">${ic('alert')}<p style="margin:0"><b>Offline sample.</b> The scoring service could not be reached, so these numbers are the built-in sample.</p></div>`;
+  const strip=`<ol class="pipe" aria-label="How the score was reached">${b.pipeline.map((p,i)=>`<li><b>${i+1}</b><span>${esc(p.label)}</span><small>${esc(p.detail)}</small></li>`).join('')}</ol>`;
+  const src=l=>l.sourceUrl?`<a href="${esc(l.sourceUrl)}" target="_blank" rel="noopener">${esc(l.sourceName)}</a>`:`${esc(l.sourceName)}${l.ddqAnswerId?` (DDQ answer ${esc(l.ddqAnswerId)})`:''}`;
+  const rows=b.lines.map(l=>`<div class="why-row"><b class="why-pts">${l.setsTotal?'='+l.points:'+'+l.points}</b><div>
+    <h4>${esc(l.short)}</h4><p>${esc(l.summary)}</p><blockquote>“${esc(l.quote)}”</blockquote>
+    <small>Rule: ${esc(l.rule)}${l.policy?` · Policy: ${esc(l.policy)}`:''}</small>
+    <small>About: ${esc(l.subject)} · Source: ${src(l)} · read ${esc(readWhen(l.readAt))} by ${esc(l.agent)}</small></div></div>`).join('');
+  const total=b.confirmedSanctions?`A confirmed sanctions match sets the score to ${b.cap}.`:b.capped?`Points add up to ${b.sum}, capped at ${b.cap}.`:b.lines.length>1?`${b.lines.map(l=>l.points).join(' + ')} = ${b.risk}.`:'';
+  const left=b.notCounted.length+b.rejected.length;
+  const audit=left?`<details class="why-audit"><summary>${left} finding${left>1?'s':''} not counted</summary><ul>${b.notCounted.map(n=>`<li>${esc(n.id)}: ${esc(n.reason)}</li>`).join('')}${b.rejected.map(r=>`<li>${esc(r.summary||r.id)}: rejected. ${esc(r.reason)}</li>`).join('')}</ul></details>`:'';
+  return `${strip}<div class="sec why"><div class="sec-h"><h3>Why ${b.risk}?</h3><span class="pill plain ${levelCls(b.level.id)}">${esc(b.level.label)} risk</span></div>
+    ${b.demo?'<p class="faint" style="margin:0;font-size:11.5px">Demo data: this counterparty and its findings are fictional.</p>':''}
+    ${rows||'<p class="muted" style="margin:0;font-size:12.5px">No finding added risk points.</p>'}
+    <div class="why-total"><b>${b.risk} of ${b.cap} · ${esc(b.level.label)}</b>${total?`<span>${esc(total)}</span>`:''}</div>
+    <p class="why-route"><b>Route: ${esc(b.routeLabel)}.</b> ${esc(b.routeReason)} A person signs every decision.</p>
+    ${audit}
+    <p class="faint" style="margin:0;font-size:11.5px">The AI finds facts; the rules give the points. Higher always means riskier. CPI is the one score where low is bad, so a low CPI adds points.</p></div>`;
+}
+/* The parts of the confidence calculation, for the "What drives the confidence" list */
+function confPartsHTML(e){
+  const b=RISK.bd.get(e.id);if(!b||b.error)return '';
+  const n=x=>String(Math.round(x*100)/100);
+  let items;
+  if(b.confidenceBasis==='findings')items=b.lines.filter(l=>l.points>0).map(l=>{const p=l.confidenceParts;return `<li class="calc"><b>×</b><span>${esc(l.short)} (${l.points} pts): source trust ${n(p.sourceTrust)} × match ${n(p.matchStrength)} × freshness ${n(p.freshness)}${p.corroborationBonus?` + ${n(p.corroborationBonus)} second source`:''} = ${Math.round(l.confidence*100)}%</span></li>`;});
+  else items=b.coverage.list.map(c=>`<li class="${c.ran?'up':'down'}"><b>${c.ran?'+':'−'}</b><span>${esc(c.label)}: ${c.ran?`checked against ${esc(c.sourceName)}`:'not run'}</span></li>`);
+  return `<li class="calc-head"><span><b>${b.confidence}%</b> · ${esc(b.confidenceExplanation)}</span></li>${items.join('')}`;
+}
+
+/* ---------- Reviews: one section at a time ---------- */
+function showRevPane(pane){
+  S.revPane=pane;
+  $$('#rev-tabs button').forEach(b=>{const on=b.dataset.pane===pane;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
+  $$('#view-reviews [data-rev-pane]').forEach(el=>{el.hidden=el.dataset.revPane!==pane;});
+  // "Needs a person / All cases" filters the queue only
+  $('#rev-seg').style.display=pane==='queue'?'':'none';
+}
+/* ---------- Reviews: scoring rules editor ---------- */
+function rulesPatch(){
+  const d=RISK.draft||{},p={};
+  if(d.points&&Object.keys(d.points).length)p.points=d.points;
+  if(d.policy&&Object.keys(d.policy).length)p.policy=d.policy;
+  if(d.thresholds&&Object.keys(d.thresholds).length)p.thresholds=d.thresholds;
+  if(d.confidence&&Object.keys(d.confidence).length)p.confidence=d.confidence;
+  return p;
+}
+const rulesDirty=()=>Object.keys(rulesPatch()).length>0;
+function renderRulesCard(){
+  const host=$('#rules-body');if(!host)return;
+  // Do not redraw under someone who is typing an edit; their draft is redrawn on the next change of focus
+  if(RISK.draft&&document.activeElement&&document.activeElement.matches&&document.activeElement.matches('#rules-body [data-rk]'))return;
+  if(!RISK.rules){host.innerHTML=`<p class="muted" style="margin:0">${RISK.offline?'<b>Offline sample.</b> The scoring rules could not be loaded from the server.':'Loading the scoring rules…'}</p>`;return;}
+  const R=RISK.rules,can=isCompliance(),dis=can?'':' disabled',d=RISK.draft||{};
+  const dv=(group,key,val)=>{const g=d[group]||{};return key in g?g[key]:val;};
+  const mark=ch=>ch?'<span class="chip rules-changed">Changed</span>':'';
+  const sugg=RISK.sugg.length?`<div class="rules-sugg"><h3>${ic('alert','sm')}Recommended changes (${RISK.sugg.length})</h3><p class="faint">Dilly compared your policies and sources with these rules. Nothing changes until you accept.</p>${RISK.sugg.map(s=>`<div class="sugg" data-sid="${esc(s.id)}"><div><b>${esc(s.title)}</b><p>${esc(s.why)}</p>${s.quote?`<blockquote>“${esc(s.quote)}”</blockquote>`:''}<small class="faint">From ${esc(s.origin.type)}: ${esc(s.origin.name)}</small></div><div class="sugg-act"><button class="btn sm primary" data-ract="accept" type="button"${dis}>${s.patch?'Accept':'Mark as reviewed'}</button><button class="btn sm ghost" data-ract="dismiss" type="button"${dis}>Dismiss</button></div></div>`).join('')}</div>`:'';
+  const hl=id=>RISK.sugg.some(s=>s.target===id)?' class="hl"':'';
+  const rows=R.rows.map(r=>`<tr${hl(r.id)}><td>${esc(r.label)}${r.sendsDdq?' <span class="faint">(and sends a DDQ)</span>':''} ${mark(r.changed&&!r.custom)}${r.custom?'<span class="chip">Your row</span>':''}</td>
+    <td><input class="rules-in pol" data-rk="policy:${esc(r.id)}" value="${esc(dv('policy',r.id,r.policy))}" placeholder="none" aria-label="Policy clause for ${esc(r.short)}"${dis}></td>
+    <td class="num">${r.locked?`<span title="${esc(r.lockedReason)}">Set to ${r.points}, always Escalate</span>`:`<input class="rules-in" type="number" min="0" max="100" step="1" data-rk="points:${esc(r.id)}" value="${esc(dv('points',r.id,r.points))}" aria-label="Points for ${esc(r.short)}"${dis}>`}</td>
+    <td class="num faint">${r.custom?`<button class="btn sm ghost" data-ract="remove-row" data-row="${esc(r.id)}" type="button"${dis}>Remove</button>`:r.locked?'Locked':r.defaultPoints}</td></tr>`).join('');
+  const thr=Object.entries(R.thresholdMeta).map(([k,m])=>`<label${hl(k)}><span>${esc(m.label)} ${mark(m.changed)}</span><span class="rules-unit"><input class="rules-in" type="number" min="${m.min}" max="${m.max}" step="1" data-rk="thresholds:${k}" value="${esc(dv('thresholds',k,m.value))}"${dis}><small>${esc(m.unit)} · default ${Number(m.defaultValue).toLocaleString('en-SG')}</small></span></label>`).join('');
+  const C=R.confidence,CD=R.confidenceDefaults,dc=d.confidence||{};
+  const w=(table,key,label)=>{const val=(dc[table]&&key in dc[table])?dc[table][key]:C[table][key];return `<label><span>${esc(label)}</span><span class="rules-unit"><input class="rules-in" type="number" min="0" max="1" step="0.05" data-rk="confidence:${table}.${key}" value="${esc(val)}"${dis}><small>default ${CD[table][key]}</small></span></label>`;};
+  const lvl=R.levels.map(l=>`<span class="pill plain ${levelCls(l.id)}">${esc(l.label)} ${l.min} to ${l.max}</span>`).join(' ');
+  host.innerHTML=`${sugg}
+    <p class="muted" style="margin:0;font-size:12.5px">Gemini reads the sources and returns findings. These rules turn findings into points. Each row counts once per case and the total is capped at ${R.routes.cap}. ${lvl}</p>
+    ${can?'':`<div class="hint">${ic('lock')}<p style="margin:0">Only a compliance officer can change the scoring rules. You can read them here.</p></div>`}
+    <div class="table-wrap"><table class="rules-table"><thead><tr><th>Finding</th><th>Policy</th><th class="num">Points</th><th class="num">Default</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <form class="rules-add" id="rules-add"><input class="rules-in" name="label" placeholder="Add your own finding, e.g. State-owned majority shareholder" maxlength="160" aria-label="New finding"${dis}><input class="rules-in pol" name="policy" placeholder="Policy" maxlength="60" aria-label="Policy clause"${dis}><input class="rules-in" name="points" type="number" min="0" max="100" step="1" placeholder="Points" aria-label="Points"${dis}><button class="btn sm" type="submit"${dis}>Add row</button></form>
+    <h3 class="rules-h">Thresholds used by the rows</h3><div class="rules-grid">${thr}</div>
+    <h3 class="rules-h">Confidence formula</h3>
+    <p class="muted" style="margin:0;font-size:12.5px">Per finding: <b>source trust × match strength × freshness</b>, plus a bonus when a second independent source says the same (never above 1). Case confidence is the average of the counted findings, weighted by their points. With no findings it is the share of required checks that ran.</p>
+    <div class="rules-grid three">
+      <div><h4>Source trust</h4>${w('sourceTrust','High','High')}${w('sourceTrust','Medium','Medium')}${w('sourceTrust','Low','Low')}</div>
+      <div><h4>Match strength</h4>${w('matchStrength','second_identifier','Second identifier')}${w('matchStrength','strong_name','Strong name match')}${w('matchStrength','weak_name','Weak name match')}${w('matchStrength','not_name','Not a name match')}</div>
+      <div><h4>Freshness</h4>${w('freshness','within30Days','Read within 30 days')}${w('freshness','within12Months','Within 12 months')}${w('freshness','older','Older')}
+        <label><span>Second-source bonus</span><span class="rules-unit"><input class="rules-in" type="number" min="0" max="1" step="0.05" data-rk="confidence:corroborationBonus" value="${esc('corroborationBonus' in dc?dc.corroborationBonus:C.corroborationBonus)}"${dis}><small>default ${CD.corroborationBonus}</small></span></label></div>
+    </div>
+    <h3 class="rules-h">Cannot be changed</h3><ul class="rules-guard">${R.guardrails.map(g=>`<li>${ic('lock','sm')}<span>${esc(g)}</span></li>`).join('')}</ul>
+    <div class="rules-foot"><input class="rules-in" id="rules-reason" placeholder="Reason for the change (kept in the audit log)" maxlength="300"${dis}><span id="rules-preview" class="faint"></span>
+      <button class="btn sm ghost" data-ract="reset" type="button"${dis}${R.changes?'':' disabled'}>Reset to defaults</button><button class="btn sm" data-ract="discard" type="button" ${rulesDirty()?'':'disabled'}>Discard</button><button class="btn sm primary" data-ract="save" type="button" ${can&&rulesDirty()?'':'disabled'}>Save and re-score</button></div>
+    ${RISK.log.length?`<details class="why-audit"><summary>Change log (${RISK.log.length})</summary><ul>${RISK.log.map(l=>`<li><b>${esc(readWhen(l.at))}, ${esc(l.user)}</b>${l.reason?` · ${esc(l.reason)}`:''}<br>${l.changes.map(esc).join('<br>')}</li>`).join('')}</ul></details>`:''}`;
+  const badge=$('#rules-badge');if(badge){badge.textContent=R.changes?`${R.changes} changed from default`:'Defaults';}
+  const tabN=$('#rev-tab-rules-n');if(tabN){tabN.hidden=!RISK.sugg.length;tabN.textContent=RISK.sugg.length;}
+}
+let rulesPreviewT=null;
+function rulesPreview(){
+  clearTimeout(rulesPreviewT);
+  const out=$('#rules-preview');if(!out)return;
+  const save=$('#rules-body [data-ract="save"]'),discard=$('#rules-body [data-ract="discard"]');
+  if(save)save.disabled=!(isCompliance()&&rulesDirty());if(discard)discard.disabled=!rulesDirty();
+  if(!rulesDirty()){out.textContent='';return;}
+  rulesPreviewT=setTimeout(async()=>{
+    try{
+      const res=await apiFetch('/api/risk/rules/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patch:rulesPatch()})});
+      const data=await res.json();
+      if(!res.ok){out.textContent=(data.problems||[data.error]).join(' ');out.style.color='var(--high-ink)';if(save)save.disabled=true;return;}
+      out.style.color='';
+      out.textContent=data.changed.length?`${data.changed.length} of ${data.cases} scored cases change; ${data.routeChanges} change route. ${data.changed.slice(0,3).map(c=>`${c.name}: ${c.before.risk} to ${c.after.risk}`).join(', ')}`:`No scored case changes (${data.cases} checked).`;
+    }catch(err){out.textContent='Preview not available offline.';}
+  },350);
+}
+async function rulesCall(url,method,body){
+  const res=await apiFetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error((data.problems||[data.message||data.error||'The change was not saved']).join(' '));
+  RISK.draft=null;RISK.bd.clear();
+  await loadRisk();
+  return data;
+}
+function initRulesCard(){
+  const host=$('#rules-body');if(!host)return;
+  $('#rev-tabs').addEventListener('click',ev=>{const b=ev.target.closest('button[data-pane]');if(b)showRevPane(b.dataset.pane);});
+  showRevPane(S.revPane||'queue');
+  host.addEventListener('input',ev=>{
+    const el=ev.target.closest('[data-rk]');if(!el)return;
+    const [group,key]=el.dataset.rk.split(':');
+    const d=RISK.draft||(RISK.draft={points:{},policy:{},thresholds:{},confidence:{}});
+    if(group==='policy')d.policy[key]=el.value;
+    else if(group==='confidence'){
+      const [table,k]=key.split('.');
+      if(k){(d.confidence[table]=d.confidence[table]||{})[k]=Number(el.value);}else d.confidence[table]=Number(el.value);
+    }else d[group][key]=Number(el.value);
+    rulesPreview();
+  });
+  host.addEventListener('submit',async ev=>{
+    if(ev.target.id!=='rules-add')return;
+    ev.preventDefault();
+    const f=ev.target;
+    try{await rulesCall('/api/risk/rules','PUT',{patch:{addRows:[{label:f.label.value,points:Number(f.points.value),policy:f.policy.value}]},reason:'Added a row'});toast('Row added to the points table');}
+    catch(err){toast(err.message);}
+  });
+  host.addEventListener('click',async ev=>{
+    const b=ev.target.closest('[data-ract]');if(!b)return;
+    const a=b.dataset.ract;
+    try{
+      if(a==='discard'){RISK.draft=null;renderRulesCard();return;}
+      if(a==='save'){
+        const data=await rulesCall('/api/risk/rules','PUT',{patch:rulesPatch(),reason:($('#rules-reason')||{}).value||''});
+        const moved=(data.rescored||[]).filter(r=>r.before&&(r.before.risk!==r.after.risk||r.before.confidence!==r.after.confidence));
+        toast(data.changes.length?`Scoring rules saved. ${moved.length} case${moved.length===1?'':'s'} re-scored`:'Nothing changed');
+      }else if(a==='reset'){
+        await rulesCall('/api/risk/rules/reset','POST');toast('Scoring rules reset to the defaults');
+      }else if(a==='remove-row'){
+        await rulesCall('/api/risk/rules','PUT',{patch:{removeRows:[b.dataset.row]},reason:'Removed a row'});toast('Row removed');
+      }else if(a==='accept'||a==='dismiss'){
+        const id=b.closest('[data-sid]').dataset.sid;
+        const data=await rulesCall(`/api/risk/rules/suggestions/${encodeURIComponent(id)}/${a}`,'POST');
+        toast(a==='accept'?(data.changes&&data.changes.length?`Accepted: ${data.changes[0]}`:'Marked as reviewed'):'Recommendation dismissed');
+      }
+    }catch(err){toast(err.message);}
+  });
+  // The threshold slider previews live; letting go saves it as a rule
+  $('#thr').addEventListener('change',async e=>{
+    if(!RISK.rules||+e.target.value===RISK.rules.confidence.threshold)return;
+    if(!isCompliance()){toast('Only a compliance officer can change the confidence threshold');loadRisk();return;}
+    try{await rulesCall('/api/risk/rules','PUT',{patch:{confidence:{threshold:+e.target.value}},reason:'Threshold slider'});toast(`Confidence threshold saved at ${e.target.value}%`);}
+    catch(err){toast(err.message);loadRisk();}
+  });
+  $('#rules-alert').addEventListener('click',ev=>{
+    const b=ev.target.closest('[data-ra]');if(!b)return;
+    RISK.alertSeen=RISK.sugg.length;renderRulesAlert();
+    if(b.dataset.ra==='open'){showView('reviews');showRevPane('rules');requestAnimationFrame(()=>{const c=$('#rules-card');c.scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'start'});c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),1600);});}
+  });
+}
+/* The alert that appears when a policy or source upload leads to a recommended change */
+function renderRulesAlert(){
+  const el=$('#rules-alert');if(!el)return;
+  const n=RISK.sugg.length;
+  if(!n||RISK.alertSeen===n||!isCompliance()){el.hidden=true;return;}
+  el.hidden=false;
+  el.innerHTML=`${ic('alert','sm')}<span><b>Dilly recommends ${n} change${n>1?'s':''} to your scoring rules.</b> Found by comparing your policies and sources with the points table. Nothing changes until you accept.</span><button class="btn sm primary" data-ra="open" type="button">Review</button><button class="btn sm ghost" data-ra="later" type="button">Later</button>`;
+}
+
 function boot(){
   if(innerWidth<=1180)view.classList.add('watch-closed');
   readColors();renderLegend();renderWatch();renderAlerts();renderReviews();renderCalib();renderSources();renderPolicies();
@@ -7335,9 +8030,10 @@ function boot(){
   cSel.each(function(){this.style.fill=C['land-none'];});
   refreshStatus();
   syncFromBackend();
+  initRulesCard();loadRisk();
   // Pins change when another session submits or decides a request: re-read while the tab is in view
   setInterval(()=>{if(!document.hidden)syncFromBackend();},20000);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncFromBackend();});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncFromBackend();if(!RISK.draft)loadRisk();}});
   runTicker();setInterval(runTicker,5200);
   $('#theme-btn use').setAttribute('href',isDark()?'#i-sun':'#i-moon');
   requestAnimationFrame(frame);

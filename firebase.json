@@ -1,57 +1,60 @@
 {
-  "hosting": {
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**",
-      "src/**",
-      "data/**",
-      "demo-data/**",
-      "design/**",
-      "scripts/**",
-      "python/**",
-      "package*.json",
-      "*.md",
-      "*.pdf",
-      "tests/**",
-      "Dockerfile",
-      "cloudbuild.yaml"
-    ],
-    "rewrites": [
-      {
-        "source": "/api/**",
-        "run": {
-          "serviceId": "safe-globe-app",
-          "region": "asia-southeast1"
-        }
-      },
-      {
-        "source": "/v1/**",
-        "run": {
-          "serviceId": "safe-globe-app",
-          "region": "asia-southeast1"
-        }
-      },
-      {
-        "source": "/",
-        "destination": "/safe-globe.html"
-      },
-      {
-        "source": "/saf-globe.html",
-        "destination": "/saf-globe.html"
-      }
-    ],
-    "headers": [
-      {
-        "source": "**/*.@(html)",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
+  "_disabled": "Not in use. DueDilly deploys to Cloud Run with scripts/deploy.sh (see DEPLOY_GUIDE.md). JSON has no comments, so the old Firebase Hosting settings are kept under _was and are ignored. They pointed at the retired service safe-globe-app.",
+  "_was": {
+    "hosting": {
+      "public": ".",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**",
+        "src/**",
+        "data/**",
+        "demo-data/**",
+        "design/**",
+        "scripts/**",
+        "python/**",
+        "package*.json",
+        "*.md",
+        "*.pdf",
+        "tests/**",
+        "Dockerfile",
+        "cloudbuild.yaml"
+      ],
+      "rewrites": [
+        {
+          "source": "/api/**",
+          "run": {
+            "serviceId": "safe-globe-app",
+            "region": "asia-southeast1"
           }
-        ]
-      }
-    ]
+        },
+        {
+          "source": "/v1/**",
+          "run": {
+            "serviceId": "safe-globe-app",
+            "region": "asia-southeast1"
+          }
+        },
+        {
+          "source": "/",
+          "destination": "/safe-globe.html"
+        },
+        {
+          "source": "/saf-globe.html",
+          "destination": "/saf-globe.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(html)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

@@ -126,9 +126,18 @@ router.post('/', async (req, res) => {
     console.error('Source conversion error:', err);
   }
 
+  // A new source may carry policy text or change how much its findings are trusted: recommend, never apply
+  let recommended = [];
+  try {
+    recommended = require('../risk/suggestions').raiseFor(db, { type: 'source', name: label, text: content || '', source: { id, label, trust } });
+  } catch (err) {
+    console.error('[DueDilly] Scoring recommendations skipped:', err.message);
+  }
+
   res.status(201).json({
     status: 'created',
     source: newSource,
+    scoringSuggestions: recommended.map(s => ({ id: s.id, title: s.title })),
     uploadedFile: uploadedFile ? { id: uploadedFile.id, filename: uploadedFile.filename, storage_path: uploadedFile.storage_path } : null,
     conversion: conversion ? {
       recordsCount: conversion.recordsCount,

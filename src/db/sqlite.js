@@ -5,8 +5,10 @@ const config = require('../config');
 const seed = require('./seed-data');
 
 class SqliteDatabase {
-  constructor(dbPath = config.dbPath) {
+  constructor(dbPath = config.dbPath, { empty = false } = {}) {
     this.dbPath = dbPath;
+    // A workspace someone created (not the Demo workspace): reference data only, never the demo story
+    this.emptyWorkspace = Boolean(empty);
     const dir = path.dirname(this.dbPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -17,6 +19,18 @@ class SqliteDatabase {
     } catch (e) {}
     this.initSchema();
     this.seedIfEmpty();
+    this.ensureReferenceData();
+    // Demo counterparties are scored from findings like any other case (src/risk/riskService.js)
+    try { require('../risk/riskService').ensureDemoFindings(this); } catch (e) { console.error('[DueDilly] Demo findings skipped:', e.message); }
+  }
+
+  /** Reference rows added after a database was first created: new CPI countries, corrected demo records. */
+  ensureReferenceData() {
+    const insertCpi = this.db.prepare('INSERT OR IGNORE INTO cpi (a3, name, score, rank) VALUES (?, ?, ?, ?)');
+    for (const c of seed.CPI_2025) insertCpi.run(c.a3, c.name, c.score, c.rank);
+    // The Vendor X record for Aurora Venture carried a different IMO and flag from the vessel record
+    this.db.prepare(`UPDATE source_records SET jurisdiction = 'CMR', reg_no = 'IMO 9304124', details_json = ?, raw_content = ? WHERE id = 'sr_s2_2' AND reg_no = 'IMO 9412345'`)
+      .run(JSON.stringify({ imo: '9304124', flag: 'CMR', ais_gap_hours: 31, sts_transfer: true }), '{"vessel":"Aurora Venture","imo":"9304124","flag":"CMR","dark_gap_h":31}');
   }
 
   initSchema() {
@@ -252,6 +266,25 @@ class SqliteDatabase {
     // Ongoing monitoring: what a re-screen against each source costs, and app-wide settings
     try { this.db.exec('ALTER TABLE sources ADD COLUMN cost_per_screen REAL DEFAULT 0'); } catch (e) {}
     this.db.exec('CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)');
+    // Risk scoring (src/risk): every finding that was read, accepted or rejected, and which checks ran per case
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS findings (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT NOT NULL,
+        category TEXT,
+        status TEXT NOT NULL DEFAULT 'accepted',
+        reject_reason TEXT,
+        finding_json TEXT NOT NULL,
+        is_demo INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_findings_entity ON findings(entity_id);
+      CREATE TABLE IF NOT EXISTS risk_checks (
+        entity_id TEXT PRIMARY KEY,
+        checks_json TEXT NOT NULL,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     // Must run after the migration: older tables lack ddq_token until the ALTER above
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_kyc_token ON kyc_requests(ddq_token)');
 
@@ -262,6 +295,7 @@ class SqliteDatabase {
 
   /** False for a workspace created by `npm run demo:clean`: no built-in demo counterparties, alerts, sources or rules. */
   hasPlaceholderData() {
+    if (this.emptyWorkspace) return false;
     return this.getSetting('placeholder_data', true) !== false;
   }
 
@@ -272,6 +306,11 @@ class SqliteDatabase {
       if (!this.db.prepare('SELECT COUNT(*) as count FROM cpi').get().count) {
         const insertCpi = this.db.prepare('INSERT OR REPLACE INTO cpi (a3, name, score, rank) VALUES (?, ?, ?, ?)');
         for (const c of seed.CPI_2025) insertCpi.run(c.a3, c.name, c.score, c.rank);
+      }
+      // The policy rules are part of the app. A created workspace gets them without the demo counterparties they hit.
+      if (this.emptyWorkspace && !this.db.prepare('SELECT COUNT(*) as count FROM policies').get().count) {
+        const insertPolicy = this.db.prepare('INSERT OR REPLACE INTO policies (id, section, text, note, hits_json, is_met) VALUES (?, ?, ?, ?, ?, ?)');
+        for (const pol of seed.POLICIES) insertPolicy.run(pol.id, pol.sec, pol.t, '', '[]', 0);
       }
       return;
     }
@@ -832,7 +871,73 @@ class SqliteDatabase {
     `).run(reviewer, decision, reasons, evidence, dateStr, caseId, caseId);
   }
 
+  // --- Risk findings and checks (src/risk) ---
+  saveFindingRecord(entityId, { finding, status = 'accepted', reason = '' }) {
+    this.db.prepare(`
+      INSERT INTO findings (id, entity_id, category, status, reject_reason, finding_json, is_demo)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET entity_id = excluded.entity_id, category = excluded.category, status = excluded.status,
+        reject_reason = excluded.reject_reason, finding_json = excluded.finding_json, is_demo = excluded.is_demo
+    `).run(finding.id, entityId, finding.category || '', status, reason || null, JSON.stringify(finding), finding.demo ? 1 : 0);
+  }
+
+  _hydrateFindingRecord(r) {
+    let finding = {};
+    try { finding = JSON.parse(r.finding_json); } catch (e) {}
+    return { entityId: r.entity_id, status: r.status, reason: r.reject_reason || '', finding, createdAt: r.created_at };
+  }
+
+  getFindingRecords(entityId) {
+    return this.db.prepare('SELECT * FROM findings WHERE entity_id = ? ORDER BY created_at ASC, id ASC').all(entityId).map(r => this._hydrateFindingRecord(r));
+  }
+
+  getFindingRecordById(id) {
+    const row = this.db.prepare('SELECT * FROM findings WHERE id = ?').get(id);
+    return row ? this._hydrateFindingRecord(row) : null;
+  }
+
+  deleteFindingRecords(entityId) {
+    this.db.prepare('DELETE FROM findings WHERE entity_id = ?').run(entityId);
+  }
+
+  setRiskChecks(entityId, checks) {
+    this.db.prepare(`INSERT INTO risk_checks (entity_id, checks_json, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(entity_id) DO UPDATE SET checks_json = excluded.checks_json, updated_at = CURRENT_TIMESTAMP`).run(entityId, JSON.stringify(checks || {}));
+  }
+
+  getRiskChecks(entityId) {
+    const row = this.db.prepare('SELECT checks_json FROM risk_checks WHERE entity_id = ?').get(entityId);
+    if (!row) return null;
+    try { return JSON.parse(row.checks_json); } catch (e) { return {}; }
+  }
+
+  /** Ids of every case that has been through the scorer */
+  getScoredEntityIds() {
+    return this.db.prepare('SELECT entity_id FROM risk_checks UNION SELECT entity_id FROM findings').all().map(r => r.entity_id);
+  }
+
+  /** Writes a computed score back to the counterparty and to its open case. Decided cases keep the score they were decided on. */
+  setEntityScore(entityId, risk, confidence, quadrant) {
+    this.db.prepare('UPDATE entities SET risk = ?, confidence = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(risk, confidence, entityId);
+    this.db.prepare(`UPDATE cases SET risk = ?, confidence = ?, quadrant = ? WHERE entity_id = ? AND status != 'closed'`).run(risk, confidence, quadrant, entityId);
+  }
+
+  setEntityMetadata(entityId, patch) {
+    const row = this.db.prepare('SELECT metadata_json FROM entities WHERE id = ?').get(entityId);
+    if (!row) return;
+    let meta = {};
+    try { meta = JSON.parse(row.metadata_json || '{}'); } catch (e) {}
+    this.db.prepare('UPDATE entities SET metadata_json = ? WHERE id = ?').run(JSON.stringify(Object.assign(meta, patch)), entityId);
+  }
+
   // --- CPI ---
+  /** Country risk by ISO code or by country name (vessel flags are stored by name) */
+  getCpiByCodeOrName(value) {
+    const v = String(value || '').trim();
+    if (!v) return undefined;
+    return this.db.prepare('SELECT a3, name, score, rank FROM cpi WHERE a3 = ? OR lower(name) = lower(?)').get(v.toUpperCase(), v);
+  }
+
   getCpiScores() {
     return this.db.prepare('SELECT a3, name, score, rank FROM cpi').all();
   }
@@ -899,6 +1004,7 @@ class SqliteDatabase {
 
   // --- Source Records / Knowledge Base ---
   seedSourceRecordsIfEmpty() {
+    if (this.emptyWorkspace) return;
     try {
       const row = this.db.prepare('SELECT COUNT(*) as count FROM source_records').get();
       if (row && row.count > 0) return;
@@ -973,13 +1079,13 @@ class SqliteDatabase {
           source_type: 'api',
           entity_name: 'Aurora Venture',
           entity_kind: 'vessel',
-          jurisdiction: 'LBR',
-          reg_no: 'IMO 9412345',
+          jurisdiction: 'CMR',
+          reg_no: 'IMO 9304124',
           risk_level: 'High',
           risk_score: 85,
           summary: 'Maritime intelligence feed: 31 hr AIS dark period in Arabian Sea followed by STS transfer east of Johor.',
-          details_json: JSON.stringify({ imo: '9412345', flag: 'LBR', ais_gap_hours: 31, sts_transfer: true }),
-          raw_content: '{"vessel":"Aurora Venture","imo":"9412345","flag":"LBR","dark_gap_h":31}'
+          details_json: JSON.stringify({ imo: '9304124', flag: 'CMR', ais_gap_hours: 31, sts_transfer: true }),
+          raw_content: '{"vessel":"Aurora Venture","imo":"9304124","flag":"CMR","dark_gap_h":31}'
         },
         {
           id: 'sr_s2_3',

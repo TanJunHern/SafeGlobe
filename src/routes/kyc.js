@@ -145,7 +145,7 @@ router.get('/export', (req, res) => {
  * POST /api/kyc/extract-document
  * Multimodal file extraction via Gemini 2.5 Flash
  */
-router.post('/extract-document', async (req, res) => {
+router.post('/extract-document', require('../middleware/rateLimit').aiRateLimit, async (req, res) => {
   try {
     const { filename, fileContent, mimeType, base64Data } = req.body;
     const result = await kycService.extractDocumentData({

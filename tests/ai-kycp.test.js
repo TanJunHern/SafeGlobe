@@ -20,9 +20,12 @@ test('AI KYCP - Screen Organisation with Sanctions & State Ownership (Severny)',
   assert.strictEqual(result.status, 'completed');
   assert.strictEqual(result.target, 'Severny Agro Export LLC');
   assert.strictEqual(result.entityType, 'organisation');
-  assert(result.overallRisk.score >= 70, 'Risk score must be high');
-  assert.strictEqual(result.overallRisk.level, 'High');
-  assert.strictEqual(result.overallRisk.quadrant, 'escalate');
+  // The number comes from the points table, not from the report writer: possible sanctions link (+40) and Russia's CPI (+20)
+  assert.strictEqual(result.overallRisk.score, 60);
+  assert.strictEqual(result.overallRisk.level, 'Medium');
+  assert.strictEqual(result.overallRisk.quadrant, 'investigate');
+  assert.deepStrictEqual(result.scoring.lines.map(l => l.points).sort(), [20, 40]);
+  assert.match(result.overallRisk.scoredBy, /points table/);
   assert.strictEqual(result.knowYourCounterparty.ownershipAndUbo.status, 'Flagged');
   assert(['Designated / High Risk', 'Possible Match', 'Designated'].includes(result.knowYourCounterparty.sanctionsAndWatchlists.status));
   assert(result.findings.length > 0);

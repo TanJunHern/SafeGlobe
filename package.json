@@ -9,7 +9,9 @@
     "uat": "bash scripts/uat.sh",
     "demo:reset": "node scripts/demo-reset.js",
     "demo:clean": "node scripts/demo-reset.js --empty",
-    "test": "rm -f data/test_safe_globe.db* && DATABASE_PATH=./data/test_safe_globe.db GEMINI_API_KEY= GOOGLE_API_KEY= GOOGLE_GENAI_API_KEY= VESSELFINDER_LOOKUP=off node --test --test-concurrency=1 tests/screening.test.js tests/api.test.js tests/source-handlers.test.js tests/kyc.test.js tests/ai-kycp.test.js tests/portal.test.js tests/ddq-template.test.js tests/ddq-status.test.js tests/dilly-loader.test.js tests/monitoring.test.js tests/config.test.js tests/compliance-agent.test.js tests/vessel.test.js"
+    "agents": "bash scripts/agents-dev.sh",
+    "test:agents": "bash scripts/agents-dev.sh test",
+    "test": "rm -rf data/test_safe_globe.* && DATABASE_PATH=./data/test_safe_globe.db GEMINI_API_KEY= GOOGLE_API_KEY= GOOGLE_GENAI_API_KEY= VESSELFINDER_LOOKUP=off AI_RATE_LIMIT_MAX=0 AGENTS_SERVICE_URL= GEMINI_BACKEND= DEMO_MODE=true node --test --test-concurrency=1 tests/screening.test.js tests/api.test.js tests/source-handlers.test.js tests/kyc.test.js tests/ai-kycp.test.js tests/portal.test.js tests/ddq-template.test.js tests/ddq-status.test.js tests/dilly-loader.test.js tests/monitoring.test.js tests/config.test.js tests/compliance-agent.test.js tests/vessel.test.js tests/risk.test.js tests/phase2.test.js tests/accounts.test.js"
   },
   "keywords": [
     "compliance",

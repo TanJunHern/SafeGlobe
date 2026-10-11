@@ -17,6 +17,11 @@ const gemini = require('./geminiClient');
 const { evaluatePolicyRAG } = require('./policyRagService');
 const { generateKycExcelWorkbook } = require('./excelService');
 const vesselFinder = require('./vesselFinderService');
+const crypto = require('crypto');
+const { getRules } = require('../risk/rulesStore');
+const { validateFinding } = require('../risk/findingSchema');
+const { assess } = require('../risk/scorer');
+const { countryFinding, sourceLink, recordFindings } = require('../risk/riskService');
 
 // High risk jurisdictions list (FATF / OFAC / Low CPI)
 const HIGH_RISK_JURISDICTIONS = new Set([
@@ -109,70 +114,95 @@ function evaluatePolicyRules(data) {
  */
 function calculateAiRisk(data, screeningHit = null) {
   const db = getDb();
+  const rules = getRules(db);
   const country = (data.country || 'SGP').toUpperCase();
-  const cpiRow = db.getCpiByCode(country);
-  const cpiScore = cpiRow ? cpiRow.score : (HIGH_RISK_JURISDICTIONS.has(country) ? 25 : 55);
   const contractVal = Number(data.contract_value || 0);
   const relType = data.relationship_type || '';
   const attrs = data.attributes || (typeof data.attributes_json === 'string' ? JSON.parse(data.attributes_json || '{}') : {});
+  const name = data.counterparty_name || '';
+  const kind = data.entity_type === 'Vessel' ? 'vessel' : data.entity_type === 'Person' ? 'person' : 'org';
 
-  // Determine screening result
-  let screeningResult = data.screening_result || 'Clear';
-  let score = 15;
-  let confidence = 94;
-  let rationale = `Counterparty verified against international watchlists. Incorporated in ${country} with favorable governance index (CPI ${cpiScore}/100).`;
+  // Findings in the scoring format (CLAUDE.md 4.8). The score is added up from these by src/risk/scorer.js;
+  // nothing below sets a number. Screening findings come from the hit, the rest from what the intake form declares.
+  const readAt = new Date().toISOString();
+  const fid = 'F-' + crypto.randomBytes(4).toString('hex');
+  const INTAKE = 'KYC intake form';
+  const LISTS = 'Built-in sanctions lists (41)';
+  const scored = screeningHit && Array.isArray(screeningHit.scoredFindings) ? screeningHit.scoredFindings.slice() : [];
+  const has = category => scored.some(f => f.category === category);
+  const add = f => scored.push(Object.assign({
+    id: `${fid}-k${scored.length + 1}`, subject: name, source_name: INTAKE, source_trust: 'High', read_at: readAt, match_basis: 'not_name',
+    corroborating_sources: [], agent: 'Intake', model_id: 'none', prompt_version: 'none'
+  }, f, { source_url: sourceLink(f.source_name || INTAKE, `${fid}-k${scored.length + 1}`) }));
 
-  const isSanctioned = /sanction|designated|blocked|ofac|ofsi/i.test(data.counterparty_name || '') ||
-    /severny|varnell|zemtsov|fedgrain|rostec/i.test(data.counterparty_name || '') ||
-    (screeningHit && screeningHit.risk >= 80);
+  const isSanctioned = /sanction|designated|blocked|ofac|ofsi/i.test(name) || /severny|varnell|zemtsov|fedgrain|rostec/i.test(name) || has('sanctions_possible') || has('sanctions_confirmed');
+  if (isSanctioned && !has('sanctions_possible') && !has('sanctions_confirmed')) {
+    add({ category: 'sanctions_possible', match_basis: 'strong_name', source_name: LISTS, agent: 'Sentry (offline rules)', demo: true,
+      summary: 'The name matches an entry on the built-in sanctions lists. No second identifier was compared.',
+      evidence_quote: 'Name matches a designated party on the built-in sanctions lists.' });
+  }
 
   const isPep = Boolean(attrs.pep_declared || data.pep_declared || /pep/i.test(data.remarks || ''));
-
-  if (isSanctioned) {
-    score = 95;
-    confidence = 96;
-    screeningResult = 'Sanctions Alert';
-    rationale = `Target counterparty or affiliated beneficial controllers match international sanctions watchlists (OFAC/OFSI). Direct restrictive designation flagged.`;
-  } else if (isPep) {
-    score = 78;
-    confidence = 92;
-    screeningResult = 'PEP Alert';
-    rationale = `Politically exposed person (PEP) self-declaration or public official association detected. Elevated risk of regulatory scrutiny.`;
-  } else if (data.entity_type === 'Vessel' && (/aurora|dark|sts/i.test(data.counterparty_name || '') || /dark/i.test(data.remarks || ''))) {
-    score = 68;
-    confidence = 88;
-    screeningResult = 'High Risk';
-    rationale = `Vessel telemetry reveals historical AIS gaps and transshipment patterns in monitored EEZ corridors. Further maritime scrutiny required.`;
-  } else if (HIGH_RISK_JURISDICTIONS.has(country) || cpiScore < 40) {
-    score = 62;
-    confidence = 85;
-    screeningResult = 'Watchlist Match';
-    rationale = `Jurisdiction of operation (${country}) ranks below CPI threshold (<40) with elevated regional compliance exposure. Enhanced due diligence required.`;
-  } else if (relType === '3rd Party Reps & Brokers' || contractVal > 500000) {
-    score = 35;
-    confidence = 90;
-    screeningResult = 'Clear';
-    rationale = `Intermediary counterparty cleared watchlists. High anticipated contract value (SGD ${contractVal.toLocaleString()}) requires standard governance verification.`;
+  if (isPep && !has('pep_owner')) {
+    add({ category: 'pep_owner', summary: 'The intake form declares a politically exposed person, or the remarks mention one.',
+      evidence_quote: attrs.pep_declared || data.pep_declared ? 'PEP self-declaration: Yes' : String(data.remarks || '').slice(0, 280) });
   }
 
-  // Format AI Result Chip
-  let resultLabel = 'Low Risk';
-  if (score >= 75) {
-    resultLabel = 'High Risk';
-  } else if (score >= 50) {
-    resultLabel = 'Medium Risk';
-  } else if (/dark|anomaly/i.test(rationale)) {
-    resultLabel = 'Anomalies Flagged';
+  const isDarkVessel = kind === 'vessel' && (/aurora|dark|sts/i.test(name) || /dark/i.test(data.remarks || ''));
+  if (isDarkVessel && !has('vessel_ais_dark')) {
+    add({ category: 'vessel_ais_dark', source_name: 'AIS position feed', agent: 'Tide (offline rules)', demo: true,
+      summary: 'The vessel has a history of AIS gaps.', evidence_quote: 'Vessel telemetry reveals historical AIS gaps and transshipment patterns.' });
   }
 
-  const aiResult = `${resultLabel} (Confidence ${confidence}%)`;
+  if (relType === '3rd Party Reps & Brokers') {
+    add({ category: 'broker_intermediary', summary: 'The counterparty acts as a broker or intermediary.', evidence_quote: `Relationship type: ${relType}` });
+  }
+  if (contractVal > rules.thresholds.contractValueSgd) {
+    add({ category: 'contract_value_high', summary: `The anticipated contract value is above SGD ${rules.thresholds.contractValueSgd.toLocaleString('en-SG')}.`,
+      evidence_quote: `Anticipated contract value: SGD ${contractVal.toLocaleString('en-SG')}` });
+  }
+
+  // Country counts once: take the hit's country finding when it screened the same country, else look it up here
+  let countryCheck = screeningHit && screeningHit.checks ? screeningHit.checks.country : null;
+  if (!has('country_cpi_low') && !has('country_cpi_mid') && !(countryCheck && countryCheck.ran)) {
+    const place = countryFinding(db, rules, [{ value: country, role: kind === 'vessel' ? 'flag state' : 'country on file' }], { idPrefix: `${fid}-k`, readAt });
+    if (place.finding) scored.push(place.finding);
+    countryCheck = place.check;
+  }
+  const cpiRow = db.getCpiByCode(country);
+
+  const listCheck = { ran: true, source_name: LISTS, source_url: sourceLink(LISTS), read_at: readAt, result: 'Screened' };
+  const checks = Object.assign({ sanctions: listCheck, pep: listCheck }, (screeningHit && screeningHit.checks) || {}, { _kind: kind, country: countryCheck });
+  const valid = scored.map(f => validateFinding(f, rules));
+  const breakdown = assess({ findings: valid.filter(v => v.ok).map(v => v.finding), rejected: valid.filter(v => !v.ok), checks, kind }, rules);
+  const score = breakdown.risk;
+  const confidence = breakdown.confidence;
+  const counted = new Set(breakdown.lines.map(l => l.category));
+
+  // The screening result label names the most serious kind of finding (existing values, unchanged)
+  let screeningResult = data.screening_result || 'Clear';
+  if (counted.has('sanctions_confirmed') || counted.has('sanctions_possible')) screeningResult = 'Sanctions Alert';
+  else if (counted.has('pep_owner') || counted.has('pep_associate')) screeningResult = 'PEP Alert';
+  else if (counted.has('vessel_ais_dark') || counted.has('vessel_sts_transfer')) screeningResult = 'High Risk';
+  else if (counted.has('country_cpi_low')) screeningResult = 'Watchlist Match';
+
+  const rationale = breakdown.lines.length
+    ? `${breakdown.lines.map(l => `${l.short} (+${l.points}${l.policy ? `, ${l.policy}` : ''})`).join('; ')}. Total ${score} of ${breakdown.cap}: ${breakdown.level.label} risk. ${breakdown.routeReason}`
+    : `No finding added risk points${cpiRow ? ` (${cpiRow.name}: CPI ${cpiRow.score}/100)` : ''}. ${breakdown.confidenceExplanation}`;
+
+  const hasAnomaly = counted.has('vessel_ais_dark') || counted.has('vessel_sts_transfer');
+  const resultLabel = score < rules.routes.riskLine && hasAnomaly ? 'Anomalies Flagged' : `${breakdown.level.label} Risk`;
 
   return {
-    ai_result: aiResult,
+    ai_result: `${resultLabel} (Confidence ${confidence}%)`,
     ai_score: score,
     ai_confidence: confidence,
     ai_rationale: rationale,
-    screening_result: screeningResult
+    screening_result: screeningResult,
+    // The scoring trail, saved with the request so the "Why <score>?" panel can show it
+    scored_findings: scored,
+    checks,
+    breakdown
   };
 }
 
@@ -532,6 +562,9 @@ function createKycRequest(input, userContext = {}, checks = {}) {
       clause: policyEval.ddq_clause,
       exp: Math.floor(Date.now() / 1000) + (14 * 86400) // 14-day validity
     };
+    // Which workspace the questionnaire belongs to (absent for the Demo workspace); the counterparty has no account
+    const workspaceId = require('../db').currentWorkspaceId();
+    if (workspaceId) payload.ws = workspaceId;
     ddqToken = jwt.sign(payload, config.jwtSecret);
     ddqExpiresAt = new Date(Date.now() + 14 * 86400 * 1000).toISOString();
   }
@@ -540,7 +573,8 @@ function createKycRequest(input, userContext = {}, checks = {}) {
   let requestStatus = input.request_status;
   if (!requestStatus) {
     if (aiRisk.screening_result === 'Sanctions Alert') {
-      requestStatus = 'Rejected';
+      // A machine never rejects: a sanctions alert goes to the compliance queue and a person decides (CLAUDE.md section 10)
+      requestStatus = 'Under Review';
     } else if (policyEval.ddq_required) {
       requestStatus = 'Pending DDQ'; // Branch B
     } else {
@@ -589,6 +623,13 @@ function createKycRequest(input, userContext = {}, checks = {}) {
   };
 
   const saved = db.addKycRequest(record);
+  // Keep the scoring trail under the id the globe uses for this request, so its "Why <score>?" panel can be shown
+  try {
+    recordFindings(db, monitoredEntityId(id), aiRisk.scored_findings || [], { replace: true });
+    db.setRiskChecks(monitoredEntityId(id), aiRisk.checks || {});
+  } catch (err) {
+    console.error('[DueDilly] Scoring trail not saved:', err.message);
+  }
 
   // Freeze the questionnaire the counterparty will see at the moment the DDQ is issued
   if (policyEval.ddq_required) {
