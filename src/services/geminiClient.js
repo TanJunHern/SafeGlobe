@@ -5,9 +5,19 @@
  */
 const config = require('../config');
 
-function isConfigured() {
+/**
+ * Which backend answers Gemini calls right now: 'aistudio', 'vertex' or 'disabled'.
+ * GEMINI_BACKEND=vertex is accepted but the Vertex client is Phase 4 of docs/CLOUD_PLAN.md, so until
+ * then it reports 'disabled' rather than quietly using the AI Studio key in an environment meant for Vertex.
+ */
+function backend() {
+  if (config.geminiBackend === 'vertex') return 'disabled';
   const key = config.geminiApiKey || '';
-  return key.length > 20 && !/^YOUR_/i.test(key);
+  return key.length > 20 && !/^YOUR_/i.test(key) ? 'aistudio' : 'disabled';
+}
+
+function isConfigured() {
+  return backend() !== 'disabled';
 }
 
 // Model names are retired and quotas differ per model, so a rejected model falls through to the next
@@ -98,4 +108,4 @@ async function generateJsonDetailed(parts, opts = {}) {
   }
 }
 
-module.exports = { isConfigured, generateText, generateJson, generateJsonDetailed, modelChain };
+module.exports = { isConfigured, backend, generateText, generateJson, generateJsonDetailed, modelChain };

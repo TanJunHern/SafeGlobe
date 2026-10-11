@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { convertAndStoreSource } = require('../services/sourceHandlers');
+const { authenticate, requireRole } = require('../middleware/auth');
 
 // GET /api/sources
 router.get('/', (req, res) => {
@@ -204,6 +205,15 @@ router.post('/:id/retry', (req, res) => {
 });
 
 // DELETE /api/sources/:id
+// PUT /api/sources/:id/cost: what one screen against this source costs (SGD). Compliance only.
+router.put('/:id/cost', authenticate, requireRole('compliance_officer'), (req, res) => {
+  const cost = Number(req.body && req.body.cost_per_screen);
+  if (!Number.isFinite(cost) || cost < 0) return res.status(400).json({ error: 'cost_per_screen must be a number of 0 or more' });
+  const ok = getDb().setSourceCost(req.params.id, Math.round(cost * 100) / 100);
+  if (!ok) return res.status(404).json({ error: 'Source not found' });
+  res.json({ success: true, id: req.params.id, cost_per_screen: Math.round(cost * 100) / 100 });
+});
+
 router.delete('/:id', (req, res) => {
   const db = getDb();
   db.deleteSource(req.params.id);

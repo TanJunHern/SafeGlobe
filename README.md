@@ -109,7 +109,30 @@ The automated test suite runs 92 unit and integration tests verifying every PRD 
 npm test
 ```
 
-### 3. Launch the Server
+### 3. Two ports: DEV (offline) and UAT (online)
+
+| | DEV | UAT |
+| --- | --- | --- |
+| Command | `npm run dev` | `npm run uat` |
+| URL | http://localhost:8080 | http://localhost:8081 |
+| Runs | `node --watch` (restarts on every save) | the production Docker image, the same one Cloud Run runs |
+| Settings | `.env.dev` | `.env.uat` |
+| Needs internet | No | Yes |
+| Needs Docker | Only for the Pub/Sub emulator; the app starts without it | Yes |
+
+First time:
+```bash
+cp .env.example .env.dev      # or: cp .env .env.dev to keep your current settings
+cp .env.example .env.uat      # set APP_ENV=uat, your own JWT_SECRET, and GEMINI_BACKEND
+```
+- The server refuses to start, and lists what is wrong, if a required setting is missing. In UAT that is `JWT_SECRET`, `GEMINI_BACKEND`, and either `GEMINI_API_KEY` (aistudio) or `GOOGLE_CLOUD_PROJECT` + `GOOGLE_CLOUD_LOCATION` (vertex).
+- `GET /healthz` (and `GET /api/health`) reports `{ env, version, gemini }`, where `gemini` is `aistudio`, `vertex` or `disabled`.
+- `npm run uat` mounts your Application Default Credentials read-only when they exist (`gcloud auth application-default login`).
+- `npm test` is unchanged and runs offline with Gemini disabled.
+- Region: `asia-southeast1` for Cloud Run and Cloud Storage. The locations used for Document AI and Agent Search will be recorded here when those are set up.
+- The full cloud plan and the decisions taken are in [docs/CLOUD_PLAN.md](docs/CLOUD_PLAN.md).
+
+### 4. Launch the Server (no environment file)
 ```bash
 npm start
 ```

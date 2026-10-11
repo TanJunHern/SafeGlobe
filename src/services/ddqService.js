@@ -304,7 +304,31 @@ function saveDdqDraft(token, draft = {}) {
   return { success: true, saved_at: new Date().toISOString(), progress: templateService.computeProgress(state.template, draft) };
 }
 
+/**
+ * Duck row for the reviewer: one status per questionnaire section, from the same deterministic
+ * check the portal runs. A completeness signal only: it never feeds risk, confidence or route.
+ */
+function ddqDuckSummary(request) {
+  if (!request || (!request.ddq_required && (!request.ddq_status || request.ddq_status === 'N/A'))) return null;
+  const bundle = getDb().getKycDdqBundle(request.id) || {};
+  if (!bundle.template) return null;
+  const returned = ['Under Review', 'Completed'].includes(request.ddq_status);
+  const responses = returned ? request.ddq_responses : bundle.draft;
+  if (returned && (!responses || responses.format !== 'template-v1')) return { returned, sections: null };
+  const check = require('../../ddq-section-status').evaluate(bundle.template, responses || {});
+  return {
+    returned,
+    done: check.done,
+    total: check.total,
+    sections: check.sections.map(s => ({ title: s.title, status: s.status })),
+    // Only possible for questionnaires submitted before the portal enforced the section check
+    poorly_completed: returned && !check.allSectionsDone,
+    failed: returned ? check.failed : []
+  };
+}
+
 module.exports = {
+  ddqDuckSummary,
   resolveGuestToken,
   saveDdqDraft,
   generateDDQ,

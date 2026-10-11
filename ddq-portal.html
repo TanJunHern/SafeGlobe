@@ -743,7 +743,7 @@ async function runPrefill(file) {
   const btn = $('#prefill-btn');
   btn.disabled = true;
   btn.querySelector('span').textContent = t('prefilling');
-  btn.insertAdjacentHTML('beforebegin', '<img class="dilly" src="/assets/mascot/dilly_v3_focused.svg" width="72" height="72" alt="">');
+  btn.insertAdjacentHTML('beforebegin', '<img class="dilly" src="/assets/mascot/dilly_reading.svg" width="72" height="72" alt="">');
   try {
     const body = { token: TOKEN, filename: file.name, mimeType: file.type || '' };
     if (file.type === 'application/pdf' || file.type.startsWith('image/')) {

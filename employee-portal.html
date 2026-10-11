@@ -1389,6 +1389,8 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="/duck-tour.js"></script>
+<script src="/dilly-loader.js"></script>
+<script src="/monitoring-ui.js"></script>
 <script>
 (function(){
 'use strict';
@@ -1500,6 +1502,16 @@ function getAiRiskClass(aiResult) {
   return 'low-risk';
 }
 
+/* Ongoing monitoring: schedule and cost of each monitored request, for the table and the audit drawer */
+let monitoringById = {};
+async function loadMonitoringMap() {
+  try {
+    const res = await apiFetch('/api/monitoring');
+    if (res.ok) monitoringById = Object.fromEntries((await res.json()).items.map(i => [i.id, i]));
+  } catch (e) {}
+}
+const monLabel = r => (r.ongoing_monitoring && monitoringById[r.id] && window.MonitoringUI ? MonitoringUI.label(monitoringById[r.id]) : '');
+
 async function renderEmployeeWorkspace() {
   const tbody = $('#kyc-table-body');
   if (!tbody || !session || isCompliance()) return;
@@ -1509,6 +1521,7 @@ async function renderEmployeeWorkspace() {
     if (kycFilterState.search) q.set('search', kycFilterState.search);
     if (kycFilterState.entityType !== 'all') q.set('entity_type', kycFilterState.entityType);
 
+    await loadMonitoringMap();
     const res = await apiFetch(`/api/kyc/my-requests?${q.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch KYC requests');
     const data = await res.json();
@@ -1551,7 +1564,7 @@ async function renderEmployeeWorkspace() {
           <td class="mono" style="font-weight:600">${esc(r.country)}</td>
           <td style="color:var(--fg-2)">${esc(r.relationship_type)}</td>
           <td class="mono" style="font-weight:600;color:var(--fg)">${formattedVal}</td>
-          <td><span class="badge-bool ${r.ongoing_monitoring ? 'enabled' : 'disabled'}">${r.ongoing_monitoring ? 'Enabled' : 'Disabled'}</span></td>
+          <td><span class="badge-bool ${r.ongoing_monitoring ? 'enabled' : 'disabled'}">${r.ongoing_monitoring ? 'Enabled' : 'Disabled'}</span>${monLabel(r) ? `<small class="faint" style="display:block;font-size:10.5px;margin-top:3px">${esc(monLabel(r))}</small>` : ''}</td>
           <td><span class="badge-status ${statusSlug}">${esc(r.request_status)}</span></td>
           <td><span class="badge-screen ${screenSlug}">${esc(r.screening_result)}</span></td>
           <td>${aiBadgeHtml(r)}</td>
@@ -1589,7 +1602,7 @@ function openKycAuditModal(r) {
   // Section 1 Overview
   $('#aud-contract-val').textContent = `SGD ${Number(r.contract_value || 0).toLocaleString('en-US')}`;
   $('#aud-rel-type').textContent = r.relationship_type;
-  $('#aud-monitoring').textContent = r.ongoing_monitoring ? 'Enabled' : 'Disabled';
+  $('#aud-monitoring').textContent = (r.ongoing_monitoring ? 'Enabled' : 'Disabled') + (monLabel(r) ? ` · ${monLabel(r)}` : '');
   $('#aud-screening').textContent = r.screening_result;
 
   // Section 2 Point B AI
@@ -1835,6 +1848,7 @@ function resetKycForm() {
   $('#kyc-rel-type').value = 'Vendor/Supplier';
   $('#kyc-contract-val').value = '';
   $('#kyc-ongoing-mon').checked = true;
+  if (window.MonitoringUI) { MonitoringUI.attachToKycForm({ api: apiFetch }); MonitoringUI.resizableSheet($('#kyc-modal .sheet')); }
   $('#kyc-remarks').value = '';
   $('#kyc-address').value = '';
   delete $('#kyc-address').dataset.lat;
@@ -1873,7 +1887,6 @@ function resetKycForm() {
 // Point A: Multimodal Document Upload & Extraction
 async function handleKycDocumentUpload(file) {
   const statusEl = $('#kyc-extract-status');
-  if (statusEl) statusEl.style.display = 'flex';
 
   try {
     let fileContent = '';
@@ -1892,19 +1905,24 @@ async function handleKycDocumentUpload(file) {
       fileContent = await file.text();
     }
 
-    const resp = await fetch('/api/kyc/extract-document', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filename: file.name,
-        fileContent: fileContent.substring(0, 15000),
-        mimeType: file.type || 'application/pdf',
-        base64Data: base64Data
-      })
+    // Dilly covers the form fields while the document is read; a failure offers "Try again"
+    const result = await DillyLoader.run($('#kyc-modal-body'), {
+      task: 'document', variant: 'overlay', errorHost: $('#kyc-dropzone'),
+      request: async () => {
+        const resp = await fetch('/api/kyc/extract-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          fileContent: fileContent.substring(0, 15000),
+          mimeType: file.type || 'application/pdf',
+          base64Data: base64Data
+        })
+        });
+        if (!resp.ok) throw new Error('Document extraction failed. Try again, or fill in the form yourself.');
+        return resp.json();
+      }
     });
-
-    if (!resp.ok) throw new Error('Document extraction failed');
-    const result = await resp.json();
     const d = result.data || {};
 
     // Auto-fill fields and apply Point A AI Suggested light blue highlighting
@@ -2097,6 +2115,7 @@ async function handleKycFormSubmit() {
     relationship_type: relType,
     contract_value: contractVal,
     ongoing_monitoring: monitoring,
+    monitoring: window.MonitoringUI ? MonitoringUI.kycSchedule() : undefined,
     remarks: remarks,
     attributes: attributes,
     location: location,
@@ -2105,18 +2124,28 @@ async function handleKycFormSubmit() {
   };
 
   try {
-    const res = await apiFetch('/api/kyc/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    // Policy evaluation runs on submit: Dilly sits next to the button while it does
+    const submitEl = $('#kyc-submit-btn');
+    let loadHost = $('#kyc-submit-load');
+    if (!loadHost) { loadHost = document.createElement('div'); loadHost.id = 'kyc-submit-load'; submitEl.before(loadHost); }
+    submitEl.disabled = true;
+    const data = await DillyLoader.run($('#kyc-modal .sheet'), {
+      task: 'policy', variant: 'inline', host: loadHost,
+      onError: () => { submitEl.disabled = false; },
+      request: async () => {
+        const res = await apiFetch('/api/kyc/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Failed to submit KYC request');
+        }
+        return res.json();
+      }
     });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to submit KYC request');
-    }
-
-    const data = await res.json();
+    submitEl.disabled = false;
     const created = data.request;
 
     toast(`KYC Request ${created.id} submitted! Policy RAG: ${created.ddq_required ? 'DDQ Triggered' : 'Clear'}`);

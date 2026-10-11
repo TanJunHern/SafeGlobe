@@ -52,7 +52,7 @@ test('Tri-Party Portal Tests', async (t) => {
     const res = await fetch(`${BASE_URL}/api/config/public`);
     assert.equal(res.status, 200);
     const body = await res.json();
-    assert.deepEqual(Object.keys(body).sort(), ['googleClientId', 'googleMapsApiKey', 'mapsEnabled']);
+    assert.deepEqual(Object.keys(body).sort(), ['googleClientId', 'googleMapsApiKey', 'mapsEnabled', 'workspaceName']);
   });
 
   await t.test('employee persona is seeded and only sees own rows, even with scope=all', async () => {

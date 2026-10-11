@@ -740,6 +740,15 @@ table.kyc-table tbody tr:last-child td{border-bottom:none}
 .badge-bool.no{background:var(--surface-3);color:var(--fg-3)}
 
 .badge-ddq-status{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
+/* DDQ duck row (reviewer side) */
+.ddq-ducks{display:flex;align-items:flex-end;gap:2px;margin-top:5px}
+.ddq-ducks .dks{display:flex;flex-direction:row-reverse;gap:1px}
+.ddq-ducks .dk.not_started{opacity:.28}
+.ddq-ducks .dk.in_progress{opacity:.6}
+.badge-poor{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;color:var(--mid-ink);background:var(--mid-soft);border:1px solid var(--mid)}
+.ddq-ducks-panel{display:flex;flex-direction:column;gap:4px;padding:8px 10px;margin-bottom:8px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font-size:12px}
+.ddq-ducks-panel .ddq-ducks{margin-top:0}
+.ddq-failed{margin:2px 0 0;padding-left:18px}
 .badge-ddq-status.triggered{background:color-mix(in srgb,var(--mid) 16%,transparent);color:var(--mid-ink);font-weight:600}
 .badge-ddq-status.sent-to-counterparty{background:color-mix(in srgb,var(--slate) 14%,transparent);color:var(--slate)}
 .badge-ddq-status.returned-to-counterparty{background:color-mix(in srgb,var(--mid) 16%,transparent);color:var(--mid-ink);font-weight:600}
@@ -933,8 +942,8 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
 
   <header class="topbar">
     <div class="wordmark"><b>DueDilly</b><span>Ongoing screening</span></div>
-    <button class="ws-switch" type="button" title="Workspace">Meridian Commodities <svg class="ic sm"><use href="#i-down"/></svg></button>
-    <div class="search">
+    <button class="ws-switch" type="button" title="Workspace"><span id="ws-name">Meridian Commodities</span> <svg class="ic sm"><use href="#i-down"/></svg></button>
+    <div class="search" hidden>
       <svg class="ic"><use href="#i-search"/></svg>
       <input id="q" type="search" autocomplete="off" placeholder="Screen an organisation, person, vessel or country" aria-label="Search">
       <kbd>/</kbd>
@@ -981,10 +990,10 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
       <div id="map-wrap"><svg id="map" role="img" aria-label="World map of counterparties, vessels and country risk"></svg><div id="tooltip"></div></div>
 
       <div class="kpis panel" aria-label="Summary">
-        <div class="kpi"><small>Under monitoring</small><b id="k-mon">1,284</b><span class="kpi-sub">1,031 orgs · 198 people · 55 vessels</span></div>
-        <div class="kpi"><small>Open reviews</small><b id="k-open">37</b><span class="kpi-sub"><span style="color:var(--high-ink)">6 escalated</span> · 12 DDQs out</span></div>
-        <div class="kpi"><small>Auto-cleared, 7 days</small><b>2,912</b><span class="kpi-sub">0.3% error in sample checks</span></div>
-        <div class="kpi"><small>Change to alert, median</small><b>11 min</b><span class="kpi-sub">Ripples · last 30 days</span></div>
+        <div class="kpi"><small>Screened</small><b id="k-screened">–</b><span class="kpi-sub" id="k-screened-sub">&nbsp;</span></div>
+        <div class="kpi"><small>Under monitoring</small><b id="k-mon">–</b><span class="kpi-sub" id="k-mon-sub">&nbsp;</span></div>
+        <div class="kpi"><small>Open reviews</small><b id="k-open">–</b><span class="kpi-sub" id="k-open-sub">&nbsp;</span></div>
+        <div class="kpi"><small>Auto-cleared</small><b id="k-auto">–</b><span class="kpi-sub" id="k-auto-sub">&nbsp;</span></div>
       </div>
 
       <button class="watch-toggle panel" id="watch-open" type="button"><svg class="ic"><use href="#i-list"/></svg>Watchlist</button>
@@ -1079,6 +1088,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           <div class="seg" id="rev-seg"><button class="on" data-f="open" type="button">Needs a person</button><button data-f="all" type="button">All cases</button></div>
         </div>
         <div class="stat-row" id="rev-stats"></div>
+        <div id="mon-host"></div>
         <div class="rev-grid">
           <div class="card">
             <div class="card-h"><h2>Case queue</h2><span class="faint" style="font-size:12px">Owner analyst → approving reviewer</span></div>
@@ -1113,6 +1123,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           </div>
         </div>
         <div class="src-grid" id="src-grid"></div>
+        <div id="src-cost-host"></div>
         <div class="rev-grid">
           <div class="card">
             <div class="card-h"><h2>Built-in data</h2><span class="faint" style="font-size:12px">Maintained by DueDilly</span></div>
@@ -1181,7 +1192,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         </div>
         <div class="pol-grid">
           <div class="card doc-card">
-            <div class="doc-thumb" aria-hidden="true"><b>Third-Party Risk Policy</b><span class="faint" style="font-size:11px">Meridian Commodities · v4.2</span><i style="width:90%"></i><i style="width:76%"></i><i class="hl" style="width:84%"></i><i style="width:60%"></i><i style="width:88%"></i><i class="hl" style="width:70%"></i><i style="width:80%"></i><i style="width:52%"></i><i style="width:86%"></i><i class="hl" style="width:64%"></i><i style="width:74%"></i></div>
+            <div class="doc-thumb" aria-hidden="true"><b>Third-Party Risk Policy</b><span class="faint" style="font-size:11px"><span data-ws-name>Meridian Commodities</span> · v4.2</span><i style="width:90%"></i><i style="width:76%"></i><i class="hl" style="width:84%"></i><i style="width:60%"></i><i style="width:88%"></i><i class="hl" style="width:70%"></i><i style="width:80%"></i><i style="width:52%"></i><i style="width:86%"></i><i class="hl" style="width:64%"></i><i style="width:74%"></i></div>
             <dl class="kv"><dt>File</dt><dd>third-party-risk-policy-v4.2.pdf</dd><dt>Pages</dt><dd>23</dd><dt>Compiled</dt><dd>29 Sep 2026, 16:20</dd><dt>Rules</dt><dd id="pol-count">14</dd><dt>Owner</dt><dd>Grace Teo</dd></dl>
             <div class="callout gap"><svg class="ic"><use href="#i-alert"/></svg><b>Gap</b><p>No rule covers minority stakes below 50% held by state-owned or state-linked companies. Severny Agro Export LLC is 51% state-owned and triggers R2.</p></div>
             <div class="callout conflict" id="conflict-callout"><svg class="ic"><use href="#i-alert"/></svg><b>Conflict</b><p></p></div>
@@ -1679,7 +1690,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
   <div class="sheet" style="max-width:720px;max-height:90vh;display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="New KYC Request">
     <div class="sheet-head">
       <div style="flex:1">
-        <div class="agent">DueDilly · Employee Portal</div>
+        <div class="agent">DueDilly · Intake</div>
         <h2>New Counterparty KYC Request</h2>
         <p>Tell us who you want to work with. Upload a document and Dilly fills in the form, then check it and submit.</p>
       </div>
@@ -2199,6 +2210,9 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="/duck-tour.js"></script>
+<script src="/dilly-loader.js"></script>
+<script src="/monitoring-ui.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
 /* =====================================================================
@@ -3038,7 +3052,9 @@ function miniMatrix(e){
   const r=(k,x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" style="fill:${k===q?Q[k].color:'var(--surface-3)'};fill-opacity:${k===q?.3:.6}"/>`;
   return `<svg class="mini-matrix" viewBox="0 0 76 76" aria-hidden="true">${r('investigate',x0,x0,tx-x0-1,ty-x0-1)}${r('escalate',tx+1,x0,x0+s-tx-1,ty-x0-1)}${r('gaps',x0,ty+1,tx-x0-1,x0+s-ty-1)}${r('monitor',tx+1,ty+1,x0+s-tx-1,x0+s-ty-1)}<circle cx="${(x0+e.conf/100*s).toFixed(1)}" cy="${(x0+(1-e.risk/100)*s).toFixed(1)}" r="4" style="fill:var(--fg);stroke:var(--surface);stroke-width:1.5"/></svg>`;
 }
-function routeCard(e){const q=quad(e);const pose={monitor:'happy',escalate:'concerned'}[q];return `<div class="route-card"${pose?' style="grid-template-columns:76px 1fr 56px"':''}>${miniMatrix(e)}<div><div class="eyebrow">Route</div><h4 style="color:${Q[q].color}">${Q[q].label}</h4><p>${Q[q].action}</p></div>${pose?dilly(pose,56):''}</div>`;}
+/* Sanctions-caused escalation: only person records carry a structured list match (`lists`) */
+const sanctionsMatch=e=>Array.isArray(e.lists)&&e.lists.length>0;
+function routeCard(e){const q=quad(e);const pose=DillyLoader.poseImg(q,sanctionsMatch(e));return `<div class="route-card"${pose?' style="grid-template-columns:76px 1fr 56px"':''}>${miniMatrix(e)}<div><div class="eyebrow">Route</div><h4 style="color:${Q[q].color}">${Q[q].label}</h4><p>${Q[q].action}</p></div>${pose}</div>`;}
 function factorsHTML(e){if(!e.factors||!e.factors.length)return '';return `<div class="sec"><div class="sec-h"><h3>What drives the confidence</h3></div><ul class="factors">${e.factors.map(([s,t])=>`<li class="${s==='+'?'up':'down'}"><b>${s==='+'?'+':'−'}</b><span>${esc(t)}</span></li>`).join('')}</ul>${e.raise&&e.conf<85?`<div class="hint">${ic('spark')}<p><b>Raise confidence:</b> ${esc(e.raise)}</p></div>`:''}</div>`;}
 function scaleHTML(s){
   const h=S.th.high,l=S.th.low;
@@ -3318,6 +3334,8 @@ $('#q').addEventListener('blur',()=>setTimeout(()=>$('#q-results').hidden=true,1
 
 /* ===================== Ask the Globe ===================== */
 const ASK=[
+  {k:'free',q:'How many counterparties have been screened?',tag:'Screening history'},
+  {k:'free',q:'Which screenings came back with a hit?',tag:'Screening history'},
   {k:'ru',q:'Show suppliers within two ownership hops of a Russian state-owned company',tag:'Ownership graph'},
   {k:'dark',q:'Which vessels went dark in the last 30 days?',tag:'Tide'},
   {k:'cpi',q:'Which counterparties are in countries scoring under 30 on CPI 2025?',tag:'Country risk'},
@@ -3387,8 +3405,61 @@ function solve(k,text){
   }
   return null;
 }
+// Questions about past screenings ("how many have been screened?") are answered from the KYC requests on record
+function renderAskHistory(box,item,h){
+  box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div>
+    <ul class="steps">${(h.steps||[]).map(s=>`<li class="show">${ic('check','sm')}<span>${esc(s)}</span></li>`).join('')}</ul>
+    <div class="answer-body"><div class="ask-avatar">${dilly('three_quarter',28,'Dilly')}</div><p class="answer-sum">${esc(h.sum)}</p>
+      ${(h.rows||[]).length?`<div class="answer-res" style="margin-top:8px">${h.rows.map(r=>`<div class="link-row" style="cursor:default"><div class="lr-main"><div>${esc(r.name)}</div><small>${esc(r.sub)}</small></div></div>`).join('')}</div>`:''}
+      ${h.more?`<p class="faint" style="font-size:11.5px;margin:6px 0 0">and ${h.more} more</p>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px"><span class="faint" style="font-size:11.5px">Source: ${esc(h.src||'Screening history')}</span><button class="btn sm ghost" data-x type="button">Clear</button></div></div>`;
+}
+
+/* Top strip: every figure is counted from the KYC requests on record (GET /api/stats) */
+async function refreshKpis(){
+  try{
+    const k=(await (await fetch('/api/stats')).json()).kpis;
+    const set=(id,v)=>{const el=$(id);if(el)el.innerHTML=v;};
+    const n=v=>Number(v||0).toLocaleString('en-SG');
+    set('#k-screened',n(k.screened.total));
+    const w=(c,one,many)=>`${n(c)} ${c===1?one:many}`;
+    set('#k-screened-sub',`${w(k.screened.orgs,'org','orgs')} · ${w(k.screened.people,'person','people')} · ${w(k.screened.vessels,'vessel','vessels')}`);
+    set('#k-mon',n(k.monitored.total));
+    set('#k-mon-sub',k.monitored.costPerYear>0?`SGD ${n(k.monitored.costPerYear)} a year to re-screen`:'approved and re-screened');
+    set('#k-open',n(k.openReviews.total));
+    set('#k-open-sub',`<span style="color:var(--high-ink)">${n(k.openReviews.escalated)} with a hit</span> · ${n(k.openReviews.ddqsOut)} DDQs out`);
+    set('#k-auto',n(k.autoCleared.total));
+    set('#k-auto-sub',`${n(k.autoCleared.last7Days)} in the last 7 days`);
+  }catch(e){}
+}
+
+/* Ongoing monitoring panel (Reviews) and cost per screen (Sources); built once per sign-in */
+let monitoringPanel=null,costTable=null;
+function initMonitoringPanels(){
+  if(!window.MonitoringUI||!session)return;
+  const say=m=>toast(m);
+  if(!$('#mon-host').dataset.ready){
+    $('#mon-host').dataset.ready='1';
+    monitoringPanel=MonitoringUI.panel($('#mon-host'),{api:apiFetch,canEdit:isCompliance(),toast:say,onChange:refreshKpis});
+    costTable=MonitoringUI.costTable($('#src-cost-host'),{api:apiFetch,canEdit:isCompliance(),toast:say,onChange:()=>monitoringPanel&&monitoringPanel.reload()});
+  }else if(monitoringPanel){monitoringPanel.reload();}
+}
+
+// One intake for everyone: the KYC request form, which feeds the compliance queue, the globe and these figures
+function openKycRequestForm(){
+  populateKycCountries();
+  resetKycForm();
+  $('#kyc-modal').hidden=false;
+}
+
 let askRun=0;
-async function runAsk(item){
+async function kycpRequest(query){
+  const res = await fetch('/api/ai/kycp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }) });
+  if (!res.ok) throw new Error('The screening service did not answer. Please try again.');
+  return res.json();
+}
+// `prefetched`: an AI KYCP result already loaded elsewhere (the Sources page loads it in the record's row)
+async function runAsk(item,prefetched){
   if(!item)return;closeAsk();if(S.view!=='globe')showView('globe');
   const run=++askRun;
   const box=$('#answer');box.hidden=false;view.classList.add('has-answer');
@@ -3402,16 +3473,21 @@ async function runAsk(item){
     }
   }
 
+  // Questions about previous screenings come first; anything else is screened as a counterparty name
+  if(!prefetched){
+    try{
+      const hr=await apiFetch('/api/ask/history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:item.q})});
+      const h=hr.ok?await hr.json():null;
+      if(run!==askRun)return;
+      if(h&&h.answered){renderAskHistory(box,item,h);return;}
+    }catch(e){}
+  }
+
   // Live AI KYCP Query across Knowledge Base and LLM
-  box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div><div class="dilly-row">${dilly('focused',72)}<span class="muted">Dilly is screening…</span></div><div class="answer-body"></div>`;
+  box.innerHTML=`<div class="answer-q">${ic('spark','spark')}<p>${esc(item.q)}</p><button class="dr-close" data-x type="button" aria-label="Close">${ic('close')}</button></div><div class="ask-load"></div><div class="answer-body"></div>`;
 
   try {
-    const res = await fetch('/api/ai/kycp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: item.q })
-    });
-    const data = await res.json();
+    const data = prefetched || await DillyLoader.run(box, { task: 'screen', variant: 'inline', host: $('.ask-load', box), request: () => kycpRequest(item.q) });
     if(run !== askRun) return;
 
     if(data && data.status === 'completed') {
@@ -3428,6 +3504,7 @@ async function runAsk(item){
         <div class="answer-body">
           <div class="ask-avatar">${dilly('three_quarter',28,'Dilly')}</div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
+            ${DillyLoader.poseImg(q, Number((kyc.sanctionsAndWatchlists || {}).matchCount) > 0)}
             <span class="pill q-${q}" style="font-size:12px;padding:3px 8px">${data.overallRisk.level} Risk · ${data.overallRisk.score}/100 (${data.overallRisk.route})</span>
             <button class="btn sm primary" id="view-ask-json-btn" type="button"><svg class="ic sm"><use href="#i-code"/></svg>View KYCP JSON</button>
           </div>
@@ -3468,7 +3545,7 @@ async function runAsk(item){
         S.selNet = new Set([foundEnt.id]);
         refreshStatus();
         const pt = foundEnt.kind === 'org' ? foundEnt.ll : foundEnt.cur;
-        if (pt) flyTo(pt[0], pt[1], 4);
+        if (pt) flyToPoints([pt], { maxK: 6, targetK: 4 });
       }
       return;
     }
@@ -3545,8 +3622,6 @@ function renderReviews(){
   const needs=counts.escalate+counts.investigate+counts.gaps;
   $('#rev-stats').innerHTML=`<div class="stat"><small>Needs a person</small><b>${needs}</b><small>${counts.investigate} investigate · ${counts.gaps} fill the gaps</small></div><div class="stat"><small>Escalated</small><b style="color:var(--high-ink)">${counts.escalate}</b><small>Senior reviewer decides</small></div><div class="stat"><small>Auto-cleared</small><b style="color:var(--low-ink)">${counts.monitor}</b><small>Each with a written reason</small></div><div class="stat"><small>Analyst hours per review</small><b>1.4 h</b><small>vs 5.2 h manual screening</small></div>`;
   $('#rail-count').textContent=counts.escalate;$('#rail-count').style.display=counts.escalate?'':'none';
-  $('#k-open').textContent=needs;
-  const sub=$('#k-open').nextElementSibling;if(sub)sub.innerHTML=`<span style="color:var(--high-ink)">${counts.escalate} escalated</span> · 3 DDQs out`;
   const rows=CASES.filter(c=>S.rev==='all'||quad(c)!=='monitor').sort((a,b)=>Q[quad(a)].rank-Q[quad(b)].rank||b.risk-a.risk);
   $('#cases').innerHTML=`<thead><tr><th>Case</th><th>Counterparty</th><th>Trigger</th><th>Risk</th><th>Confidence</th><th>Route</th><th>Owner → reviewer</th><th>Due</th></tr></thead><tbody>${rows.map(c=>{const q=quad(c);return `<tr data-id="${c.id}"><td class="mono faint" style="white-space:nowrap">${c.caseId}</td><td><div class="c-name"><span class="w-ico">${ic(kindIcon[c.kind],'sm')}</span><div><b>${esc(c.short||c.name)}</b><small>${esc(c.kind==='org'?cname(c.a3):c.kind==='vessel'?'IMO '+c.imo:'Person')}</small></div></div></td><td style="min-width:150px;max-width:210px">${esc(c.trigger)}</td><td><span class="pill plain ${riskCls(c.risk)}">${c.risk}</span></td><td>${confHTML(c.conf)} <span class="faint" style="font-size:11px">${confBand(c.conf)}</span></td><td><span class="pill q-${q}">${Q[q].short}</span></td><td><span class="who"><i>${initials(c.owner)}</i></span> ${ic('arrow','sm')} <span class="who"><i style="background:var(--accent-soft);color:var(--accent)">GT</i></span></td><td class="mono" style="white-space:nowrap">${dueOf(q)}</td></tr>`;}).join('')}</tbody>`;
   renderMatrix();
@@ -3628,7 +3703,7 @@ function renderKbRecords() {
   listEl.innerHTML = filtered.map((r) => {
     const riskBadge = r.risk_level === 'High' ? 'q-escalate' : r.risk_level === 'Medium' ? 'q-investigate' : 'q-monitor';
     const jsonEscaped = esc(JSON.stringify(r));
-    return `<div style="padding:12px 16px;border-bottom:1px solid var(--line-2);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+    return `<div data-kb-row style="padding:12px 16px;border-bottom:1px solid var(--line-2);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span class="w-ico" style="width:20px;height:20px">${ic(r.entity_kind === 'vessel' ? 'ship' : r.entity_kind === 'person' ? 'person' : 'org', 'sm')}</span>
@@ -3682,7 +3757,13 @@ document.addEventListener('click', e => {
   }
   const kbScreenBtn = e.target.closest('[data-kb-screen]');
   if (kbScreenBtn) {
-    runAsk({ k: 'free', q: kbScreenBtn.dataset.kbScreen, tag: 'AI KYCP' });
+    const q = kbScreenBtn.dataset.kbScreen;
+    const row = kbScreenBtn.closest('[data-kb-row]');
+    let host = row.querySelector('.kb-load');
+    if (!host) { host = document.createElement('div'); host.className = 'kb-load'; host.style.marginTop = '8px'; row.firstElementChild.appendChild(host); }
+    kbScreenBtn.disabled = true;
+    DillyLoader.run(row, { task: 'source', variant: 'inline', host, onError: () => { kbScreenBtn.disabled = false; }, request: () => kycpRequest(q) })
+      .then(data => { kbScreenBtn.disabled = false; runAsk({ k: 'free', q, tag: 'AI KYCP' }, data); });
   }
 });
 
@@ -4726,7 +4807,7 @@ if (uboAddBtn) {
   });
 }
 
-$('#intake-open').addEventListener('click', ()=>openIntakeModal());
+$('#intake-open').addEventListener('click', ()=>openKycRequestForm());
 
 $('#intake-type').addEventListener('change', e=>{
   updateIntakeTypeView(e.target.value);
@@ -5412,6 +5493,16 @@ function getAiRiskClass(aiResult) {
   return 'low-risk';
 }
 
+/* Ongoing monitoring: schedule and cost of each monitored request, for the table and the audit drawer */
+let monitoringById = {};
+async function loadMonitoringMap() {
+  try {
+    const res = await apiFetch('/api/monitoring');
+    if (res.ok) monitoringById = Object.fromEntries((await res.json()).items.map(i => [i.id, i]));
+  } catch (e) {}
+}
+const monLabel = r => (r.ongoing_monitoring && monitoringById[r.id] && window.MonitoringUI ? MonitoringUI.label(monitoringById[r.id]) : '');
+
 async function renderEmployeeWorkspace() {
   const tbody = $('#kyc-table-body');
   if (!tbody || !session || isCompliance()) return;
@@ -5421,6 +5512,7 @@ async function renderEmployeeWorkspace() {
     if (kycFilterState.search) q.set('search', kycFilterState.search);
     if (kycFilterState.entityType !== 'all') q.set('entity_type', kycFilterState.entityType);
 
+    await loadMonitoringMap();
     const res = await apiFetch(`/api/kyc/my-requests?${q.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch KYC requests');
     const data = await res.json();
@@ -5463,7 +5555,7 @@ async function renderEmployeeWorkspace() {
           <td class="mono" style="font-weight:600">${esc(r.country)}</td>
           <td style="color:var(--fg-2)">${esc(r.relationship_type)}</td>
           <td class="mono" style="font-weight:600;color:var(--fg)">${formattedVal}</td>
-          <td><span class="badge-bool ${r.ongoing_monitoring ? 'enabled' : 'disabled'}">${r.ongoing_monitoring ? 'Enabled' : 'Disabled'}</span></td>
+          <td><span class="badge-bool ${r.ongoing_monitoring ? 'enabled' : 'disabled'}">${r.ongoing_monitoring ? 'Enabled' : 'Disabled'}</span>${monLabel(r) ? `<small class="faint" style="display:block;font-size:10.5px;margin-top:3px">${esc(monLabel(r))}</small>` : ''}</td>
           <td><span class="badge-status ${statusSlug}">${esc(r.request_status)}</span></td>
           <td><span class="badge-screen ${screenSlug}">${esc(r.screening_result)}</span></td>
           <td>${aiBadgeHtml(r)}</td>
@@ -5501,7 +5593,7 @@ function openKycAuditModal(r) {
   // Section 1 Overview
   $('#aud-contract-val').textContent = `SGD ${Number(r.contract_value || 0).toLocaleString('en-US')}`;
   $('#aud-rel-type').textContent = r.relationship_type;
-  $('#aud-monitoring').textContent = r.ongoing_monitoring ? 'Enabled' : 'Disabled';
+  $('#aud-monitoring').textContent = (r.ongoing_monitoring ? 'Enabled' : 'Disabled') + (monLabel(r) ? ` · ${monLabel(r)}` : '');
   $('#aud-screening').textContent = r.screening_result;
 
   // Section 2 Point B AI
@@ -5736,6 +5828,7 @@ function resetKycForm() {
   $('#kyc-rel-type').value = 'Vendor/Supplier';
   $('#kyc-contract-val').value = '';
   $('#kyc-ongoing-mon').checked = true;
+  if (window.MonitoringUI) { MonitoringUI.attachToKycForm({ api: apiFetch }); MonitoringUI.resizableSheet($('#kyc-modal .sheet')); }
   $('#kyc-remarks').value = '';
   $('#kyc-address').value = '';
   delete $('#kyc-address').dataset.lat;
@@ -5773,7 +5866,6 @@ function resetKycForm() {
 // Point A: Multimodal Document Upload & Extraction
 async function handleKycDocumentUpload(file) {
   const statusEl = $('#kyc-extract-status');
-  if (statusEl) statusEl.style.display = 'flex';
 
   try {
     let fileContent = '';
@@ -5792,19 +5884,24 @@ async function handleKycDocumentUpload(file) {
       fileContent = await file.text();
     }
 
-    const resp = await fetch('/api/kyc/extract-document', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filename: file.name,
-        fileContent: fileContent.substring(0, 15000),
-        mimeType: file.type || 'application/pdf',
-        base64Data: base64Data
-      })
+    // Dilly covers the form fields while the document is read; a failure offers "Try again"
+    const result = await DillyLoader.run($('#kyc-modal-body'), {
+      task: 'document', variant: 'overlay', errorHost: $('#kyc-dropzone'),
+      request: async () => {
+        const resp = await fetch('/api/kyc/extract-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          fileContent: fileContent.substring(0, 15000),
+          mimeType: file.type || 'application/pdf',
+          base64Data: base64Data
+        })
+        });
+        if (!resp.ok) throw new Error('Document extraction failed. Try again, or fill in the form yourself.');
+        return resp.json();
+      }
     });
-
-    if (!resp.ok) throw new Error('Document extraction failed');
-    const result = await resp.json();
     const d = result.data || {};
 
     // Auto-fill fields and apply Point A AI Suggested light blue highlighting
@@ -5990,6 +6087,7 @@ async function handleKycFormSubmit() {
     relationship_type: relType,
     contract_value: contractVal,
     ongoing_monitoring: monitoring,
+    monitoring: window.MonitoringUI ? MonitoringUI.kycSchedule() : undefined,
     remarks: remarks,
     attributes: attributes,
     location: location,
@@ -5998,23 +6096,36 @@ async function handleKycFormSubmit() {
   };
 
   try {
-    const res = await apiFetch('/api/kyc/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    // Policy evaluation runs on submit: Dilly sits next to the button while it does
+    const submitEl = $('#kyc-submit-btn');
+    let loadHost = $('#kyc-submit-load');
+    if (!loadHost) { loadHost = document.createElement('div'); loadHost.id = 'kyc-submit-load'; submitEl.before(loadHost); }
+    submitEl.disabled = true;
+    const data = await DillyLoader.run($('#kyc-modal .sheet'), {
+      task: 'policy', variant: 'inline', host: loadHost,
+      onError: () => { submitEl.disabled = false; },
+      request: async () => {
+        const res = await apiFetch('/api/kyc/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Failed to submit KYC request');
+        }
+        return res.json();
+      }
     });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Failed to submit KYC request');
-    }
-
-    const data = await res.json();
+    submitEl.disabled = false;
     const created = data.request;
 
     toast(`KYC Request ${created.id} submitted! Policy RAG: ${created.ddq_required ? 'DDQ Triggered' : 'Clear'}`);
     $('#kyc-modal').hidden = true;
     await renderEmployeeWorkspace();
+    if (isCompliance()) renderComplianceWorkspace();
+    refreshKpis();
+    if (monitoringPanel) monitoringPanel.reload();
     if (created.ddq_required) openKycAuditModal(created);
   } catch (err) {
     console.error('Error submitting KYC request:', err);
@@ -6069,6 +6180,8 @@ function apiFetch(url, opts = {}) {
 
 function applySession() {
   if (!session) return;
+  refreshKpis();
+  initMonitoringPanels();
   const comp = isCompliance();
   const initials = String(session.name || session.email).split(/[\s.@]+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
   $('#top-user-avatar').textContent = initials;
@@ -6177,6 +6290,7 @@ async function bootSession() {
   try {
     const res = await fetch('/api/config/public');
     if (res.ok) publicConfig = await res.json();
+    if (publicConfig.workspaceName) $$('#ws-name, [data-ws-name]').forEach(el => { el.textContent = publicConfig.workspaceName; });
   } catch (e) {}
   initGoogleSignIn();
 }
@@ -6576,10 +6690,57 @@ function triagePriority(r) {
   return 3;
 }
 function submitterName(r) {
+  // The signed-in user and the known personas are shown by name, everyone else from their email
+  const email = String(r.created_by_email || '').toLowerCase();
+  if (session && email === String(session.email || '').toLowerCase() && session.name) return session.name;
+  const persona = Object.values(PERSONAS).find(p => p.email === email);
+  if (persona) return persona.name;
   return String(r.created_by_email || '').split('@')[0].split(/[._]/).filter(Boolean).map(p => p[0].toUpperCase() + p.slice(1)).join(' ') || 'Unknown';
 }
 
+/* DDQ duck row for reviewers: mommy duck = the questionnaire, one duckling per section.
+   Completeness only. It never changes the risk score, confidence or route. */
+const DDQ_ICON = '/assets/ddq/';
+const DDQ_WORD = { not_started: 'not started', in_progress: 'in progress', done: 'complete', needs_attention: 'needs another look' };
+function ddqDucksHtml(r, size) {
+  const k = r.ddq_ducks;
+  if (!k) return '';
+  const px = size || 16;
+  const state = k.returned ? 'returned' : 'sent, waiting';
+  const label = k.sections ? `Questionnaire ${state}: ${k.done} of ${k.total} sections complete` : `Questionnaire ${state}`;
+  const ducks = (k.sections || []).map((s, i) => `<img class="dk ${s.status}" src="${DDQ_ICON}${s.status === 'needs_attention' ? 'ugly_duckling_plain' : 'duckling_plain'}.svg" width="${px}" height="${px}" alt="" title="${esc(`${i + 1}. ${s.title} · ${DDQ_WORD[s.status]}`)}">`).join('');
+  const poor = k.poorly_completed ? `<span class="badge-poor"><img src="${DDQ_ICON}ugly_duckling_plain.svg" width="14" height="14" alt="">Poorly completed</span>` : '';
+  return `<div class="ddq-ducks" role="img" aria-label="${esc(label)}"><span class="dks">${ducks}</span><img src="${DDQ_ICON}${k.returned ? 'mommy_duck_envelope' : 'mommy_duck'}.svg" width="${Math.round(px * 1.5)}" height="${Math.round(px * 1.5)}" alt="" title="${esc(label)}"></div>${poor}`;
+}
+function ddqDucksPanelHtml(r) {
+  const k = r.ddq_ducks;
+  if (!k) return '';
+  const count = k.sections ? `<small class="faint">${k.done} of ${k.total} sections complete · ${k.returned ? 'returned' : 'sent, waiting'}</small>` : '';
+  const failed = k.poorly_completed && k.failed.length
+    ? `<ul class="ddq-failed">${k.failed.map(f => `<li>${esc(f.message)}</li>`).join('')}</ul>` : '';
+  const note = k.poorly_completed ? `<small class="faint">Completeness only. This does not change the risk score, confidence or route.</small>` : '';
+  return `<div class="ddq-ducks-panel">${ddqDucksHtml(r, 20)}${count}${failed}${note}</div>`;
+}
+
+/* Pop-up guide: the KYC + DDQ journey for a compliance officer */
+function startComplianceTour(force) {
+  if (!window.DuckTour || !$('#view-compliance').classList.contains('on')) return;
+  DuckTour.start({
+    id: 'compliance-workspace', force,
+    steps: [
+      { title: 'Welcome!', text: "I'm Dilly. Every counterparty your colleagues ask to onboard lands here. Let me show you the journey. It takes 20 seconds." },
+      { sel: 'div:has(> #comp-metric-total)', title: 'Your queue at a glance', text: 'Total requests, what is escalated, which questionnaires are out or back, and what is already cleared.' },
+      { sel: '#comp-quick-filters', title: 'Start with what needs you', text: 'Triage Required shows requests that were flagged or have a questionnaire to review.' },
+      { sel: '#comp-kyc-table', title: 'One row, one request', text: 'I screen each request on arrival. The AI risk chip is my view, with the policy clauses that triggered. The ducks show how far the questionnaire is: one duckling per section, an envelope when it is back.' },
+      { sel: '#comp-table-body tr [data-triage="review"]', title: 'Review side by side', text: 'Open a request to compare what the employee submitted, what the counterparty answered, and my assessment. Then approve, reject, or bounce the questionnaire back with points to clarify.' },
+      { sel: '#rail-ddq-manager', title: 'Shape the questionnaire', text: 'Edit the questions counterparties receive in the DDQ Manager.' },
+      { sel: '#comp-export-btn', title: 'Audit trail', text: 'Export every request with its decisions and reasons to Excel.' }
+    ]
+  });
+}
+
 async function renderComplianceWorkspace() {
+  refreshKpis();
   const tbody = $('#comp-table-body');
   if (!tbody || !isCompliance()) return;
   try {
@@ -6632,11 +6793,17 @@ async function renderComplianceWorkspace() {
           <td class="mono" style="font-weight:600">${fmtSgd(r.contract_value)}</td>
           <td><span class="badge-screen ${kycSlug(r.screening_result)}">${esc(r.screening_result)}</span></td>
           <td>${aiBadgeHtml(r)}${agentChipHtml(r)}</td>
-          <td><span class="badge-ddq-status ${kycSlug(r.ddq_status)}">${esc(r.ddq_status)}</span></td>
+          <td><span class="badge-ddq-status ${kycSlug(r.ddq_status)}">${esc(r.ddq_status)}</span>${ddqDucksHtml(r)}</td>
           <td><span class="badge-status ${kycSlug(r.request_status)}">${esc(r.request_status)}</span></td>
           <td><div style="display:flex;gap:5px">${actions}</div></td>
         </tr>`;
     }).join('');
+    if (window.DuckTour && !$('#comp-help-btn')) {
+      const help = DuckTour.helpButton('How it works', () => startComplianceTour(true));
+      help.id = 'comp-help-btn';
+      $('#comp-export-btn').parentNode.prepend(help);
+      setTimeout(() => startComplianceTour(false), 700);
+    }
   } catch (err) {
     console.error('Error rendering compliance queue:', err);
     tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--high-ink)">Error loading triage queue: ${esc(err.message)}</td></tr>`;
@@ -6702,6 +6869,9 @@ function openTriageModal(r) {
     ? `Questionnaire not yet submitted — DDQ status: ${r.ddq_status}${r.counterparty_email ? ` · ${r.counterparty_email}` : ''}.`
     : 'No questionnaire required for this request.';
   $('#triage-ddq-content').style.display = hasDdq ? 'flex' : 'none';
+  let duckPanel = $('#triage-ddq-ducks');
+  if (!duckPanel) { duckPanel = document.createElement('div'); duckPanel.id = 'triage-ddq-ducks'; $('#triage-ddq-empty-notice').before(duckPanel); }
+  duckPanel.innerHTML = ddqDucksPanelHtml(r);
   if (hasDdq) {
     const ubos = Array.isArray(d.ubo_list) ? d.ubo_list : [];
     $('#triage-ddq-ubos').innerHTML = ubos.length
@@ -6764,7 +6934,7 @@ function renderTriageAgent(r) {
   const head = `<div class="agent-head"><svg class="ic spark sm" style="color:var(--accent)"><use href="#i-spark"/></svg><b>Compliance Agent</b>
       ${mode ? `<span class="agent-pill" title="${esc((ddq || intake).model || '')}">${mode === 'gemini' ? `Gemini · ${esc((ddq || intake).model)}` : 'Placeholder mode (no model)'}</span>` : ''}
       <button class="btn sm" type="button" data-agent-rerun style="margin-left:auto;height:24px">Re-run</button></div>`;
-  if (!intake && !ddq) { box.innerHTML = `<div class="agent-card">${head}<div class="dilly-row">${dilly('focused',72)}<div class="agent-text">Dilly is screening…</div></div></div>`; return; }
+  if (!intake && !ddq) { box.innerHTML = `<div class="agent-card">${head}<div class="dilly-row" role="status"><img class="dilly" src="/assets/mascot/dilly_loading.svg" width="72" height="72" alt=""><div class="agent-text">Dilly is screening…</div></div></div>`; return; }
 
   let html = `<div class="agent-card">${head}`;
   if (intake) {

@@ -218,8 +218,9 @@ function buildAnswers(template, item, quality) {
   const has = id => Boolean(responses.answers[id]);
   if (quality === 'weak') {
     if (has('1.9')) responses.answers['1.9'] = { value: 'tbc' };
-    if (has('1.13')) responses.answers['1.13'] = { value: 'n/a' };
-    if (has('3.5')) responses.answers['3.5'] = { value: 'Yes', details: 'permits' };
+    // Evasive, but not caught by the portal's own section check, so the questionnaire can still be submitted
+    if (has('1.13')) responses.answers['1.13'] = { value: 'nil' };
+    if (has('1.12')) responses.answers['1.12'] = { value: 'tbd' };
     if (has('6.7')) responses.answers['6.7'] = { value: 'No' };
   }
   if (quality === 'disclosure') {
