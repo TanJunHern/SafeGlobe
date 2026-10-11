@@ -125,3 +125,6 @@
 ### Cloud Run Deployment Target
 - Multi-stage `Dockerfile` listening on environment variable `PORT` (default `8080`).
 - No hardcoded secrets; reads `GEMINI_API_KEY` from environment.
+---
+
+Cloud stack and deployment plan: see docs/CLOUD_PLAN.md

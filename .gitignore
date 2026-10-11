@@ -1,5 +1,8 @@
 node_modules/
 .env
+# Per-environment settings (APP_ENV=dev / uat); .env.example is the template
+.env.*
+!.env.example
 data/safe_globe.db*
 data/test_safe_globe.db*
 data/uploads/*

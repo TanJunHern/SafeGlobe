@@ -18,6 +18,15 @@ function isScopedEmployee(req) {
  * GET /api/kyc/my-requests
  * Employee scoped requests: strictly filtered by session email (WHERE created_by_email == session.email)
  */
+// Adds the DDQ duck row (per-section completeness) to a request sent to the UI
+function withDucks(request) {
+  try {
+    return Object.assign({}, request, { ddq_ducks: require('../services/ddqService').ddqDuckSummary(request) });
+  } catch (err) {
+    return request;
+  }
+}
+
 router.get('/my-requests', (req, res) => {
   try {
     const db = getDb();
@@ -27,7 +36,7 @@ router.get('/my-requests', (req, res) => {
       search: req.query.search || '',
       created_by_email: req.user.email
     };
-    const requests = db.getAllKycRequests(filter);
+    const requests = db.getAllKycRequests(filter).map(withDucks);
     res.json({
       success: true,
       scoped_user: req.user.email,
@@ -58,7 +67,7 @@ router.get('/', (req, res) => {
       filter.created_by_email = req.user.email;
     }
 
-    const requests = db.getAllKycRequests(filter);
+    const requests = db.getAllKycRequests(filter).map(withDucks);
     res.json({
       success: true,
       user_role: req.user.role,
@@ -168,7 +177,7 @@ router.get('/:id', (req, res) => {
     }
     res.json({
       success: true,
-      request
+      request: withDucks(request)
     });
   } catch (err) {
     console.error('Error retrieving KYC request:', err);
@@ -259,7 +268,13 @@ const submitKycHandler = async (req, res) => {
       clientTimestamp: req.headers['x-client-timestamp'] || new Date().toISOString()
     };
 
-    const created = kycService.createKycRequest(req.body, userContext);
+    let created = kycService.createKycRequest(req.body, userContext);
+    // Ongoing monitoring: keep the schedule (frequency, dates, sources) chosen on the intake form
+    if (created.ongoing_monitoring && req.body.monitoring && typeof req.body.monitoring === 'object') {
+      const monitoring = require('../services/monitoringService');
+      const schedule = monitoring.normalizeSchedule(req.body.monitoring);
+      created = getDb().setKycMonitoring(created.id, Object.assign(schedule, { updated_by: userContext.email, updated_at: new Date().toISOString() }), true);
+    }
     // Compliance Agent: intake scoring + investigation (stored now, model-written detail follows)
     const agent = await complianceAgent.runIntake(created.id, { enrich: 'background' }).catch(err => {
       console.error('Compliance Agent intake failed:', err.message);

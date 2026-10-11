@@ -31,13 +31,18 @@ app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Which environment is running and which Gemini backend answers. No secrets.
+const healthInfo = () => ({ env: config.appEnv || 'local', version: config.version, gemini: require('./services/geminiClient').backend() });
+app.get('/healthz', (req, res) => res.json(healthInfo()));
+
 // Container health check endpoint (Google Cloud Run & Kubernetes probes)
+// Carries the /healthz fields too: Cloud Run reserves some paths ending in "z", so /healthz may not be reachable there
 app.get('/api/health', (req, res) => {
   res.json({
+    ...healthInfo(),
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'DueDilly Compliance Platform',
-    version: '1.0.0',
     dbType: config.dbType
   });
 });
@@ -64,6 +69,7 @@ app.use('/api/uploads', uploadsRouter);
 app.use('/api/places', placesRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/kyc', kycRouter);
+app.use('/api/monitoring', require('./routes/monitoring'));
 
 
 // Auth routes
@@ -84,7 +90,9 @@ app.get('/api/config/public', (req, res) => {
   res.json({
     googleClientId: config.googleClientId,
     googleMapsApiKey: mapsKey,
-    mapsEnabled: Boolean(mapsKey)
+    mapsEnabled: Boolean(mapsKey),
+    // Name of the company using DueDilly, shown in the top bar (WORKSPACE_NAME)
+    workspaceName: config.workspaceName
   });
 });
 
@@ -143,7 +151,7 @@ app.get('/saf-globe.html', (req, res) => {
 // Serve static directory for any static assets (PDFs, images, etc.)
 // Only these files are public. The repo root is NOT served: it holds the database, uploaded
 // counterparty documents, source code and config, none of which may be downloadable.
-const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js', 'ddq-section-status.js', 'duck-tour.js'];
+const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js', 'ddq-section-status.js', 'duck-tour.js', 'dilly-loader.js', 'monitoring-ui.js'];
 for (const file of PUBLIC_ASSETS) {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(config.staticDir, file)));
 }
@@ -207,6 +215,14 @@ function stopServer() {
 }
 
 if (require.main === module) {
+  // Refuse to start on a broken environment, and say exactly what is wrong
+  const problems = config.validateEnv();
+  if (problems.length) {
+    console.error(`[DueDilly] Cannot start${config.appEnv ? ` (APP_ENV=${config.appEnv})` : ''}. Fix these in ${config.envFile || 'the environment variables'}:`);
+    problems.forEach(p => console.error(`  - ${p}`));
+    process.exit(1);
+  }
+  console.log(`[DueDilly] Environment: ${config.appEnv || 'local'} · config from ${config.envFile || 'environment variables'} · Gemini: ${require('./services/geminiClient').backend()}`);
   startServer();
 
   // Cloud Run SIGTERM graceful shutdown

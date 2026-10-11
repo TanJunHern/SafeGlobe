@@ -24,4 +24,14 @@ router.post('/', (req, res) => {
   });
 });
 
+// POST /api/ask/history: questions about past screenings ("how many have been screened?")
+router.post('/history', require('../middleware/auth').authenticate, async (req, res) => {
+  const { query } = req.body || {};
+  if (!query || typeof query !== 'string') return res.status(400).json({ error: 'Field "query" is required' });
+  const email = req.user.role === 'employee' && !req.user.anonymous ? req.user.email : null;
+  const result = await require('../services/screeningHistoryService').answer(query, { email });
+  if (result.records) delete result.records;
+  res.json(Object.assign({ query }, result));
+});
+
 module.exports = router;

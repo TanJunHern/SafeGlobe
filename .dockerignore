@@ -2,11 +2,22 @@ node_modules
 npm-debug.log
 .git
 .gitignore
+# Secrets and per-environment settings never go into an image
 .env
-.env.local
+.env.*
 tests
 *.md
 !README.md
 !DEPLOYMENT.md
 .DS_Store
 Thumbs.db
+# Local data: the database, uploaded counterparty documents and backups stay on this machine
+data/*.db*
+data/*.bak
+data/uploads/**
+!data/uploads/.gitkeep
+demo-data
+design
+docs
+python
+.scratch
