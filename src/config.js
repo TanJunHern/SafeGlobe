@@ -85,6 +85,8 @@ module.exports = {
   jwtSecret: process.env.JWT_SECRET || DEFAULT_JWT_SECRET,
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+  // Vessel lookup by IMO (services/vesselFinderService.js): the official API when a key is set, the public page otherwise
+  vesselFinderApiKey: process.env.VESSELFINDER_API_KEY || '',
   complianceEmails: (process.env.COMPLIANCE_OFFICER_EMAILS || 'compliance@duedilly.com,grace.teo@duedilly.internal').split(',').map(s => s.trim().toLowerCase()),
   // Company name shown in the top bar of the compliance workspace
   workspaceName: process.env.WORKSPACE_NAME || 'Meridian Commodities',

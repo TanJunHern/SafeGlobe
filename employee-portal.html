@@ -1163,8 +1163,9 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         <div class="eyebrow" style="margin-bottom:8px">Vessel Maritime Attributes</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="field">
-            <label for="kyc-vessel-imo">IMO Number (International Maritime Organization)</label>
-            <input id="kyc-vessel-imo" type="text" placeholder="e.g. IMO 9823411">
+            <label for="kyc-vessel-imo">IMO Number <b style="color:var(--high-ink)">* required</b></label>
+            <input id="kyc-vessel-imo" type="text" placeholder="e.g. IMO 9811000">
+            <small class="faint" style="display:block;margin-top:4px;font-size:11.5px">Checked on VesselFinder when you submit. An IMO that does not exist is not accepted.</small>
           </div>
           <div class="field">
             <label for="kyc-vessel-type">Vessel Type</label>

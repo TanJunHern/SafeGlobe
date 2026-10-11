@@ -16,6 +16,7 @@ const jwt = require('jsonwebtoken');
 const gemini = require('./geminiClient');
 const { evaluatePolicyRAG } = require('./policyRagService');
 const { generateKycExcelWorkbook } = require('./excelService');
+const vesselFinder = require('./vesselFinderService');
 
 // High risk jurisdictions list (FATF / OFAC / Low CPI)
 const HIGH_RISK_JURISDICTIONS = new Set([
@@ -403,7 +404,7 @@ function getNextKycId() {
  * @param {Object} [userContext]
  * @returns {Object} Stored and hydrated KYC record
  */
-function createKycRequest(input, userContext = {}) {
+function createKycRequest(input, userContext = {}, checks = {}) {
   const db = getDb();
 
   if (!input.counterparty_name || !input.counterparty_name.trim()) {
@@ -424,6 +425,9 @@ function createKycRequest(input, userContext = {}) {
     try { attributes = JSON.parse(attributes); } catch (e) { attributes = {}; }
   }
 
+  // The registry check is written by the server only (checks.vessel), never taken from the form
+  delete attributes.ais;
+
   // Populate dynamic entity attributes from top-level fields if provided
   if (entityType === 'Organisation') {
     if (input.registration_number) attributes.reg_no = input.registration_number;
@@ -436,6 +440,7 @@ function createKycRequest(input, userContext = {}) {
     if (input.vessel_type) attributes.vessel_type = input.vessel_type;
     if (input.registered_owner) attributes.registered_owner = input.registered_owner;
     if (input.commercial_operator) attributes.commercial_operator = input.commercial_operator;
+    if (checks.vessel) attributes.ais = vesselRecord(checks.vessel, { name: counterpartyName, country, type: attributes.vessel_type });
   } else if (entityType === 'Person') {
     if (input.full_name) attributes.full_name = input.full_name;
     if (input.aliases) attributes.aliases = input.aliases;
@@ -457,7 +462,8 @@ function createKycRequest(input, userContext = {}) {
   }
 
   // Ongoing monitoring places the counterparty on the globe, so it needs somewhere to be pinned
-  if (ongoingMonitoring && !String(location.address || '').trim()) {
+  const hasAisPosition = Boolean(attributes.ais && attributes.ais.lat !== null && attributes.ais.lat !== undefined);
+  if (ongoingMonitoring && !hasAisPosition && !String(location.address || '').trim()) {
     throw new Error('A location is required when Ongoing Monitoring is enabled');
   }
 
@@ -497,6 +503,17 @@ function createKycRequest(input, userContext = {}) {
     attributes,
     remarks: input.remarks
   }, screeningHit);
+
+  // A vessel whose registry record contradicts the form goes to compliance, never auto-cleared
+  const mismatches = (attributes.ais && attributes.ais.mismatches) || [];
+  if (mismatches.length) {
+    const clause = 'Policy §5.4 (Vessel registry mismatch on VesselFinder)';
+    policyEval.triggered_clauses = [...(policyEval.triggered_clauses || []), clause];
+    policyEval.ddq_clause = policyEval.triggered_clauses.join(' & ');
+    policyEval.ddq_required = true;
+    if (!policyEval.ddq_status || policyEval.ddq_status === 'N/A') policyEval.ddq_status = 'Triggered';
+    Object.assign(aiRisk, withVesselMismatch(aiRisk, attributes.ais));
+  }
 
   // Counterparty Contact Email
   const counterpartyEmail = (input.counterparty_email || input.email || `${counterpartyName.toLowerCase().replace(/[^a-z0-9]+/g, '')}@vendor.domain`).trim();
@@ -595,14 +612,16 @@ const monitoredEntityId = kycId => `kyc-${String(kycId).toLowerCase()}`;
 
 /**
  * Keeps the globe in step with KYC decisions: a request with Ongoing Monitoring enabled is
- * pinned on the globe once it is Approved (auto-cleared, or passed after DDQ review), and
- * removed again if it stops qualifying. Call after every status change.
+ * pinned on the globe from intake. Until it is Approved (auto-cleared, or passed after DDQ
+ * review) the pin is marked pending; it is removed if the request is Rejected or monitoring
+ * is switched off. Call after every status change.
  */
 function syncMonitoredEntity(request) {
   if (!request || !request.id) return null;
   const db = getDb();
   const entityId = monitoredEntityId(request.id);
-  const qualifies = Boolean(request.ongoing_monitoring) && request.request_status === 'Approved';
+  const qualifies = Boolean(request.ongoing_monitoring) && request.request_status !== 'Rejected';
+  const pending = request.request_status !== 'Approved';
 
   if (!qualifies) {
     if (db.getEntityById(entityId)) db.deleteEntity(entityId);
@@ -615,7 +634,10 @@ function syncMonitoredEntity(request) {
   const hasPin = Number.isFinite(Number(loc.lat)) && Number.isFinite(Number(loc.lng)) && loc.lat !== null && loc.lng !== null;
   const submitter = String(request.created_by_email || '').split('@')[0].split(/[._]/).filter(Boolean)
     .map(p => p[0].toUpperCase() + p.slice(1)).join(' ') || 'Compliance';
-  const cleared = request.ddq_required ? 'Approved after DDQ review' : 'Auto-cleared by policy';
+  const ais = attrs.ais || null;
+  const hasFix = ais && ais.status === 'found' && Number.isFinite(Number(ais.lat)) && Number.isFinite(Number(ais.lng)) && ais.lat !== null && ais.lng !== null;
+  const voyage = kind === 'vessel' && hasFix ? { at: [Number(ais.lng), Number(ais.lat)], to: Array.isArray(ais.destination_ll) ? ais.destination_ll : null } : null;
+  const cleared = pending ? 'Pending approval' : request.ddq_required ? 'Approved after DDQ review' : 'Auto-cleared by policy';
 
   db.upsertEntity({
     id: entityId,
@@ -632,15 +654,114 @@ function syncMonitoredEntity(request) {
     trigger: `Ongoing monitoring · ${request.id} · ${cleared}`,
     since: String(request.submission_date || '').slice(0, 4) || String(new Date().getFullYear()),
     summary: request.ai_rationale || '',
-    // The globe expects [longitude, latitude]; without a pin it falls back to the country centroid
-    ll: hasPin ? [Number(loc.lng), Number(loc.lat)] : undefined,
+    // The globe expects [longitude, latitude]; without a pin it falls back to the country centroid.
+    // A vessel is drawn at its last AIS position, with a route to its destination when it broadcasts one.
+    ll: voyage ? voyage.at : hasPin ? [Number(loc.lng), Number(loc.lat)] : undefined,
+    route: voyage && voyage.to ? [voyage.at, voyage.to] : undefined,
+    ais: kind === 'vessel' && ais ? ais : undefined,
+    flag: ais && ais.flag ? ais.flag : undefined,
+    mmsi: ais && ais.mmsi ? ais.mmsi : undefined,
+    dest: ais && ais.destination ? ais.destination : undefined,
     operatingAddresses: loc.address || '',
     residentialAddress: kind === 'person' ? (loc.address || '') : '',
     controllers: attrs.directors_ubo || '',
-    factors: [['-', `${cleared} (${request.id})`], ['+', `Screening result: ${request.screening_result}`]],
+    pending,
+    factors: [['-', `${cleared} (${request.id})`], ['+', `Screening result: ${request.screening_result}`], ...vesselFactors(ais)],
     findings: []
   });
   return db.getEntityById(entityId);
+}
+
+/** What is kept on the request from a VesselFinder lookup, plus how it differs from the form. */
+function vesselRecord(vessel, declared) {
+  const db = getDb();
+  // The flag is only compared when the form's country code maps to a flag state name
+  const cpiRow = declared.country ? db.getCpiByCode(declared.country) : null;
+  const declaredFlag = vesselFinder.flagName(declared.country) || (cpiRow && cpiRow.name) || '';
+  const record = {
+    status: vessel.status, imo: vessel.imo, source: vessel.source, source_url: vessel.source_url, via: vessel.via || '',
+    checked_at: vessel.checked_at, message: vessel.message || ''
+  };
+  if (vessel.status !== 'found') return Object.assign(record, { mismatches: [] });
+  return Object.assign(record, {
+    name: vessel.name, type: vessel.type, flag: vessel.flag, mmsi: vessel.mmsi,
+    lat: vessel.lat, lng: vessel.lng, course: vessel.course, speed: vessel.speed, reported: vessel.reported, precision: vessel.precision,
+    destination: vessel.destination, eta: vessel.eta, destination_ll: vessel.destination_ll || null,
+    mismatches: vesselFinder.compare({ name: declared.name, flag: declaredFlag, type: declared.type }, vessel)
+  });
+}
+
+const mismatchText = ais => (ais.mismatches || []).map(m => `${m.field.toLowerCase()} declared "${m.declared}", registry "${m.registry}"`).join('; ');
+
+/** Raises a request to at least Medium Risk and says why, when the registry contradicts the form. */
+function withVesselMismatch(aiRisk, ais) {
+  const score = Math.max(Number(aiRisk.ai_score) || 0, 65);
+  const label = score >= 75 ? 'High Risk' : 'Medium Risk';
+  return {
+    ai_score: score,
+    ai_result: `${label} (Confidence ${aiRisk.ai_confidence}%)`,
+    ai_rationale: `${aiRisk.ai_rationale} VesselFinder registry mismatch for IMO ${ais.imo}: ${mismatchText(ais)}.`
+  };
+}
+
+/** Lines shown under "why this score" on the globe for a vessel. */
+function vesselFactors(ais) {
+  if (!ais) return [];
+  if (ais.status === 'found') {
+    const lines = [['-', `IMO ${ais.imo} verified on VesselFinder as ${ais.name}`]];
+    (ais.mismatches || []).forEach(m => lines.push(['+', `${m.field} mismatch: declared "${m.declared}", registry "${m.registry}"`]));
+    return lines;
+  }
+  if (ais.status === 'not_found') return [['+', `IMO ${ais.imo} was not found on VesselFinder`]];
+  if (ais.status === 'invalid') return [['+', `IMO ${ais.imo || 'number'} is not a valid IMO number`]];
+  return [['+', 'IMO not verified: VesselFinder could not be reached']];
+}
+
+/**
+ * Re-reads one vessel request from VesselFinder (position, destination, registry details),
+ * stores it on the request and moves its marker on the globe. Returns the stored record, or null.
+ */
+async function refreshVessel(requestId) {
+  const db = getDb();
+  const request = db.getKycRequestById(requestId);
+  if (!request || request.entity_type !== 'Vessel') return null;
+  const attrs = Object.assign({}, request.attributes || {});
+  const before = attrs.ais || null;
+  const vessel = await vesselFinder.lookup(attrs.imo, { fresh: true });
+  // An outage must not wipe a position that was read earlier
+  if (vessel.status === 'unavailable' && before && before.status === 'found') return before;
+  attrs.ais = vesselRecord(vessel, { name: request.counterparty_name, country: request.country, type: attrs.vessel_type });
+  const updated = db.setKycAttributes(request.id, attrs);
+  // Only a vessel that has its own marker is moved: demo entities with the same name keep theirs
+  if (db.getEntityById(monitoredEntityId(request.id))) syncMonitoredEntity(updated);
+  if (before && before.status === 'found' && attrs.ais.status === 'found' && before.destination !== attrs.ais.destination) {
+    db.addAlert('Tide', request.id, `${request.counterparty_name}: destination changed from ${before.destination || 'none'} to ${attrs.ais.destination || 'none'} (VesselFinder)`, 'monitor');
+  }
+  return attrs.ais;
+}
+
+/** Looks up monitored vessels that have never been checked. Runs in the background after start-up. */
+async function refreshUncheckedVessels() {
+  if (!vesselFinder.isEnabled()) return 0;
+  const todo = getDb().getAllKycRequests({}).filter(r => r.entity_type === 'Vessel' && r.ongoing_monitoring && r.request_status !== 'Rejected' && !(r.attributes && r.attributes.ais));
+  for (const r of todo) {
+    try { await refreshVessel(r.id); } catch (err) { console.error(`[DueDilly] Vessel lookup failed for ${r.id}:`, err.message); }
+  }
+  return todo.length;
+}
+
+/**
+ * Pins every monitored request that is not on the globe yet (requests created before pins
+ * were added at intake, or seeded straight into the database). A request whose counterparty
+ * is already on the globe under another id, such as the built-in demo entities, is left alone.
+ */
+function syncAllMonitoredEntities() {
+  const db = getDb();
+  const names = new Set(db.getAllEntities().filter(e => !String(e.id).startsWith('kyc-')).map(e => String(e.name).trim().toLowerCase()));
+  db.getAllKycRequests({}).forEach(r => {
+    if (r.ongoing_monitoring && names.has(String(r.counterparty_name).trim().toLowerCase())) return;
+    syncMonitoredEntity(r);
+  });
 }
 
 /**
@@ -731,6 +852,8 @@ function ensurePersonaSeed() {
   // The demo kit (scripts/demo-reset.js) seeds its own, fuller story for this persona
   if (process.env.SAFEGLOBE_SKIP_PERSONA_SEED) return;
   const db = getDb();
+  // A clean workspace (npm run demo:clean) starts with no requests at all
+  if (!db.hasPlaceholderData()) return;
   const persona = { userId: 'EMP-1042', email: 'john.doe@duedilly.com', department: 'Procurement & Logistics' };
   if (db.getAllKycRequests({ created_by_email: persona.email }).length > 0) return;
 
@@ -776,6 +899,9 @@ function ensurePersonaSeed() {
 module.exports = {
   ensurePersonaSeed,
   syncMonitoredEntity,
+  syncAllMonitoredEntities,
+  refreshVessel,
+  refreshUncheckedVessels,
   evaluatePolicyRules,
   calculateAiRisk,
   extractDocumentData,

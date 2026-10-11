@@ -5,6 +5,9 @@
  *   npm run demo:reset            rebuild with the Compliance Agent in placeholder mode (fast, offline)
  *   npm run demo:reset -- --ai    also let Gemini write the agent's explanations (slower, needs quota)
  *   npm run demo:reset -- --force run even if a server appears to be listening on the app port
+ *   npm run demo:clean            no story at all: an empty workspace for testing with your own documents
+ *                                 (no demo counterparties, requests, alerts, sources or uploads; the globe is empty).
+ *                                 `npm run demo:reset` brings the story back.
  *
  * Everything the kit produces lives in demo-data/, which is gitignored:
  *   demo-data/scenario.json   the story (edit it to change the demo; delete it to restore the default)
@@ -21,6 +24,7 @@ const path = require('path');
 
 const args = new Set(process.argv.slice(2));
 const USE_AI = args.has('--ai');
+const EMPTY = args.has('--empty');
 const ROOT = path.join(__dirname, '..');
 process.chdir(ROOT);
 
@@ -31,6 +35,10 @@ if (!USE_AI) {
   process.env.GOOGLE_GENAI_API_KEY = '';
 }
 process.env.SAFEGLOBE_SKIP_PERSONA_SEED = '1';
+// --empty: the new database is created without the built-in demo counterparties, alerts, sources and rules
+if (EMPTY) process.env.SAFEGLOBE_NO_PLACEHOLDER_DATA = '1';
+// Seeding stays offline: vessels are looked up on VesselFinder when the app next starts
+process.env.VESSELFINDER_LOOKUP = 'off';
 
 const config = require('../src/config');
 const DEMO_DIR = path.join(ROOT, 'demo-data');
@@ -93,7 +101,7 @@ const DEFAULT_SCENARIO = {
     },
     {
       key: 'selat', by: 'john', days_ago: 1, stage: 'DDQ TRIGGERED, not sent: send it as John, then fill it in as the counterparty (use the sample profile to prefill)',
-      request: { counterparty_name: 'MV Selat Pioneer', entity_type: 'Vessel', country: 'PAN', relationship_type: 'Customer/Trading Partner', contract_value: 420000, ongoing_monitoring: true, location: PLACES.tuas, counterparty_email: 'ops@selatshipping.example', remarks: 'Time-charter for product tanker, Tuas to Fujairah.', attributes: { imo: 'IMO 9823411', vessel_type: 'Product Tanker', registered_owner: 'Selat Shipping Pte Ltd', commercial_operator: 'Selat Shipping Pte Ltd' } }
+      request: { counterparty_name: 'MV Selat Pioneer', entity_type: 'Vessel', country: 'PAN', relationship_type: 'Customer/Trading Partner', contract_value: 420000, ongoing_monitoring: true, location: PLACES.tuas, counterparty_email: 'ops@selatshipping.example', remarks: 'Time-charter for product tanker, Tuas to Fujairah.', attributes: { imo: 'IMO 9823417', vessel_type: 'Product Tanker', registered_owner: 'Selat Shipping Pte Ltd', commercial_operator: 'Selat Shipping Pte Ltd' } }
     },
     {
       key: 'caspian', by: 'marcus', days_ago: 1, stage: 'DDQ returned with disclosures, agent recommends ESCALATE (officer judgement, cannot be bounced away)',
@@ -118,6 +126,20 @@ function portInUse(port) {
   });
 }
 
+// Every uploaded file (policies, data feeds, intake documents) is moved into the backup, not deleted
+function wipeUploads(uploadsDir, stamp) {
+  if (!fs.existsSync(uploadsDir)) return;
+  const files = fs.readdirSync(uploadsDir).filter(f => f !== '.gitkeep');
+  if (!files.length) return;
+  const target = path.join(BACKUP_DIR, stamp, 'uploads');
+  fs.mkdirSync(target, { recursive: true });
+  files.forEach(f => {
+    fs.cpSync(path.join(uploadsDir, f), path.join(target, f), { recursive: true });
+    fs.rmSync(path.join(uploadsDir, f), { recursive: true, force: true });
+  });
+  log(`${files.length} uploaded item(s) moved to demo-data/backups/${stamp}/uploads/`);
+}
+
 function backupAndWipe() {
   const dbPath = path.resolve(config.dbPath);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -132,6 +154,7 @@ function backupAndWipe() {
     fs.readdirSync(BACKUP_DIR).sort().reverse().slice(5).forEach(d => fs.rmSync(path.join(BACKUP_DIR, d), { recursive: true, force: true }));
   }
   fs.rmSync(path.join(path.dirname(dbPath), 'uploads', 'ddq'), { recursive: true, force: true });
+  if (EMPTY) wipeUploads(path.join(path.dirname(dbPath), 'uploads'), stamp);
 }
 
 // A small but valid single-page PDF, so uploaded demo documents open in a viewer
@@ -271,8 +294,22 @@ policy with screening of all charterers, and an anonymous whistleblowing hotline
 // Main
 // ---------------------------------------------------------------------------
 
+// Creates the database with reference data only, then reports what is in it
+async function createEmptyWorkspace() {
+  const { getDb } = require('../src/db');
+  const db = getDb();
+  require('../src/services/ddqTemplateService').ensureDefaultTemplate();
+  require('../src/services/vesselFinderService').ensureSource(db);
+  const count = table => db.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n;
+  log(`counterparties ${count('entities')} · requests ${count('kyc_requests')} · alerts ${count('alerts')} · sources ${count('sources')} (VesselFinder, built in)`);
+  log(`kept: ${count('cpi')} country risk scores, the default DDQ template`);
+  if (typeof db.close === 'function') db.close();
+  console.log('\n  The workspace is empty. Next: npm start, then follow "Demo guide" in README.md');
+  console.log('  To bring the demo story back: npm run demo:reset\n');
+}
+
 async function main() {
-  console.log(`\nDueDilly demo reset (${USE_AI ? 'Gemini-assisted' : 'placeholder mode'})\n`);
+  console.log(EMPTY ? '\nDueDilly clean workspace\n' : `\nDueDilly demo reset (${USE_AI ? 'Gemini-assisted' : 'placeholder mode'})\n`);
 
   if (!args.has('--force') && await portInUse(config.port)) {
     console.error(`  A server is listening on port ${config.port}. Stop it first (it holds the database open), or re-run with --force.\n`);
@@ -287,6 +324,7 @@ async function main() {
   const scenario = JSON.parse(fs.readFileSync(SCENARIO_PATH, 'utf8'));
 
   backupAndWipe();
+  if (EMPTY) return createEmptyWorkspace();
   writeSamples();
 
   const { startServer, stopServer } = require('../src/server');

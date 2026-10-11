@@ -4,6 +4,7 @@ const { getDb } = require('../db');
 const kycService = require('../services/kycService');
 const { authenticate, requireRole } = require('../middleware/auth');
 const complianceAgent = require('../agents/complianceAgent');
+const vesselFinder = require('../services/vesselFinderService');
 
 // Mount auth middleware across KYC routes
 router.use(authenticate);
@@ -268,7 +269,22 @@ const submitKycHandler = async (req, res) => {
       clientTimestamp: req.headers['x-client-timestamp'] || new Date().toISOString()
     };
 
-    let created = kycService.createKycRequest(req.body, userContext);
+    // Vessels: the IMO number must exist on VesselFinder before the request is accepted
+    const checks = {};
+    if (req.body.entity_type === 'Vessel') {
+      let attrs = req.body.attributes || {};
+      if (typeof attrs === 'string') { try { attrs = JSON.parse(attrs); } catch (e) { attrs = {}; } }
+      const imo = req.body.imo_number || attrs.imo;
+      if (!String(imo || '').trim()) {
+        return res.status(400).json({ error: 'IMO check failed', message: 'An IMO number is required to screen a vessel' });
+      }
+      checks.vessel = await vesselFinder.lookup(imo);
+      if (checks.vessel.status === 'invalid' || checks.vessel.status === 'not_found') {
+        return res.status(400).json({ error: 'IMO check failed', message: checks.vessel.message, imo_check: checks.vessel.status, source: checks.vessel.source_url });
+      }
+    }
+
+    let created = kycService.createKycRequest(req.body, userContext, checks);
     // Ongoing monitoring: keep the schedule (frequency, dates, sources) chosen on the intake form
     if (created.ongoing_monitoring && req.body.monitoring && typeof req.body.monitoring === 'object') {
       const monitoring = require('../services/monitoringService');
