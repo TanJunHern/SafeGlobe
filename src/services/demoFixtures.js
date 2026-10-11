@@ -11,7 +11,7 @@ const SETTING = 'demo_fixture_port_notices_version';
 const NOTICES = [
   { version: 1, date: '2 Oct 2026', title: 'Notice 2026-41: Berth maintenance', body: 'Meridian Port Logistics Pte Ltd is the appointed contractor for berths 4 and 5 at the eastern terminal, which are closed for fender replacement until 20 October.' },
   { version: 1, date: '5 Oct 2026', title: 'Notice 2026-42: Pilotage hours', body: 'Night pilotage in the eastern anchorage is suspended on 14 and 15 October for hydrographic survey work.' },
-  { version: 2, date: '11 Oct 2026', title: 'Notice 2026-43: Inquiry opened', body: 'The tanker Aurora Venture (IMO 9304124), flying the flag of Cameroon, was observed in a ship-to-ship transfer east of Johor on 9 October after 31 hours without an AIS signal. The authority has opened an inquiry and asked the ship manager, Halcyon Marine Services Pte. Ltd., for voyage records.' }
+  { version: 2, date: '11 Oct 2026', title: 'Notice 2026-43: Inquiry opened', body: 'The tanker Aurora Venture (IMO 9304124), flying the flag of Cameroon, was observed in a ship-to-ship transfer east of Johor on 9 October after 31 hours without an AIS signal. The authority has opened an inquiry and asked for the voyage records.' }
 ];
 
 const versionOf = db => (Number(db.getSetting(SETTING, 1)) === 2 ? 2 : 1);

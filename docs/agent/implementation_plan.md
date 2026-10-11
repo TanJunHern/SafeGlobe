@@ -1,7 +1,7 @@
 # Implementation plan: Phase 3 (events, crawler agents, self-healing, Ripples triage, policy search)
 
 Status: **approved by the user on 12 Oct 2026. Build and test locally first; update the container when ready.**
-Questions 3 to 6 were not answered, so the recommended defaults are used (see `decisions.md`).
+After review the crawl runs once a week, not daily, and the demo notice no longer names Halcyon (see `decisions.md`).
 Earlier plans are kept as `implementation_plan.phase1.md`, `implementation_plan.phase2.md` and
 `implementation_plan.accounts.md`.
 

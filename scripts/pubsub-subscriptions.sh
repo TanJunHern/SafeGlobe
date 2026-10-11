@@ -7,7 +7,8 @@
 #
 # What it creates (all idempotent):
 #   - one push subscription per uat-* topic, delivering to  <link>/events/<event>
-#   - the Cloud Scheduler job duedilly-uat-crawl-due, calling  <link>/events/crawl-due  every day at 06:30 Singapore time
+#   - the Cloud Scheduler job duedilly-uat-crawl-due, calling  <link>/events/crawl-due  once a week (Mondays, 06:30 Singapore time)
+#     Another schedule:  CRAWL_SCHEDULE="30 6 * * *" bash scripts/pubsub-subscriptions.sh   (that one is daily)
 # Every delivery carries a Google-signed token for the service account duedilly-run, made for the app's link.
 # The app refuses anything else.
 #
@@ -23,6 +24,8 @@ SERVICE="duedilly-uat"
 SA_EMAIL="duedilly-run@${PROJECT_ID}.iam.gserviceaccount.com"
 EVENTS=(screening-requested screening-completed ddq-submitted alert-raised rescreen-due source-changed)
 CRAWL_JOB="duedilly-uat-crawl-due"
+# Once a week keeps the demo cheap: each run is one Gemini call per website source. "Run now" in the Sources tab reads at any time.
+CRAWL_SCHEDULE="${CRAWL_SCHEDULE:-30 6 * * 1}"
 
 command -v gcloud >/dev/null 2>&1 || { echo "gcloud CLI not found. DEPLOY_GUIDE.md step 0."; exit 1; }
 
@@ -59,8 +62,8 @@ for event in "${EVENTS[@]}"; do
   fi
 done
 
-echo "== 3. Cloud Scheduler: read every website source once a day (06:30 Singapore time)"
-job_args=(--location "$REGION" --project "$PROJECT_ID" --schedule "30 6 * * *" --time-zone "Asia/Singapore"
+echo "== 3. Cloud Scheduler: read every website source on the schedule \"${CRAWL_SCHEDULE}\" (Singapore time; the default is Mondays at 06:30)"
+job_args=(--location "$REGION" --project "$PROJECT_ID" --schedule "$CRAWL_SCHEDULE" --time-zone "Asia/Singapore"
   --uri "${URL}/events/crawl-due" --http-method POST --headers "Content-Type=application/json" --message-body '{"source":"cloud-scheduler"}'
   --oidc-service-account-email "$SA_EMAIL" --oidc-token-audience "$URL" --attempt-deadline 600s)
 if gcloud scheduler jobs describe "$CRAWL_JOB" --location "$REGION" --project "$PROJECT_ID" >/dev/null 2>&1; then

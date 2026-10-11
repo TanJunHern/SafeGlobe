@@ -535,8 +535,8 @@ test('Phase 3 over HTTP: push endpoint, crawler routes, policy routes, and the g
     assert.equal(ripples.length, 1);
     assert.equal(ripples[0].severity, 'High');
     assert.match(ripples[0].rescreen, /^done: 85 of 100, Escalate \(offline sample\)$/);
-    // Halcyon is named too and gets its own ripple
-    assert.ok(db.getAlerts(200).some(a => a.id === 'halcyon' && a.agent === 'Ripples'));
+    // The notice names only the vessel: no other counterparty gets a ripple or is screened again
+    assert.equal(db.getAlerts(200).some(a => a.agent === 'Ripples' && /now names/.test(a.x) && a.id !== 'aurora'), false);
 
     const status = await (await api('/api/sources/crawl/status')).json();
     assert.equal(status.mode, 'offline');

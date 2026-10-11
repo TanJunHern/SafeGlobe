@@ -435,6 +435,14 @@ To see the live agents on your computer: `APP_ENV=uat npm run agents` in one ter
    are now told to go through every allowed category. After the change: 12 runs of 12 returned all three.
    Prompt version is now `pond-guard-2026-10-12b`.
 
+### Changed after review (12 Oct 2026)
+
+- The demo notice no longer names Halcyon Marine, so the changed page raises one ripple (Aurora Venture) and
+  Halcyon keeps its 40 points. Point 1 below is settled this way.
+- The crawl schedule is once a week (Mondays, 06:30 Singapore time), not daily. Point 2 below: the other defaults
+  are confirmed.
+- The live table above was measured with the earlier notice, which also named Halcyon.
+
 ### Things you should know, and decide
 
 1. **Halcyon Marine drops to 0, Auto-clear, after a live re-screen.** The changed page names Halcyon, its ripple is

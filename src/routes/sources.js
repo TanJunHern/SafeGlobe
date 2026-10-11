@@ -57,7 +57,7 @@ router.get('/crawl/status', (req, res) => {
   res.json({
     mode: mode.live ? 'live' : 'offline', reason: mode.reason, userAgent: crawler.userAgent(),
     storage: require('../services/objectStorage').status(), events: require('../events/bus').status(),
-    schedule: config.pubsubMode === 'pubsub' ? 'Cloud Scheduler, once a day' : 'Not connected: use Run now',
+    schedule: config.pubsubMode === 'pubsub' ? 'Cloud Scheduler, once a week (Mondays, 06:30 Singapore time)' : 'Not connected: use Run now',
     sources: db.getSources().filter(s => crawler.isWebSource(s) && !isLockedSource(s.id)).map(crawlView),
     proposals: db.getSourceProposals({ status: 'pending' }),
     demoPage: config.demoMode ? { url: fixtureUrl(req), version: demoFixtures.versionOf(db), sourceId: demoFixtures.SOURCE_ID, added: Boolean(db.getSourceById(demoFixtures.SOURCE_ID)) } : null

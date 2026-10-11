@@ -213,7 +213,9 @@ Vertex AI, and the variables, are added in Phase 4 and this step will be updated
 **What it does:** the app raises six events (`screening-requested`, `screening-completed`, `ddq-submitted`,
 `alert-raised`, `rescreen-due`, `source-changed`). With Pub/Sub on, each goes to the topic `uat-<event>` and comes
 back to the app at `POST /events/<event>`. Cloud Scheduler publishes `rescreen-due` every day at 06:00 and calls
-`POST /events/crawl-due` every day at 06:30 (Singapore time), which makes every crawler agent read its website.
+`POST /events/crawl-due` once a week, on Mondays at 06:30 (Singapore time), which makes every crawler agent read
+its website. Once a week keeps the demo cheap: each run is one Gemini call per website source. For another
+schedule, run the script with one, for example daily: `CRAWL_SCHEDULE="30 6 * * *" bash scripts/pubsub-subscriptions.sh`
 
 `scripts/gcp-setup.sh` (step 1) already created the topics and the 06:00 job. After the first deploy (step 13):
 
