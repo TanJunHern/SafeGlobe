@@ -203,12 +203,15 @@ All companies, people and events in the kit are fictional. Two vessels use real 
 
 ### Step 3: sign in
 
-Open http://localhost:8080/login and pick a persona. No password is needed locally.
+Open http://localhost:8080/login and choose a demo account under "Try a demo account". No password is needed locally.
 
-| Persona | Use it for | Page |
-| --- | --- | --- |
-| The Company Employee (John Doe) | Submitting onboarding requests | `/portal/employee` |
-| The Compliance Officer (Grace Teo) | Policies, sources, DDQ Manager, review and decisions, the globe | `/portal/compliance` |
+| Demo account | Role | Use it for | Page |
+| --- | --- | --- | --- |
+| John Doe | Employee | Submitting onboarding requests | `/portal/employee` |
+| Grace Teo | Compliance officer | Policies, sources, DDQ Manager, review and decisions, the globe, Settings | `/portal/compliance` |
+
+The login page also has "Sign in with Google" and "Create an account" (a new, empty workspace). Both need
+`GOOGLE_CLIENT_ID`; see `DEPLOY_GUIDE.md` step 11.
 
 ### Step 4: run the demo in this order
 
@@ -274,22 +277,19 @@ Open http://localhost:8080/login and pick a persona. No password is needed local
 
 ---
 
-## ☁️ Cloud Deployment (Google Cloud Run / Firebase)
+## ☁️ Cloud Deployment (Google Cloud Run)
 
-This codebase is production-ready for deployment to **Google Cloud Run** and **Firebase Hosting**.
+DueDilly runs as two Cloud Run services in `asia-southeast1`: the app (`duedilly-uat`, public link) and the ADK
+agents (`duedilly-agents-uat`, private). Follow **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)** step by step: it shows where
+every key comes from and which line to paste it into.
 
-### Deploy to Google Cloud Run (One Command)
 ```bash
-gcloud run deploy safe-globe-app \
-  --source . \
-  --region asia-southeast1 \
-  --allow-unauthenticated \
-  --port 8080
+bash scripts/gcp-setup.sh          # once: service account, secrets, bucket, topics
+bash scripts/deploy.sh uat         # the app
+bash scripts/deploy.sh agents-uat  # the agents
+bash scripts/deploy.sh uat         # again, so the app learns the agents' address
+bash scripts/smoke.sh <your link>
 ```
 
-### Deploy to Firebase Hosting
-```bash
-firebase deploy --only hosting
-```
-
-For complete deployment details and configuring Google Cloud SQL (PostgreSQL) or Cloud Firestore, refer to [DEPLOYMENT.md](DEPLOYMENT.md).
+You run these scripts yourself; they create billable resources. The app starts and runs with every placeholder in
+`.env.example` still commented, on labelled offline fallbacks.

@@ -25,7 +25,8 @@ COPY employee-portal.html ./employee-portal.html
 COPY ddq-portal.html ddq-manager.html ddq-print.html portal-shared.css portal-shared.js ddq-section-status.js duck-tour.js dilly-loader.js monitoring-ui.js ./
 COPY saf-globe.html ./saf-globe.html
 COPY assets/ ./assets/
-COPY "Final PRD.pdf" ./"Final PRD.pdf"
+# JSON form: the shell form cannot copy a file name with a space in it
+COPY ["Final PRD.pdf", "./"]
 
 # Set file permissions for non-root user (security compliance PRD B.11)
 RUN chown -R node:node /app

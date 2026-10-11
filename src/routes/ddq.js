@@ -2,6 +2,21 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { generateDDQ, processDDQAnswers } = require('../services/ddqService');
+const { runInWorkspace } = require('../db');
+const { officerOnly } = require('../middleware/auth');
+
+// The counterparty has no account. Their signed link says which workspace the questionnaire belongs to;
+// a link without one (every link made before workspaces existed) belongs to the Demo workspace.
+router.use((req, res, next) => {
+  const token = (req.body && req.body.token) || (req.query && req.query.token);
+  if (!token) return next();
+  let workspaceId = null;
+  try {
+    const decoded = require('jsonwebtoken').verify(String(token), require('../config').jwtSecret);
+    if (decoded && decoded.ws && require('../accounts/accountsStore').getAccountsStore().getWorkspace(decoded.ws)) workspaceId = decoded.ws;
+  } catch (err) { /* an invalid link is refused by the route itself */ }
+  runInWorkspace(workspaceId, next);
+});
 
 // Registered before '/:id' so the literal path is not captured as an entity id
 // GET /api/ddq/verify-token?token=...
@@ -123,7 +138,7 @@ router.post('/translate', aiRateLimit, guest((body, state) => {
 }));
 
 // GET /api/ddq/:id
-router.get('/:id', (req, res) => {
+router.get('/:id', officerOnly, (req, res) => {
   const db = getDb();
   const entity = db.getEntityById(req.params.id);
   if (!entity) {
@@ -139,7 +154,7 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/ddq/send
-router.post('/send', (req, res) => {
+router.post('/send', officerOnly, (req, res) => {
   const { id, questions, dueDate } = req.body;
   if (!id) {
     return res.status(400).json({ error: 'Field "id" is required' });
@@ -168,7 +183,7 @@ router.post('/send', (req, res) => {
 });
 
 // POST /api/ddq/answer
-router.post('/answer', (req, res) => {
+router.post('/answer', officerOnly, (req, res) => {
   const { id, answers } = req.body;
   if (!id) {
     return res.status(400).json({ error: 'Field "id" is required' });

@@ -1353,9 +1353,9 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
   <div class="sheet" style="max-width:480px" role="dialog" aria-modal="true" aria-label="Switch User Persona">
     <div class="sheet-head">
       <div style="flex:1">
-        <div class="eyebrow">Authentication & RBAC</div>
-        <h2>Dual Hackathon Persona Switcher</h2>
-        <p class="faint">Switch between employee submission view and compliance triage workspace.</p>
+        <div class="eyebrow">Your account</div>
+        <h2 id="persona-modal-title">Account</h2>
+        <p class="faint" id="persona-modal-sub">Signed in.</p>
       </div>
       <button class="dr-close" data-close type="button" aria-label="Close"><svg class="ic"><use href="#i-close"/></svg></button>
     </div>
@@ -1364,18 +1364,18 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         <div class="persona-card" id="persona-opt-employee" data-persona="employee">
           <div class="p-avatar">JD</div>
           <div class="p-meta">
-            <b>The Company Employee</b>
+            <b>John Doe · Employee</b>
             <small>john.doe@duedilly.com · Procurement & Logistics</small>
           </div>
-          <span class="p-badge">Scoped View</span>
+          <span class="p-badge">Demo</span>
         </div>
         <div class="persona-card" id="persona-opt-compliance" data-persona="compliance">
           <div class="p-avatar comp">GT</div>
           <div class="p-meta">
-            <b>The Compliance Officer</b>
-            <small>compliance@duedilly.com · Compliance Admin</small>
+            <b>Grace Teo · Compliance officer</b>
+            <small>compliance@duedilly.com · Compliance & Risk Governance</small>
           </div>
-          <span class="p-badge" style="color:var(--high-ink)">Global Triage</span>
+          <span class="p-badge">Demo</span>
         </div>
       </div>
     </div>
@@ -1421,7 +1421,8 @@ let publicConfig = { googleClientId: '', googleMapsApiKey: '', mapsEnabled: fals
 let compRequestsCache = [];
 
 function loadSession() {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; }
+  // A session saved before accounts existed has no token: it is dropped, and the person signs in again
+  try { const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); return s && (s.token || s.idToken) ? s : null; } catch (e) { return null; }
 }
 function saveSession(s) {
   session = s;
@@ -1435,8 +1436,8 @@ function isCompliance() { return Boolean(session && session.role === 'compliance
 // All KYC API calls carry the signed-in identity so the backend can row-scope and audit
 function apiFetch(url, opts = {}) {
   const headers = Object.assign({}, opts.headers || {});
-  if (session.idToken) {
-    headers['Authorization'] = `Bearer ${session.idToken}`;
+  if (session.token || session.idToken) {
+    headers['Authorization'] = `Bearer ${session.token || session.idToken}`;
   } else {
     headers['x-user-email'] = session.email;
     headers['x-user-name'] = session.name;
@@ -1445,23 +1446,43 @@ function apiFetch(url, opts = {}) {
     headers['x-user-role'] = session.role;
   }
   headers['x-client-timestamp'] = new Date().toISOString();
-  return fetch(url, Object.assign({}, opts, { headers }));
+  return fetch(url, Object.assign({}, opts, { headers })).then(res => {
+    // The session ended (12 hours passed, or the account was removed): back to the login page
+    if (res.status === 401 && session && session.token) {
+      saveSession(null);
+      try { sessionStorage.setItem('duedilly.loginMsg', 'Your session has ended. Please sign in again.'); } catch (e) {}
+      location.href = '/login';
+    }
+    return res;
+  });
 }
+const isDemoSession = () => Boolean(session && (session.demoAccount || !session.workspace || session.workspace.isDemo));
 
 function initSessionControls() {
   const initials = String(session.name || session.email).split(/[\s.@]+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
   $('#top-user-avatar').textContent = initials;
   $('#top-user-name').textContent = session.name;
-  $('#top-user-role').textContent = `Employee · ${session.department}`;
+  $('#top-user-role').textContent = `Employee · ${isDemoSession() ? 'Demo' : session.department}`;
   $('#persona-opt-employee').classList.add('active');
+  // The other demo account is offered only to a demo account; anyone else just sees who they are
+  $('#persona-modal .persona-cards').hidden = !isDemoSession();
+  $('#persona-modal-title').textContent = isDemoSession() ? 'Demo accounts' : 'Account';
+  $('#persona-modal-sub').textContent = `${session.name} · ${session.email} · Employee${session.workspace ? ' · ' + session.workspace.name + (session.workspace.isDemo ? ' (Demo workspace)' : '') : ''}`;
   $('#top-persona-btn').addEventListener('click', () => { $('#persona-modal').hidden = false; });
   $('#persona-opt-employee').addEventListener('click', () => { $('#persona-modal').hidden = true; });
-  $('#persona-opt-compliance').addEventListener('click', () => {
-    saveSession(Object.assign({}, COMPLIANCE_PERSONA));
-    location.href = '/portal/compliance';
+  $('#persona-opt-compliance').addEventListener('click', async () => {
+    // One click to the other demo account; the server says who that is and what role it has
+    try {
+      const res = await fetch('/api/auth/demo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ account: 'compliance' }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'That demo account is not available.');
+      saveSession(Object.assign({}, data.user, { token: data.token }));
+      location.href = '/portal/compliance';
+    } catch (err) { toast(err.message); }
   });
   $('#persona-logout-btn').addEventListener('click', () => {
     saveSession(null);
+    fetch('/api/auth/signout', { method: 'POST' }).catch(() => {});
     location.href = '/login';
   });
 }
@@ -1544,6 +1565,11 @@ async function renderEmployeeWorkspace() {
     const railBadge = $('#rail-emp-count');
     if (railBadge) railBadge.textContent = String(kycRequestsCache.length);
 
+    if (kycRequestsCache.length === 0 && !q.toString()) {
+      // Nothing submitted yet: say what will appear here and how to add the first one
+      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:36px;color:var(--fg-3)"><img class="dilly" src="/assets/mascot/dilly_v3_neutral.svg" width="96" height="96" alt="" style="display:block;margin:0 auto 8px"><b style="color:var(--fg)">No KYC requests yet</b><br>The counterparties you ask compliance to check will be listed here with their status and result.<br>Press <b>New KYC Request</b> to submit your first one.</td></tr>`;
+      return;
+    }
     if (filtered.length === 0) {
       tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:36px;color:var(--fg-3)"><img class="dilly" src="/assets/mascot/dilly_v3_neutral.svg" width="96" height="96" alt="" style="display:block;margin:0 auto 8px">No KYC requests matching the selected filter criteria.</td></tr>`;
       return;
@@ -1910,7 +1936,7 @@ async function handleKycDocumentUpload(file) {
     const result = await DillyLoader.run($('#kyc-modal-body'), {
       task: 'document', variant: 'overlay', errorHost: $('#kyc-dropzone'),
       request: async () => {
-        const resp = await fetch('/api/kyc/extract-document', {
+        const resp = await apiFetch('/api/kyc/extract-document', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2388,6 +2414,18 @@ async function boot() {
     const res = await fetch('/api/config/public');
     if (res.ok) publicConfig = await res.json();
   } catch (e) {}
+  if (publicConfig.demoMode === false) $('#persona-modal .persona-cards').hidden = true;
+  // The role is kept on the server: if a compliance officer changed it, this page follows
+  if (session.token) {
+    try {
+      const res = await apiFetch('/api/auth/session');
+      if (res.ok) {
+        const { user } = await res.json();
+        saveSession(Object.assign({}, session, user));
+        if (isCompliance()) { location.replace('/portal/compliance'); return; }
+      }
+    } catch (e) {}
+  }
   renderEmployeeWorkspace();
   if (window.DuckTour) {
     $('.emp-head-actions').prepend(DuckTour.helpButton('How it works', () => startEmployeeTour(true)));

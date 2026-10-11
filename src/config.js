@@ -40,15 +40,23 @@ function validateEnv(env = process.env) {
     if (env.GEMINI_BACKEND === 'vertex') {
       if (!env.GOOGLE_CLOUD_PROJECT) problems.push('GOOGLE_CLOUD_PROJECT is required when GEMINI_BACKEND=vertex.');
       if (!env.GOOGLE_CLOUD_LOCATION) problems.push('GOOGLE_CLOUD_LOCATION is required when GEMINI_BACKEND=vertex.');
+      if (!env.VERTEX_GEMINI_MODEL) problems.push('VERTEX_GEMINI_MODEL is required when GEMINI_BACKEND=vertex: choose it from the models your project can use (DEPLOY_GUIDE.md step 4).');
     }
     if (env.GEMINI_BACKEND === 'aistudio' && !usableKey(env.GEMINI_API_KEY || env.GOOGLE_API_KEY || env.GOOGLE_GENAI_API_KEY)) {
       problems.push('GEMINI_API_KEY is required when GEMINI_BACKEND=aistudio.');
     }
+    // Without the persona picker the only way in is Google sign-in, which needs a client ID
+    if (env.DEMO_MODE !== 'true' && !env.GOOGLE_CLIENT_ID) problems.push('GOOGLE_CLIENT_ID is required in uat unless DEMO_MODE=true: without one of them nobody can sign in.');
   }
   return problems;
 }
 
 const envFile = loadEnvFile();
+
+// The persona picker and the x-user-* headers only work in demo mode. On by default locally; in uat it must be asked for.
+const demoMode = process.env.DEMO_MODE ? process.env.DEMO_MODE === 'true' : process.env.APP_ENV !== 'uat';
+const wholeNumber = (value, fallback) => (Number.isInteger(Number(value)) && String(value || '').trim() !== '' ? Number(value) : fallback);
+const list = value => String(value || '').split(',').map(m => m.trim()).filter(Boolean);
 
 module.exports = {
   appEnv: process.env.APP_ENV || null,
@@ -59,6 +67,22 @@ module.exports = {
   geminiBackend: process.env.GEMINI_BACKEND || 'aistudio',
   googleCloudProject: process.env.GOOGLE_CLOUD_PROJECT || '',
   googleCloudLocation: process.env.GOOGLE_CLOUD_LOCATION || '',
+  // Gemini on Vertex AI: the model chain is chosen from the models the project can use, so there is no default
+  vertexModel: process.env.VERTEX_GEMINI_MODEL || '',
+  vertexFallbackModels: list(process.env.VERTEX_GEMINI_FALLBACK_MODELS),
+  demoMode,
+  // True on Cloud Run, where the container's disk (and so the SQLite database) is lost on restart
+  isCloudRun: Boolean(process.env.K_SERVICE),
+  // Per-IP limit on every endpoint that calls Gemini or the agents. max 0 switches it off (the test command does).
+  aiRateLimit: { max: wholeNumber(process.env.AI_RATE_LIMIT_MAX, 20), windowMinutes: wholeNumber(process.env.AI_RATE_LIMIT_WINDOW_MINUTES, 10) },
+  // Pond-Guard screenings allowed per day across all users; when reached, the offline fallback runs. 0 = no cap.
+  pondGuardDailyCap: wholeNumber(process.env.POND_GUARD_DAILY_CAP, 30),
+  // The ADK agents service (agents/). Empty: Pond-Guard and Ask Dilly run on the in-process fallback.
+  agentsServiceUrl: (process.env.AGENTS_SERVICE_URL || '').replace(/\/+$/, ''),
+  // Shared secret between this app and the agents service (both directions). Cloud Run also checks IAM.
+  agentsInternalToken: process.env.AGENTS_INTERNAL_TOKEN || '',
+  // Where the agents service reaches this app's read-only tool API (Ask Dilly). Defaults to this server.
+  publicBaseUrl: (process.env.PUBLIC_BASE_URL || '').replace(/\/+$/, ''),
   port: parseInt(process.env.PORT || '8080', 10),
   host: process.env.HOST || '0.0.0.0',
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -87,6 +111,7 @@ module.exports = {
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
   // Vessel lookup by IMO (services/vesselFinderService.js): the official API when a key is set, the public page otherwise
   vesselFinderApiKey: process.env.VESSELFINDER_API_KEY || '',
+  // No longer grants access (Accounts phase): a compliance officer is an account. Kept so old settings files still load.
   complianceEmails: (process.env.COMPLIANCE_OFFICER_EMAILS || 'compliance@duedilly.com,grace.teo@duedilly.internal').split(',').map(s => s.trim().toLowerCase()),
   // Company name shown in the top bar of the compliance workspace
   workspaceName: process.env.WORKSPACE_NAME || 'Meridian Commodities',

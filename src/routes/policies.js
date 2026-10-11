@@ -40,9 +40,19 @@ router.post('/compile', (req, res) => {
 
   db.addPolicy(compiledRule);
 
+  // A new policy may state a threshold or clause the scoring rules do not match: recommend the change, never apply it
+  let recommended = [];
+  try {
+    const ruleText = (Array.isArray(rules) ? rules : []).map(r => (typeof r === 'string' ? r : (r && (r.t || r.text)) || '')).join('. ');
+    recommended = require('../risk/suggestions').raiseFor(db, { type: 'policy', name: filename || title, text: [ruleText, content || req.body.file_data || ''].filter(Boolean).join('\n') });
+  } catch (err) {
+    console.error('[DueDilly] Scoring recommendations skipped:', err.message);
+  }
+
   res.json({
     status: 'compiled',
     rule: compiledRule,
+    scoringSuggestions: recommended.map(s => ({ id: s.id, title: s.title })),
     gap: 'No rule covers minority stakes below 50% held by state-owned companies.',
     conflict: 'CPI high-risk threshold (40) vs Appendix B standard risk classification for Turkey (31).',
     uploadedFile: savedFile ? { id: savedFile.id, filename: savedFile.filename, storage_path: savedFile.storage_path } : null

@@ -5,6 +5,9 @@ node_modules/
 !.env.example
 data/safe_globe.db*
 data/test_safe_globe.db*
+# Accounts and the databases of created workspaces
+data/*.accounts.db*
+data/*.workspaces/
 data/uploads/*
 # Local demo kit: scenario, sample files, DB backups, demo links (never pushed)
 demo-data/
@@ -13,3 +16,6 @@ demo-data/
 npm-debug.log*
 .DS_Store
 Thumbs.db
+# Python bytecode (agents service)
+__pycache__/
+*.pyc

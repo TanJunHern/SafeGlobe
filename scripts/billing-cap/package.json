@@ -1,0 +1,11 @@
+{
+  "name": "duedilly-billing-cap",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Disables billing on the project when a budget is exceeded. Deployed by scripts/billing-cap.sh.",
+  "main": "index.js",
+  "engines": { "node": ">=20.0.0" },
+  "dependencies": {
+    "@google-cloud/billing": "^5.0.0"
+  }
+}

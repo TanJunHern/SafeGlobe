@@ -1,24 +1,27 @@
-# Google Cloud Build pipeline for DueDilly
-# Builds Docker image and deploys to Google Cloud Run automatically
+# Google Cloud Build pipeline for DueDilly: builds the image and rolls it out to the existing Cloud Run service.
+#
+#   gcloud builds submit --config=cloudbuild.yaml
+#
+# Run `bash scripts/deploy.sh uat` once first. That first deploy sets the service account, the settings and
+# the secrets; this pipeline only changes the image, so those stay as they are.
+# Needs the Artifact Registry repository named in _REPO_NAME (created by the first `scripts/deploy.sh uat`).
 
 steps:
-  # 1. Build the container image using Artifact Registry
+  # 1. Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
-      - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/safe-globe:$COMMIT_SHA'
-      - '-t'
-      - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/safe-globe:latest'
+      - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE_NAME:$BUILD_ID'
       - '.'
 
-  # 2. Push image to Google Artifact Registry
+  # 2. Push it to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/safe-globe:$COMMIT_SHA'
+      - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE_NAME:$BUILD_ID'
 
-  # 3. Deploy to Google Cloud Run
+  # 3. Roll the new image out. One instance only: the app keeps its data in SQLite on the instance's disk.
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -26,31 +29,19 @@ steps:
       - 'deploy'
       - '$_SERVICE_NAME'
       - '--image'
-      - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/safe-globe:$COMMIT_SHA'
+      - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE_NAME:$BUILD_ID'
       - '--region'
       - '$_LOCATION'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--port'
-      - '8080'
-      - '--memory'
-      - '512Mi'
-      - '--cpu'
-      - '1'
-      - '--min-instances'
-      - '0'
       - '--max-instances'
-      - '10'
+      - '1'
 
 images:
-  - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/safe-globe:$COMMIT_SHA'
-  - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/safe-globe:latest'
+  - '$_LOCATION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/$_SERVICE_NAME:$BUILD_ID'
 
 substitutions:
-  _LOCATION: 'asia-southeast1' # Default Singapore region (matches PRD Singapore port focus)
-  _REPO_NAME: 'safe-globe'
-  _SERVICE_NAME: 'safe-globe-app'
+  _LOCATION: 'asia-southeast1'
+  _REPO_NAME: 'cloud-run-source-deploy'
+  _SERVICE_NAME: 'duedilly-uat'
 
 options:
   logging: CLOUD_LOGGING_ONLY

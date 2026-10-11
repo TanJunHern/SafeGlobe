@@ -8,16 +8,20 @@
  * - Custom uploaded feeds and API connectors
  */
 
+const crypto = require('crypto');
 const { getDb } = require('../db');
+const { ROUTES } = require('../risk/points.config');
+const { getRules } = require('../risk/rulesStore');
+const { validateFinding } = require('../risk/findingSchema');
+const { assess, routeFor } = require('../risk/scorer');
+const { countryFinding, sourceLink } = require('../risk/riskService');
 
+// The route comes from the scorer (src/risk/scorer.js); this keeps the signature older callers use
 function calculateQuadrant(risk, conf, threshold = 80) {
-  const isHighRisk = risk >= 50;
-  const isHighConf = conf >= threshold;
-  if (isHighRisk && isHighConf) return 'escalate';
-  if (isHighRisk && !isHighConf) return 'investigate';
-  if (!isHighRisk && !isHighConf) return 'gaps';
-  return 'monitor'; // low-risk, high-confidence
+  return routeFor(risk, conf, { routes: { riskLine: ROUTES.riskLine }, confidence: { threshold } });
 }
+
+const LISTS = 'Built-in sanctions lists (41)';
 
 function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP', registration = '', docStatus = 'verified', watch = true }) {
   const db = getDb();
@@ -35,6 +39,17 @@ function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP
   let autoCleared = false;
   let autoClearReason = '';
 
+  // Findings in the scoring format (GEMINI.md 4.8). The points come from these, never from a number set here.
+  // This offline engine recognises the demo names by pattern, so what it finds is labelled as demo data.
+  const readAt = new Date().toISOString();
+  const fid = 'F-' + crypto.randomBytes(4).toString('hex');
+  const scored = [];
+  const sample = f => scored.push(Object.assign({
+    id: `${fid}-${scored.length + 1}`, subject: cleanName, source_trust: 'High', read_at: readAt, match_basis: 'not_name',
+    corroborating_sources: [], agent: 'Sentry (offline rules)', model_id: 'none', prompt_version: 'none', demo: true
+  }, f, { source_url: sourceLink(f.source_name, `${fid}-${scored.length + 1}`) }));
+  let vesselChecked = false;
+
   // 1. Sanctions & Fraud List Matching
   if (/varnell|zemtsov|severny|fedgrain|kremlin|rostec/i.test(lower)) {
     risk = 88;
@@ -49,6 +64,9 @@ function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP
       src: 'Built-in sanctions lists (41)'
     });
     factors.push(['-', 'Name matches designated party or parent company in international watchlists']);
+    sample({ category: 'sanctions_possible', match_basis: 'strong_name', source_name: LISTS,
+      summary: 'The name matches a designated party, or the parent of one, on the built-in sanctions lists. No second identifier was compared.',
+      evidence_quote: 'Counterparty or controlling entity matches entries on UK, EU and US OFAC designated lists.' });
   } else if (/kestrel|aurora|caribe/i.test(lower)) {
     risk = 82;
     conf = 60;
@@ -62,6 +80,13 @@ function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP
       src: 'Corporate registry filings & news inference'
     });
     factors.push(['-', 'Multi-hop ownership connects to sanctioned entity']);
+    sample({ category: 'sanctions_possible', match_basis: 'strong_name', source_trust: 'Medium', source_name: 'Corporate registry filings & news inference',
+      subject: `Reported controller of ${cleanName}`, agent: 'Web (offline rules)',
+      summary: 'Ownership hops lead to a designated person or a state-linked entity. The link rests on a name, not a second identifier.',
+      evidence_quote: 'Web graph identified ownership hops leading to a designated individual or state-linked entity.' });
+    sample({ category: 'ownership_unclear', source_trust: 'Medium', source_name: 'Corporate registry filings & news inference', agent: 'Web (offline rules)',
+      summary: 'Ownership runs through several layers and the beneficial owner is not confirmed by a registry.',
+      evidence_quote: 'Multi-hop ownership connects to sanctioned entity' });
   } else if (/strait/i.test(lower)) {
     risk = 14;
     conf = 96;
@@ -92,6 +117,9 @@ function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP
       src: 'Built-in PEP database'
     });
     factors.push(['-', 'PEP relationship requires senior compliance sign-off']);
+    sample({ category: 'pep_owner', match_basis: 'strong_name', source_name: 'Built-in PEP database', subject: `Director or beneficial owner of ${cleanName}`,
+      summary: 'A director or beneficial owner is listed as a former government commissioner.',
+      evidence_quote: 'Director/beneficial owner identified as a former government commissioner.' });
   } else {
     // Standard baseline screening
     if (cpiScore < 35) {
@@ -166,10 +194,33 @@ function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP
         src: 'AIS position feed'
       });
       factors.push(['-', 'Tide flagged dark period and unverified position coordinates']);
+      vesselChecked = true;
+      sample({ category: 'vessel_ais_dark', source_name: 'AIS position feed', agent: 'Tide (offline rules)',
+        summary: 'The vessel had an AIS dark period.', evidence_quote: 'Vessel exhibited an AIS dark period > 12 hours and subsequent ship-to-ship rendezvous.' });
+      sample({ category: 'vessel_sts_transfer', source_name: 'AIS position feed', agent: 'Tide (offline rules)',
+        summary: 'The dark period was followed by a ship-to-ship rendezvous.', evidence_quote: 'Vessel exhibited an AIS dark period > 12 hours and subsequent ship-to-ship rendezvous.' });
     }
   }
 
-  const quadrant = calculateQuadrant(risk, conf);
+  // Score: points from the findings, confidence from the evidence, route from both (src/risk/scorer.js)
+  const rules = getRules(db);
+  const isVessel = entity === 'vessel' || vesselChecked;
+  const place = countryFinding(db, rules, [{ value: jurisdiction, role: isVessel ? 'flag state' : 'country on file' }], { idPrefix: fid, readAt });
+  if (place.finding) scored.push(place.finding);
+  const listCheck = { ran: true, source_name: LISTS, source_url: sourceLink(LISTS), read_at: readAt, result: 'Screened' };
+  // What this offline engine really checks: the built-in lists, the country, and the registry extract when documents are in.
+  // It does not search adverse media, and it has vessel behaviour only when the AIS rule fired.
+  const checks = { _kind: isVessel ? 'vessel' : entity === 'person' ? 'person' : 'org', sanctions: listCheck, pep: listCheck, country: place.check };
+  if (docStatus !== 'pending') checks.ownership = { ran: true, source_name: 'Corporate registry extracts', source_url: sourceLink('Corporate registry extracts'), read_at: readAt, result: 'Registry extract on file' };
+  if (vesselChecked) checks.vessel_behaviour = { ran: true, source_name: 'AIS position feed', source_url: sourceLink('AIS position feed'), read_at: readAt, result: 'AIS gap found' };
+  const valid = scored.map(f => validateFinding(f, rules));
+  const breakdown = assess({ findings: valid.filter(v => v.ok).map(v => v.finding), rejected: valid.filter(v => !v.ok), checks, kind: checks._kind }, rules);
+  risk = breakdown.risk;
+  conf = breakdown.confidence;
+  const quadrant = breakdown.route;
+  autoCleared = quadrant === 'monitor';
+  if (autoCleared && !autoClearReason) autoClearReason = breakdown.confidenceExplanation;
+  if (!autoCleared) autoClearReason = '';
   const routeLabel = {
     escalate: 'Escalate',
     investigate: 'Investigate',
@@ -191,6 +242,10 @@ function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP
     autoClearReason,
     findings,
     factors,
+    // The scoring trail: findings in the 4.8 format, the checks that ran, and the "Why <score>?" breakdown
+    scoredFindings: scored,
+    checks,
+    breakdown,
     sources: [
       'Built-in sanctions lists (41)',
       'Vendor X sanctions API',
