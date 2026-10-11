@@ -173,10 +173,22 @@ unless a line here changes them.
   `AGENT_SEARCH_LOCATION` (added by Claude at the user's request).
 - Git: checked that no `.env` file with real values was ever committed on any branch.
 
+## Phase 3 review (12 Oct 2026)
+
+- **Halcyon Marine:** the demo notice no longer names Halcyon ("remove it for the demo if it is confusing").
+  So the changed page raises one ripple, for Aurora Venture only, and Halcyon keeps its 40 points.
+- **Crawl schedule: once a week** (Mondays, 06:30 Singapore time), to save cost for the demo. The screen says
+  "once a week" too. The user's words were "you can put it as that but backend make it once a week"; I read
+  "put it as that" as keeping the scheduled crawl, and made the screen say what the schedule really is.
+  To confirm. `CRAWL_SCHEDULE` on the script sets another schedule.
+- The other Phase 3 defaults are confirmed: automatic re-screen on a High ripple inside the daily cap; the
+  12-hour policy text and the 24-hour scoring rule both left as they are; the demo page as the changed page.
+- Phase 3 work committed and pushed to `DueBilly` (`31d6f1d`) at the user's request.
+- **Phase 4 is not approved yet.** The user asked for this clean-up first.
+
 ## Open questions
 
-- Halcyon Marine after a live re-screen (walkthrough, Phase 3, point 1).
-- Phase 3 plan questions 3 to 6: defaults in use, to confirm.
+None.
 
 ## Accounts phase approvals (12 Oct 2026)
 

@@ -4,7 +4,7 @@
  * An answer of 2xx is only sent after the work is saved; anything else makes Pub/Sub deliver the event again.
  *
  *   POST /events/<event>      a Pub/Sub push: { message: { data: base64(JSON), messageId }, subscription }
- *   POST /events/crawl-due    Cloud Scheduler, once a day: every website source is read by its crawler agent
+ *   POST /events/crawl-due    Cloud Scheduler, once a week: every website source is read by its crawler agent
  */
 const express = require('express');
 const router = express.Router();
