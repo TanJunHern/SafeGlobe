@@ -46,7 +46,7 @@ Leaving a block commented is always safe: the app uses the fallback written in t
 | Pub/Sub, Cloud Scheduler | Handles events inside the app; "Run now" in the Sources tab replaces the schedule |
 | Cloud Storage | Stores page snapshots locally; on Cloud Run they reset when the app restarts |
 | Agent Search | Uses the built-in policy text, labelled "Offline fallback" |
-| Document AI (not built yet) | Reads PDFs with Gemini directly, as today |
+| Document AI | Gemini reads the uploaded file directly, and the result says so |
 | Gmail API (not built yet) | Shows the "copy link" button, as today |
 | Google sign-in | Shows "not set up" on the two Google options; the demo accounts work (with `DEMO_MODE=true`) |
 
@@ -319,12 +319,30 @@ policy text answers and the screen says "Offline fallback".
 
 ## Step 9: Document AI (Duck-Scanner)
 
-**Not built yet (Phase 5).** In Phase 5 Claude walks you through creating the Form Parser processor. The variables
-already exist and stay commented until then: `DOCUMENT_AI_PROJECT_ID`, `DOCUMENT_AI_LOCATION`,
-`DOCUMENT_AI_PROCESSOR_ID`. Do not fill them in yet: with them set, PDF template uploads are refused with
-"integration is not implemented yet".
+**What it does:** when a supplier uploads a returned questionnaire or a company document in the DDQ portal,
+Document AI (Form Parser) reads the text and the form fields with a reading confidence for each, and Gemini maps
+them to the DDQ question numbers with a confidence per answer. Answers below 75% are marked "Not sure. Please
+check" for the supplier. Nothing is submitted for them.
 
-**Fallback:** upload templates as `.md`; Gemini reads returned PDFs directly.
+You already created the Form Parser processor `3beb45e235622652` in `us` (12 Oct), and `duedilly-run` has the
+Document AI API user role. So only the settings are left. In `.env.uat`:
+```
+DOCUMENT_AI_PROJECT_ID=safe-globe-compliance
+DOCUMENT_AI_LOCATION=us
+DOCUMENT_AI_PROCESSOR_ID=3beb45e235622652
+```
+Then redeploy: `bash scripts/deploy.sh uat`
+
+Check the processor (read-only):
+`curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" https://us-documentai.googleapis.com/v1/projects/safe-globe-compliance/locations/us/processors/3beb45e235622652`
+It should say `"type": "FORM_PARSER_PROCESSOR"` and `"state": "ENABLED"`.
+
+Cost: Form Parser bills per page (about USD 30 per 1,000 pages when this guide was written; check
+https://cloud.google.com/document-ai/pricing). A document is sent only when a supplier uploads one, never on a
+schedule, and at most `DOCUMENT_AI_DAILY_CAP` documents a day (default 20). Files over 15 MB are refused.
+
+**Fallback:** with the three lines commented, over the daily cap, or if Document AI fails, Gemini reads the file
+directly and the result says so. With Gemini off as well, there is no suggestion and the supplier fills the form in.
 
 ---
 
@@ -446,7 +464,7 @@ What the script sets, so you do not have to:
 - the agents: no public access, only `duedilly-run` may call it, scales to zero, `GOOGLE_GENAI_USE_VERTEXAI=TRUE`,
   `AGENTS_MODEL`, `AGENTS_THINKING_LEVEL` when it is set, and `DUEDILLY_INTERNAL_URL` (the app's link, for Ask Dilly's read-only tools).
 
-Settings you can add to `.env.uat` (all optional): `CRAWLER_DAILY_CAP` (default 50), `TRIAGE_DAILY_CAP`
+Settings you can add to `.env.uat` (all optional): `COPILOT_DAILY_CAP` (default 100), `CRAWLER_DAILY_CAP` (default 50), `TRIAGE_DAILY_CAP`
 (default 200), `AGENT_SEARCH_DAILY_CAP` (default 200), `POND_GUARD_DAILY_CAP` (default 30), `AI_RATE_LIMIT_MAX`
 (default 20) and `AI_RATE_LIMIT_WINDOW_MINUTES` (default 10), `WORKSPACE_NAME`, `CONFIDENCE_THRESHOLD`,
 `CORS_ORIGIN`, `VESSELFINDER_LOOKUP`.

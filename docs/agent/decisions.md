@@ -234,6 +234,27 @@ Choices Claude made while building, to confirm:
   Harmless; fixed in the page (asked only when signed in as an officer, and when the Sources tab is opened).
 - The cost of the training run is not known yet (check Billing > Reports tomorrow).
 
+## Next pieces chosen by the user (12 Oct 2026)
+
+- "Do A and C. B can wait. For D wait." A = reviewer copilot. C = DDQ intelligence (Duck-Scanner and answer
+  verification). B = "How Dilly works" page, later. D = old Phase 4 (forecast, anomalies, name matching), on hold.
+- Built the same day. Document AI is not live yet: section 9.1 asked, waiting.
+- Claude's choices, to confirm: answers below 75% confidence are marked for the supplier; a "No" (or nothing
+  declared) is what gets compared with a finding, never a "Yes"; questions about having a policy or a control are
+  not compared; the copilot draft goes into the existing memo box.
+
+## Document AI: first live call (12 Oct 2026)
+
+- The user said go ahead with Document AI, the commit and the deploy. Claude added the three `DOCUMENT_AI_*`
+  lines to `.env.uat` (processor `3beb45e235622652`, location `us`).
+- **It worked first time**, from this computer: a one-page fictional returned questionnaire (PDF) was read by the
+  Form Parser (8 form fields) and mapped by Gemini to 12 answers in 8.9 seconds; none dropped.
+- 6 of the 12 were marked "Not sure" because the Form Parser's own confidence for those fields was 0.44 to 0.52,
+  on clean typed text. One of them was a real misreading ("example" read as "examplé"). The marker errs on the
+  side of asking; the line is 75% (`CONFIRM_BELOW` in `duckScannerService.js`).
+- Cost: one page.
+- Deploy: `CLAUDE.md` rule 4 says the user runs deploys. Claude did not run it and gave the command.
+
 ## Open questions
 
 - Build the rest of the old Phase 4 (forecast, anomalies, name matching), or go to Phase 5?

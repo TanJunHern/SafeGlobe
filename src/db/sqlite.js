@@ -341,6 +341,27 @@ class SqliteDatabase {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // Reviewer copilot: the AI draft and what the reviewer finally confirmed are both kept
+    // DDQ answer verification: the result of comparing a returned questionnaire with the findings
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS copilot_drafts (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
+        draft_json TEXT NOT NULL,
+        final_json TEXT,
+        created_by TEXT,
+        confirmed_by TEXT,
+        confirmed_at TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_copilot_entity ON copilot_drafts(entity_id);
+      CREATE TABLE IF NOT EXISTS ddq_verifications (
+        kyc_id TEXT PRIMARY KEY,
+        result_json TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     // Must run after the migration: older tables lack ddq_token until the ALTER above
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_kyc_token ON kyc_requests(ddq_token)');
 
@@ -770,6 +791,43 @@ class SqliteDatabase {
 
   countMergedAlerts(alertId) {
     return this.db.prepare('SELECT COUNT(*) AS n FROM alerts WHERE merged_into = ?').get(alertId).n;
+  }
+
+  // --- Reviewer copilot drafts ---
+  saveCopilotDraft({ id, entityId, draft, createdBy }) {
+    this.db.prepare('INSERT INTO copilot_drafts (id, entity_id, status, draft_json, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, entityId, 'draft', JSON.stringify(draft), createdBy || '', new Date().toISOString());
+    return this.getCopilotDraft(id);
+  }
+
+  getCopilotDraft(id) {
+    const r = this.db.prepare('SELECT * FROM copilot_drafts WHERE id = ?').get(id);
+    if (!r) return null;
+    return { id: r.id, entityId: r.entity_id, status: r.status, draft: JSON.parse(r.draft_json), final: r.final_json ? JSON.parse(r.final_json) : null, createdBy: r.created_by, confirmedBy: r.confirmed_by, confirmedAt: r.confirmed_at, createdAt: r.created_at };
+  }
+
+  getLatestCopilotDraft(entityId) {
+    const r = this.db.prepare('SELECT id FROM copilot_drafts WHERE entity_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1').get(entityId);
+    return r ? this.getCopilotDraft(r.id) : null;
+  }
+
+  confirmCopilotDraft(id, final, confirmedBy) {
+    this.db.prepare("UPDATE copilot_drafts SET status = 'confirmed', final_json = ?, confirmed_by = ?, confirmed_at = ? WHERE id = ?").run(JSON.stringify(final), confirmedBy || '', new Date().toISOString(), id);
+    return this.getCopilotDraft(id);
+  }
+
+  // --- DDQ answer verification ---
+  saveDdqVerification(kycId, result) {
+    this.db.prepare('INSERT INTO ddq_verifications (kyc_id, result_json, created_at) VALUES (?, ?, ?) ON CONFLICT(kyc_id) DO UPDATE SET result_json = excluded.result_json, created_at = excluded.created_at').run(kycId, JSON.stringify(result), new Date().toISOString());
+    return result;
+  }
+
+  getDdqVerification(kycId) {
+    const r = this.db.prepare('SELECT * FROM ddq_verifications WHERE kyc_id = ?').get(kycId);
+    return r ? Object.assign(JSON.parse(r.result_json), { savedAt: r.created_at }) : null;
+  }
+
+  deleteFindingRecord(id) {
+    return this.db.prepare('DELETE FROM findings WHERE id = ?').run(id).changes;
   }
 
   // --- Review labels and the review model (src/learning) ---

@@ -131,6 +131,10 @@ module.exports = {
     location: process.env.DOCUMENT_AI_LOCATION || '',
     processorId: process.env.DOCUMENT_AI_PROCESSOR_ID || ''
   },
+  // Duck-Scanner: documents sent to Document AI per day across all users (Form Parser bills per page). 0 = no cap.
+  documentAiDailyCap: wholeNumber(process.env.DOCUMENT_AI_DAILY_CAP, 20),
+  // Reviewer copilot drafts written by Gemini per day. 0 = no cap.
+  copilotDailyCap: wholeNumber(process.env.COPILOT_DAILY_CAP, 100),
   // Compliance Agent runtime: 'builtin' today; 'adk' and 'langchain' are reserved (agents/framework.js)
   agentRuntime: process.env.AGENT_RUNTIME || 'builtin',
   jwtSecret: process.env.JWT_SECRET || DEFAULT_JWT_SECRET,

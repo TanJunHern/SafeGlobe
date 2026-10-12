@@ -573,3 +573,89 @@ red and the model retrained. The same reviews are held back on every run, so the
 7. **Not built:** Pond forecast, AIS anomaly checks and embedding name matching (features 4, 13 and 11). The old
    plan is kept in `implementation_plan.phase4-bigquery-ai.md`.
 
+---
+
+## Reviewer copilot, Duck-Scanner, answer verification (12 Oct 2026)
+
+Built by Claude Code, on this computer. The user chose these two ("Do A and C"). **Status: built, tested
+offline, and run live on Gemini on Vertex AI and on Document AI from this computer.** Not deployed.
+
+Also since the last section: **BigQuery ML went live** on the UAT link (see `decisions.md`): the review model
+trained in 26 min 47 s with 6 tuning trials, AUC 0.837 on 101 held-back synthetic reviews, 18 of 28 low-scored
+risks flagged, Halcyon Marine at 59% and "Likely miss".
+
+### What changed
+
+| Area | Files |
+| --- | --- |
+| Reviewer copilot (feature 5): AI draft of the summary and decision reason, every citation checked | `src/services/copilotService.js`, `src/routes/copilot.js` (new) |
+| Duck-Scanner (feature 14): Document AI Form Parser, then Gemini maps to question numbers with a confidence | `src/services/duckScannerService.js` (new), `src/routes/ddq.js` (`POST /api/ddq/prefill`) |
+| Answer verification (feature 7): answers against findings, both sides quoted, points once | `src/services/answerVerificationService.js` (new), `src/routes/ddq.js`, `src/events/handlers.js` |
+| Tables `copilot_drafts`, `ddq_verifications` | `src/db/sqlite.js` |
+| Review dialog: "Draft with Dilly", the "Answer verification" block | `safe-globe.html` |
+| Supplier portal: "Not sure (NN%). Please check" on low-confidence suggestions | `ddq-portal.html` |
+| Page start: source records are no longer asked for before sign-in (the 403 in the console) | `safe-globe.html` |
+| Settings and guide | `src/config.js`, `.env.example`, `scripts/deploy.sh`, `DEPLOY_GUIDE.md` step 9 |
+| Tests | `tests/phase5.test.js` (new, 10 tests) |
+
+New variables: `DOCUMENT_AI_DAILY_CAP`, `COPILOT_DAILY_CAP`. The three `DOCUMENT_AI_*` variables already existed.
+
+### How to see it
+
+`npm run dev`, sign in as Grace Teo, open **Compliance**, press **Review** on a request.
+
+1. **Reviewer copilot.** Press **Draft with Dilly** above the memo box. The box fills with a summary and a
+   decision reason that cites finding ids and policy clauses. The line beside the button says "AI draft", who
+   wrote it (Gemini and the model, or "Offline sample"), and the computed route. Edit it, then press Approve,
+   Bounce back or Reject as before: your final text is stored beside the AI draft.
+2. **Answer verification.** In the middle column, under the ducks: "Answer verification" lists each contradiction
+   with the question and answer, the finding and its quote, the reason, and the source link. It runs by itself when
+   a questionnaire is submitted; **Check answers against findings** runs it again.
+3. **Duck-Scanner.** Open a DDQ link as the counterparty and press **Upload a document**. Suggested answers
+   appear as before; an answer Dilly is less than 75% sure of now carries "Not sure (NN%). Please check". The
+   supplier confirms each one; nothing is submitted for them.
+
+### How it was tested
+
+- `npm test`: **225 pass, 0 fail**, offline (215 before). `npm run test:agents`: 11 pass, unchanged.
+- The new tests cover, for the copilot: the offline draft; a citation of a finding that is not on the case
+  dropped; a draft with no valid citation, an unknown finding id in the text, a score other than the computed one,
+  or a route other than the computed one **not used**; the daily cap; confirm and edit, with both texts kept; a
+  named reviewer required. For Duck-Scanner: reading Document AI's fields and confidences; a suggestion dropped
+  when the question does not exist, a yes/no answer is not Yes or No, or the quoted words are not in the
+  document; the reading confidence capping the answer's; the exact Document AI request; the fallback to Gemini
+  and the cap. For answer verification: which answers are compared with which findings (a "No" on having a
+  policy is not compared); contradictions quoted on both sides; **the points counted once** however many
+  contradictions; the finding removed again when the answers are corrected; Gemini limited to the pairs it was
+  given; the run on `ddq-submitted`; role checks.
+- In Chrome on the local server: the review dialog with the answer verification block and the copilot draft.
+  The supplier portal marker was not looked at in the browser.
+- **Live on Gemini on Vertex AI (`gemini-3.5-flash-lite`), from this computer:**
+
+| Live check | Result |
+| --- | --- |
+| Copilot, Aurora Venture | 2.2 seconds. Cited four findings and §4.1, §5.4; route Escalate, 85 of 100, as computed. Passed every check. |
+| Answer verification, MV Aurora Tide, answers denying sanctions and vessels | 2.1 seconds. 6 pairs compared, 1 contradiction (7.1 against the possible sanctions match). Gemini judged the "no vessels" answers not to contradict the vessel findings. |
+| Duck-Scanner on `docs/test-docs/ddq-vessel-red.md` (text, no Document AI) | 9.9 seconds. 74 answers suggested, each with its quote found in the document, none dropped. |
+
+- **Document AI, live, after the go-ahead:** a one-page fictional returned questionnaire (PDF) was read by the Form
+  Parser (8 form fields) and mapped by Gemini to 12 answers in 8.9 seconds, none dropped. 6 were marked "Not sure"
+  because the Form Parser's own confidence for those fields was 0.44 to 0.52 on clean typed text; one was a real
+  misreading ("example" read as "examplé"). The marker errs on the side of asking.
+
+### Things you should know, and decide
+
+1. **Offline and live disagree on one case**, as they should: offline, every "No" against a finding of that kind
+   counts as a contradiction (3 for MV Aurora Tide); with Gemini only the one that truly conflicts counted (1).
+2. **A contradiction adds 15 points once.** For a case already at 100 the total does not move; the row still shows
+   in "Why <score>?".
+3. **The copilot writes into the existing memo box.** I did not add a new decision flow. The summary is the first
+   paragraph and the reason is the rest; that is how the final text is split when it is stored.
+4. **Duck-Scanner replaces the answers part of the existing upload**, on the same route, so your portal works
+   unchanged. Tables (beneficial owners) still come from the earlier reader, which costs a second Gemini call
+   per upload.
+5. **A stray draft is in your own dev database** (`data/safe_globe.db`): one copilot draft for Aurora Venture,
+   written while I tried the service. It made one call on your AI Studio key. Harmless; say if you want it removed.
+6. **Still open from `CLAUDE.md`:** Quack-Back chat (6), automatic DDQ email (16), Request more info (17), the
+   "How Dilly works" page (15), and the old Phase 4 features (4, 11, 13).
+

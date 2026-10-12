@@ -2244,6 +2244,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           <div id="triage-ddq-empty-notice" class="faint" style="font-size:12px;padding:12px 0">
             No questionnaire submitted yet (or not required).
           </div>
+          <div id="triage-ddq-verify" style="margin:8px 0"></div>
           <div id="triage-ddq-content" style="display:none;flex-direction:column;gap:10px">
             <div class="eyebrow">Beneficial Ownership (UBO &gt; 25%)</div>
             <div id="triage-ddq-ubos" style="font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px"></div>
@@ -2270,6 +2271,10 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
 
       <!-- Officer Decision Action Section -->
       <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:4px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+          <button class="btn sm" id="triage-copilot-btn" type="button" title="Gemini drafts a summary and a decision reason from this case's findings and policy clauses. The route is the computed one. You edit or confirm before deciding."><svg class="ic sm"><use href="#i-spark"/></svg>Draft with Dilly</button>
+          <span class="faint" id="triage-copilot-note" style="font-size:11.5px"></span>
+        </div>
         <label for="triage-officer-notes" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Compliance Triage Memo & Rationale Notes</label>
         <textarea id="triage-officer-notes" rows="2" placeholder="Record compliance sign-off rationale, policy override justification, or specific escalation requirements."></textarea>
       </div>
@@ -7524,6 +7529,7 @@ function openTriageModal(r) {
   if (hasDdq && d.format === 'template-v1') loadTriageQuestionnaire(r.id);
 
   $('#triage-officer-notes').value = '';
+  COPILOT.draft=null;$('#triage-copilot-note').textContent='';loadDdqVerification(r.id,false);
   $('#comp-triage-modal').hidden = false;
 }
 
@@ -7694,10 +7700,10 @@ function initComplianceControls() {
     else openTriageModal(rec);
   });
 
-  const act = action => () => { if (triageTargetId) submitTriage(triageTargetId, action, $('#triage-officer-notes').value.trim()); };
+  const act = action => () => { if (triageTargetId) { confirmCopilotDraft(); submitTriage(triageTargetId, action, $('#triage-officer-notes').value.trim()); } };
   $('#triage-act-approve').addEventListener('click', act('Approve'));
   $('#triage-act-reject').addEventListener('click', act('Reject'));
-  $('#triage-act-moreinfo').addEventListener('click', () => { if (triageTargetId) submitTriage(triageTargetId, 'Bounce Back', $('#triage-officer-notes').value.trim()); });
+  $('#triage-act-moreinfo').addEventListener('click', () => { if (triageTargetId) confirmCopilotDraft(); if (triageTargetId) submitTriage(triageTargetId, 'Bounce Back', $('#triage-officer-notes').value.trim()); });
   $('#triage-agent').addEventListener('click', e => {
     const rec = compRequestsCache.find(r => r.id === triageTargetId);
     if (e.target.closest('[data-agent-rerun]') && rec) runTriageAgent(rec);
@@ -8122,6 +8128,48 @@ async function learnAction(kind){
   LEARN.busy=false;loadLearning();
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-learn]');if(b){learnAction(b.dataset.learn);return;}const o=e.target.closest('[data-learn-open]');if(o)select(o.dataset.learnOpen);});
+
+
+/* ===================== Reviewer copilot (AI draft) and DDQ answer verification, in the review dialog ===================== */
+const COPILOT={draft:null};
+const kycEntityId=id=>'kyc-'+String(id).toLowerCase();
+$('#triage-copilot-btn').addEventListener('click',async()=>{
+  if(!triageTargetId)return;
+  const note=$('#triage-copilot-note'),box=$('#triage-officer-notes');
+  note.textContent='Dilly is drafting from the findings…';
+  try{
+    const res=await apiFetch('/api/copilot/'+encodeURIComponent(kycEntityId(triageTargetId))+'/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await res.json();if(!res.ok)throw new Error(d.message||d.error||'The draft could not be written');
+    COPILOT.draft=d;
+    box.value=d.draft.summary+'\n\n'+d.draft.decision_reason;
+    note.innerHTML=`<b>AI draft</b> · ${esc(d.draft.sourceLabel)} · computed route: ${esc(d.draft.suggestedRouteLabel)} (${d.draft.risk} of 100). Edit it or confirm it; your final text is what is saved.${d.draft.note?' '+esc(d.draft.note):''}`;
+  }catch(err){note.textContent=err.message;}
+});
+function confirmCopilotDraft(){
+  const d=COPILOT.draft,text=$('#triage-officer-notes').value.trim();if(!d||!text)return;
+  COPILOT.draft=null;
+  const parts=text.split(/\n\s*\n/);
+  apiFetch('/api/copilot/drafts/'+encodeURIComponent(d.id)+'/confirm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({summary:parts[0],decision_reason:parts.slice(1).join(' ')||parts[0]})}).catch(()=>{});
+}
+async function loadDdqVerification(kycId,run){
+  const host=$('#triage-ddq-verify');if(!host||!isCompliance())return;
+  host.innerHTML='';
+  try{
+    const res=await apiFetch('/api/ddq/verification/'+encodeURIComponent(kycId),run?{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}:{});
+    if(kycId!==triageTargetId)return;
+    const btn=`<button class="btn sm" data-ddq-verify="${esc(kycId)}" type="button">${ic('refresh','sm')}Check answers against findings</button>`;
+    if(res.status===404){host.innerHTML=btn;return;}
+    const v=await res.json();if(!res.ok)throw new Error(v.error||'The answers could not be checked');
+    if(v.status==='not_returned'){host.innerHTML='';return;}
+    const rows=v.contradictions.map(c=>`<div class="why-row" style="grid-template-columns:1fr"><div><h4>${esc(c.questionId)} · ${esc(c.check)}</h4>
+      <small>The questionnaire says</small><blockquote>${esc(c.question)} <b>${esc(c.answer)}</b></blockquote>
+      <small>The screening found (${esc(c.rule)})</small><blockquote>“${esc(c.findingQuote||c.findingSummary)}”</blockquote>
+      <small>${esc(c.reason)} · Source: ${c.sourceUrl?`<a href="${esc(c.sourceUrl)}" target="_blank" rel="noopener">${esc(c.sourceName)}</a>`:esc(c.sourceName||'')}</small></div></div>`).join('');
+    host.innerHTML=`<div class="sec-h" style="margin-bottom:6px"><h3 style="font-size:13px;margin:0">Answer verification</h3><span class="pill plain ${v.contradictions.length?'q-escalate':'q-monitor'}" style="height:18px">${v.contradictions.length?v.contradictions.length+' contradiction'+(v.contradictions.length>1?'s':''):'No contradiction'}</span></div>
+      <p class="faint" style="font-size:11.5px;margin:0 0 6px">${esc(v.message)} ${v.pairsCompared} answer and finding pair${v.pairsCompared===1?'':'s'} compared by ${esc(v.checkedBy)}.${v.contradictions.length?' Counted once in the score as "DDQ answer contradicts the evidence"'+(v.pointsAdded?' (+'+v.pointsAdded+')':'')+'.':''}${v.note?' '+esc(v.note):''}</p>${rows}<div style="margin-top:6px">${btn}</div>`;
+  }catch(err){host.innerHTML=`<p class="faint" style="font-size:11.5px;margin:0">${esc(err.message)}</p>`;}
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-ddq-verify]');if(b){loadDdqVerification(b.dataset.ddqVerify,true).then(()=>loadRisk());}});
 
 /* ---------- Reviews: one section at a time ---------- */
 function showRevPane(pane){
