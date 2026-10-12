@@ -310,6 +310,37 @@ class SqliteDatabase {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // The review model (src/learning): what officers labelled, the models trained on it, and what the model predicts
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS review_labels (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT NOT NULL,
+        label TEXT NOT NULL,
+        features_json TEXT NOT NULL,
+        rule_risk INTEGER,
+        rule_confidence INTEGER,
+        rule_route TEXT,
+        reviewer TEXT,
+        note TEXT,
+        is_synthetic INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_review_labels_entity ON review_labels(entity_id);
+      CREATE TABLE IF NOT EXISTS ml_models (
+        id TEXT PRIMARY KEY,
+        backend TEXT NOT NULL,
+        status TEXT NOT NULL,
+        info_json TEXT NOT NULL,
+        model_json TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS ml_predictions (
+        entity_id TEXT PRIMARY KEY,
+        model_id TEXT NOT NULL,
+        prediction_json TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     // Must run after the migration: older tables lack ddq_token until the ALTER above
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_kyc_token ON kyc_requests(ddq_token)');
 
@@ -739,6 +770,59 @@ class SqliteDatabase {
 
   countMergedAlerts(alertId) {
     return this.db.prepare('SELECT COUNT(*) AS n FROM alerts WHERE merged_into = ?').get(alertId).n;
+  }
+
+  // --- Review labels and the review model (src/learning) ---
+  saveReviewLabel(l) {
+    this.db.prepare('INSERT OR REPLACE INTO review_labels (id, entity_id, label, features_json, rule_risk, rule_confidence, rule_route, reviewer, note, is_synthetic, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(l.id, l.entityId, l.label, JSON.stringify(l.features), l.features.rule_risk, l.features.rule_confidence, l.route || '', l.reviewer || '', l.note || '', l.isSynthetic ? 1 : 0, l.createdAt || new Date().toISOString());
+  }
+
+  getReviewLabels({ entityId = null, synthetic = null, limit = 5000 } = {}) {
+    const rows = this.db.prepare('SELECT * FROM review_labels WHERE (? IS NULL OR entity_id = ?) AND (? IS NULL OR is_synthetic = ?) ORDER BY created_at DESC, rowid DESC LIMIT ?')
+      .all(entityId, entityId, synthetic === null ? null : (synthetic ? 1 : 0), synthetic === null ? null : (synthetic ? 1 : 0), limit);
+    return rows.map(r => ({ id: r.id, entityId: r.entity_id, label: r.label, features: JSON.parse(r.features_json), route: r.rule_route, reviewer: r.reviewer, note: r.note, isSynthetic: Boolean(r.is_synthetic), createdAt: r.created_at }));
+  }
+
+  countReviewLabels() {
+    const rows = this.db.prepare('SELECT is_synthetic AS s, label, COUNT(*) AS n FROM review_labels GROUP BY is_synthetic, label').all();
+    const out = { real: { risk: 0, no_risk: 0 }, synthetic: { risk: 0, no_risk: 0 } };
+    for (const r of rows) if (out[r.s ? 'synthetic' : 'real'][r.label] !== undefined) out[r.s ? 'synthetic' : 'real'][r.label] = r.n;
+    return out;
+  }
+
+  deleteSyntheticReviewLabels() {
+    return this.db.prepare('DELETE FROM review_labels WHERE is_synthetic = 1').run().changes;
+  }
+
+  saveMlModel({ id, backend, status, info, model = null }) {
+    this.db.prepare('INSERT INTO ml_models (id, backend, status, info_json, model_json, created_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET status = excluded.status, info_json = excluded.info_json, model_json = COALESCE(excluded.model_json, ml_models.model_json)')
+      .run(id, backend, status, JSON.stringify(info), model ? JSON.stringify(model) : null, new Date().toISOString());
+  }
+
+  getMlModel(id = null, { withModel = false } = {}) {
+    const r = id ? this.db.prepare('SELECT * FROM ml_models WHERE id = ?').get(id) : this.db.prepare("SELECT * FROM ml_models WHERE status = 'ready' ORDER BY created_at DESC, rowid DESC LIMIT 1").get();
+    if (!r) return null;
+    return { id: r.id, backend: r.backend, status: r.status, info: JSON.parse(r.info_json), model: withModel && r.model_json ? JSON.parse(r.model_json) : undefined, createdAt: r.created_at };
+  }
+
+  getLatestMlModel() {
+    const r = this.db.prepare('SELECT id FROM ml_models ORDER BY created_at DESC, rowid DESC LIMIT 1').get();
+    return r ? this.getMlModel(r.id) : null;
+  }
+
+  listMlModels(limit = 12) {
+    return this.db.prepare('SELECT id FROM ml_models ORDER BY created_at DESC, rowid DESC LIMIT ?').all(limit).map(r => this.getMlModel(r.id));
+  }
+
+  savePredictions(modelId, predictions) {
+    this.db.prepare('DELETE FROM ml_predictions').run();
+    const stmt = this.db.prepare('INSERT OR REPLACE INTO ml_predictions (entity_id, model_id, prediction_json, created_at) VALUES (?, ?, ?, ?)');
+    for (const p of predictions) stmt.run(p.entityId, modelId, JSON.stringify(p), new Date().toISOString());
+  }
+
+  getPredictions() {
+    return this.db.prepare('SELECT * FROM ml_predictions').all().map(r => Object.assign(JSON.parse(r.prediction_json), { modelId: r.model_id, at: r.created_at }));
   }
 
   // --- Events (src/events): an event is handled once, however often it is delivered ---

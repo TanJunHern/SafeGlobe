@@ -72,3 +72,17 @@
 - [ ] Pub/Sub and Cloud Scheduler: set up; first live event needs the redeploy
 - [ ] Deployed to UAT by the user (the link still runs Phase 2)
 - [x] `walkthrough.md` updated
+
+## Phase 4, replaced: the review model (machine learning on officers' reviews)
+- [x] Research on Vertex AI AutoML, BigQuery ML AutoML and BigQuery ML boosted trees; reported to the user
+- [x] User's decision: BigQuery ML boosted trees, suggestions only, synthetic labelled data, Reviews tab
+- [x] Features from the score breakdown; synthetic labelled reviews (seeded, marked synthetic)
+- [x] Offline model: boosted trees inside the app, tuning trials, held-back test, reasons per prediction
+- [x] BigQuery client over REST; BigQuery ML SQL (train with tuning, trials, explain); result parsing
+- [x] Learning service and `/api/learning` routes; daily cap; guardrail test (no score or route changes)
+- [x] Reviews: red and green per case, prediction and suggestion, rings on the chart, "Dilly learns" tab, hints
+- [x] `.env.example`, `scripts/deploy.sh`, `DEPLOY_GUIDE.md` step 6
+- [x] Tests pass offline (215 Node, 11 Python)
+- [ ] Section 9.1 checkpoint: BigQuery ML (asked 12 Oct, waiting)
+- [ ] First live training run; fixes if needed
+- [ ] Not built: Pond forecast (4), name matching (11), AIS anomalies (13). Old plan kept, user to decide

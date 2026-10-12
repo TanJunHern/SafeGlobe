@@ -540,6 +540,20 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 .thr-ctl input{grid-column:1/-1;width:100%;accent-color:var(--accent)}
 .thr-ctl small{grid-column:1/-1;color:var(--fg-3);font-size:11.5px}
 .calib{display:flex;flex-direction:column;gap:12px}
+.ml-cell{display:flex;flex-direction:column;gap:4px;min-width:150px}
+.ml-pred{font-size:11.5px;color:var(--fg-2)}
+.ml-flag{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 7px;border-radius:9px;font-size:10.5px;font-weight:600;width:max-content}
+.ml-flag.miss{background:var(--high);color:#fff}.ml-flag.alarm{background:var(--surface-2);color:var(--fg-2);border:1px dashed var(--line-2)}
+.ml-btns{display:flex;gap:4px}
+.ml-btn{height:22px;padding:0 8px;border-radius:11px;border:1px solid var(--line-2);background:var(--surface);font-size:11px;cursor:pointer;color:var(--fg-2)}
+.ml-btn.red.on{background:var(--high);border-color:var(--high);color:#fff}.ml-btn.green.on{background:var(--low);border-color:var(--low);color:#fff}
+.ml-btn:hover{border-color:var(--fg-3)}
+.mx-ring{fill:none;stroke-width:2;pointer-events:none}.mx-ring.miss{stroke:var(--high)}.mx-ring.alarm{stroke:var(--fg-3);stroke-dasharray:3 2}
+.learn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.learn-kv{display:grid;grid-template-columns:1fr auto;gap:4px 14px;font-size:12.5px;margin:0}.learn-kv dt{color:var(--fg-2)}.learn-kv dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.learn-step{display:grid;grid-template-columns:22px 1fr;gap:8px;font-size:12.5px;margin-bottom:8px}.learn-step b.n{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:11px}
+.gloss dt{font-weight:600;font-size:12.5px;margin-top:8px}.gloss dd{margin:2px 0 0;font-size:12.5px;color:var(--fg-2)}
+.trial-t{width:100%;border-collapse:collapse;font-size:12px}.trial-t th,.trial-t td{padding:4px 6px;text-align:left;border-bottom:1px solid var(--line)}.trial-t tr.best td{font-weight:600;background:var(--accent-soft)}
 .calib-row{display:grid;grid-template-columns:70px 1fr 52px;gap:10px;align-items:center;font-size:12.5px}
 .calib-row .bar{height:8px;position:relative;overflow:visible}
 .calib-row .bar em{position:absolute;top:-4px;width:2px;height:16px;background:var(--fg);border-radius:1px}
@@ -1209,6 +1223,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           <button data-pane="matrix" type="button" role="tab">Risk and confidence</button>
           <button data-pane="calibration" type="button" role="tab">Calibration</button>
           <button data-pane="rules" type="button" role="tab">Scoring rules<span class="rev-tab-n" id="rev-tab-rules-n" hidden></span></button>
+          <button data-pane="learning" type="button" role="tab">Dilly learns<span class="rev-tab-n" id="rev-tab-learn-n" hidden></span></button>
         </div>
         <div id="mon-host" data-rev-pane="monitoring" hidden></div>
         <div class="rev-panes">
@@ -1222,6 +1237,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
               <div class="card-b">
                 <svg class="matrix-svg" id="matrix" viewBox="0 0 360 300" role="img" aria-label="Risk and confidence matrix"></svg>
                 <div class="thr-ctl"><label for="thr">Confidence needed to auto-clear or escalate</label><b class="mono" id="thr-v">80%</b><input id="thr" type="range" min="60" max="95" step="1" value="80"><small>Set per customer to match risk appetite. Anything high-risk always goes to a person.</small></div>
+                <p class="faint" id="mx-ml-hint" style="font-size:11.5px;margin:10px 0 0"></p>
               </div>
             </div>
             <div class="card" data-rev-pane="calibration" hidden>
@@ -1229,6 +1245,10 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
               <div class="card-b calib" id="calib"></div>
             </div>
           </div>
+        </div>
+        <div data-rev-pane="learning" id="learn-pane" hidden>
+          <div class="hint" style="margin-bottom:16px"><svg class="ic sm"><use href="#i-alert"/></svg><p style="margin:0"><b>The more you review, the better Dilly gets at how you classify risk.</b> Mark cases red (real risk) or green (not a risk) in the Case queue. A supervised model learns from those labels and predicts which cases you would mark as real risk, so a risk the rules scored low is not missed. <span id="learn-guard"></span></p></div>
+          <div class="learn-grid" id="learn-body"></div>
         </div>
         <div class="card" id="rules-card" data-rev-pane="rules" hidden>
           <div class="card-h"><h2>Scoring rules: points table and confidence formula</h2><span class="chip" id="rules-badge">Defaults</span></div>
@@ -3921,8 +3941,9 @@ function renderReviews(){
   const needs=counts.escalate+counts.investigate+counts.gaps;
   $('#rev-stats').innerHTML=`<div class="stat"><small>Needs a person</small><b>${needs}</b><small>${counts.investigate} investigate · ${counts.gaps} fill the gaps</small></div><div class="stat"><small>Escalated</small><b style="color:var(--high-ink)">${counts.escalate}</b><small>Senior reviewer decides</small></div><div class="stat"><small>Auto-cleared</small><b style="color:var(--low-ink)">${counts.monitor}</b><small>Each with a written reason</small></div><div class="stat"><small>Analyst hours per review</small>${window.DUEDILLY_NO_PLACEHOLDERS?'<b>–</b><small>Shown once reviews have been decided</small>':'<b>1.4 h</b><small>vs 5.2 h manual screening</small>'}</div>`;
   $('#rail-count').textContent=counts.escalate;$('#rail-count').style.display=counts.escalate?'':'none';
-  const rows=CASES.filter(c=>S.rev==='all'||quad(c)!=='monitor').sort((a,b)=>Q[quad(a)].rank-Q[quad(b)].rank||b.risk-a.risk);
-  $('#cases').innerHTML=`<thead><tr><th>Case</th><th>Counterparty</th><th>Trigger</th><th>Risk</th><th>Confidence</th><th>Route</th><th>Owner → reviewer</th><th>Due</th></tr></thead><tbody>${rows.map(c=>{const q=quad(c);return `<tr data-id="${c.id}"><td class="mono faint" style="white-space:nowrap">${c.caseId}</td><td><div class="c-name"><span class="w-ico">${ic(kindIcon[c.kind],'sm')}</span><div><b>${esc(c.short||c.name)}</b><small>${esc(c.kind==='org'?cname(c.a3):c.kind==='vessel'?'IMO '+c.imo:'Person')}</small></div></div></td><td style="min-width:150px;max-width:210px">${esc(c.trigger)}</td><td><span class="pill plain ${riskCls(c.risk)}">${c.risk}</span></td><td>${confHTML(c.conf)} <span class="faint" style="font-size:11px">${confBand(c.conf)}</span></td><td><span class="pill q-${q}">${Q[q].short}</span></td><td><span class="who"><i>${initials(c.owner)}</i></span> ${ic('arrow','sm')} <span class="who"><i style="background:var(--accent-soft);color:var(--accent)">GT</i></span></td><td class="mono" style="white-space:nowrap">${dueOf(q)}</td></tr>`;}).join('')}</tbody>`;
+  // A case the review model flags as a likely miss is listed under "Needs a person" even when the rules auto-cleared it
+  const rows=CASES.filter(c=>S.rev==='all'||quad(c)!=='monitor'||(LEARN.preds.get(c.id)||{}).flag==='likely_miss').sort((a,b)=>Q[quad(a)].rank-Q[quad(b)].rank||b.risk-a.risk);
+  $('#cases').innerHTML=`<thead><tr><th>Case</th><th>Counterparty</th><th>Trigger</th><th>Risk</th><th>Confidence</th><th>Route</th><th title="Prediction: how likely a compliance officer is to mark this case as real risk, from the model trained on past reviews. Your call: mark it red or green; each mark teaches the model.">Prediction · your call</th><th>Owner → reviewer</th><th>Due</th></tr></thead><tbody>${rows.map(c=>{const q=quad(c);return `<tr data-id="${c.id}"><td class="mono faint" style="white-space:nowrap">${c.caseId}</td><td><div class="c-name"><span class="w-ico">${ic(kindIcon[c.kind],'sm')}</span><div><b>${esc(c.short||c.name)}</b><small>${esc(c.kind==='org'?cname(c.a3):c.kind==='vessel'?'IMO '+c.imo:'Person')}</small></div></div></td><td style="min-width:150px;max-width:210px">${esc(c.trigger)}</td><td><span class="pill plain ${riskCls(c.risk)}">${c.risk}</span></td><td>${confHTML(c.conf)} <span class="faint" style="font-size:11px">${confBand(c.conf)}</span></td><td><span class="pill q-${q}">${Q[q].short}</span></td><td>${mlCellHTML(c)}</td><td><span class="who"><i>${initials(c.owner)}</i></span> ${ic('arrow','sm')} <span class="who"><i style="background:var(--accent-soft);color:var(--accent)">GT</i></span></td><td class="mono" style="white-space:nowrap">${dueOf(q)}</td></tr>`;}).join('')}</tbody>`;
   if(!CASES.length)$('#cases').innerHTML=`<tbody><tr><td>${emptyState('No reviews yet','Every screening that needs a person opens a case here, with its risk, confidence and route. Add a counterparty with <b>Intake</b>, or wait for an employee to submit a KYC request.')}</td></tr></tbody>`;
   const dn=document.querySelector('#view-reviews .demo-note');if(dn)dn.hidden=SESSION_WORKSPACE_EMPTY;
   renderMatrix();
@@ -3936,14 +3957,17 @@ function renderMatrix(){
   s+=`<line class="mx-thr" x1="${tx}" x2="${tx}" y1="${y0-4}" y2="${y1+4}"/><text class="mx-axis" x="${tx}" y="${y1+16}" text-anchor="middle" style="fill:var(--accent)">${S.thr}%</text>`;
   s+=`<text class="mx-axis" x="${x0}" y="${y1+16}" text-anchor="start">0</text><text class="mx-axis" x="${x1}" y="${y1+16}" text-anchor="end">100</text><text class="mx-axis" x="${(x0+x1)/2}" y="${y1+34}" text-anchor="middle" style="fill:var(--fg-2)">Confidence level →</text><text class="mx-axis" x="${x0-8}" y="${ty+3}" text-anchor="end">50</text><text class="mx-axis" x="${x0-8}" y="${y0+8}" text-anchor="end">100</text><text class="mx-axis" x="${x0-8}" y="${y1}" text-anchor="end">0</text><text class="mx-axis" transform="translate(12,${(y0+y1)/2}) rotate(-90)" text-anchor="middle" style="fill:var(--fg-2)">Risk level →</text>`;
   s+=CASES.map(c=>{const q=quad(c);return `<circle class="mx-dot" data-id="${c.id}" cx="${X(c.conf).toFixed(1)}" cy="${Y(c.risk).toFixed(1)}" r="5" style="fill:${Q[q].color}"><title>${esc(c.short||c.name)} · risk ${c.risk}, confidence ${c.conf}%</title></circle>`;}).join('');
+  // The review model's suggestions: a ring where its prediction disagrees with the rules
+  s+=CASES.map(c=>{const p=LEARN.preds.get(c.id);if(!p||!p.flag||p.flag==='agrees')return '';return `<circle class="mx-ring ${p.flag==='likely_miss'?'miss':'alarm'}" cx="${X(c.conf).toFixed(1)}" cy="${Y(c.risk).toFixed(1)}" r="9"><title>${esc(c.short||c.name)} · prediction ${p.percent}% likely real risk · ${p.flag==='likely_miss'?'likely miss':'likely false alarm'}</title></circle>`;}).join('');
   $('#matrix').innerHTML=s;
+  const mh=$('#mx-ml-hint');if(mh){const n=[...LEARN.preds.values()].filter(p=>p.flag==='likely_miss').length;mh.innerHTML=LEARN.status&&LEARN.status.model?`<b>Three signals, kept apart.</b> Risk (up) comes from the rules. Confidence (across) comes from the evidence. The <b>prediction</b> is the model's inference from past reviews: a solid red ring marks a <b>likely miss</b> (${n} now), a dashed ring a likely false alarm. A ring is a <b>suggestion</b> to look again; it moves no dot. The model's settings were chosen by <b>hyperparameter tuning</b> (see Dilly learns).`:'Train the review model in <b>Dilly learns</b> to see its predictions here as rings: where past reviews suggest the rules missed a risk.';}
 }
 function renderCalib(){
   const rows=[['High','≥ 85%',97.4,'n = 1,906',true],['Medium','60–84%',83.1,'n = 712'],['Low','< 60%',61.8,'n = 288']];
   $('#calib').innerHTML=`<p class="muted" style="margin:0;font-size:12.5px">Share of AI ratings that reviewers upheld, last 90 days. High confidence must stay above 95% before auto-clearing stays on.</p>`+rows.map(r=>`<div class="calib-row"><div><b>${r[0]}</b><div class="faint mono" style="font-size:10.5px">${r[1]}</div></div><div class="bar"><i data-w="${r[2]}" style="width:${r[2]}%;background:${r[4]?'var(--low)':'var(--fg-3)'}"></i>${r[4]?'<em style="left:95%" title="Target 95%"></em>':''}</div><div class="mono" style="text-align:right">${r[2]}%</div></div>`).join('')+`<div class="faint" style="font-size:11.5px;display:flex;justify-content:space-between"><span>Sample checks this week: 146 auto-clears</span><span class="mono">0 overturned</span></div>`;
 }
 $('#rev-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.rev=b.dataset.f;$$('#rev-seg button').forEach(x=>x.classList.toggle('on',x===b));renderReviews();});
-$('#cases').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]');if(tr)select(tr.dataset.id);});
+$('#cases').addEventListener('click',e=>{const lb=e.target.closest('[data-ml-label]');if(lb){e.stopPropagation();labelCase(lb.dataset.mlId,lb.dataset.mlLabel);return;}const tr=e.target.closest('tr[data-id]');if(tr)select(tr.dataset.id);});
 $('#cases').addEventListener('pointerover',e=>{const tr=e.target.closest('tr[data-id]');$$('.mx-dot').forEach(d=>d.classList.toggle('hl',!!tr&&d.dataset.id===tr.dataset.id));});
 $('#matrix').addEventListener('click',e=>{const d=e.target.closest('.mx-dot');if(d)select(d.dataset.id);});
 $('#matrix').addEventListener('pointerover',e=>{const d=e.target.closest('.mx-dot');$$('#cases tr[data-id]').forEach(r=>r.classList.toggle('hl',!!d&&r.dataset.id===d.dataset.id));});
@@ -3969,6 +3993,8 @@ let KB_RECORDS = [];
 let kbTypeFilter = 'all';
 
 async function fetchKbRecords() {
+  // The records are for compliance officers. Asking before sign-in only earns a 403 in the console.
+  if (!isCompliance()) return;
   try {
     const res = await apiFetch('/api/sources/records');
     const data = await res.json();
@@ -4401,6 +4427,8 @@ function showView(v, updateUrl = true){
   else if(v==='employee'&&isCompliance())v='compliance';
   if(v==='settings'&&!isCompliance())v='globe';
   S.view=v;$$('.rail button[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  // The Sources tab loads its records and crawler status when it is opened (at page start nobody is signed in yet)
+  if(v==='sources'){fetchKbRecords();loadCrawler();}
   $$('.view').forEach(s=>s.classList.toggle('on',s.id==='view-'+v));
   if(v==='globe'){requestAnimationFrame(()=>{relayout(false);dirty=true;});}
   if(v==='reviews')renderReviews();
@@ -8021,6 +8049,80 @@ $('#crawler-card').addEventListener('change',async e=>{
   try{await crawlCall(`/api/sources/${encodeURIComponent(row.dataset.crawl)}/crawl-settings`,{method:'PUT',body:JSON.stringify({[box.dataset.crawlSet]:box.checked})});toast('Saved');loadCrawler();}catch(err){toast(err.message);box.checked=!box.checked;}
 });
 
+
+/* ===================== The review model: red / green labels, predictions, "Dilly learns" ===================== */
+const LEARN={status:null,preds:new Map(),busy:false};
+function mlCellHTML(c){
+  const p=LEARN.preds.get(c.id),lab=p&&p.officerLabel;
+  const pred=p&&p.p!=null?`<span class="ml-pred" title="Inference by the ${p.backend==='bigquery'?'BigQuery ML':'offline'} model. ${esc((p.reasons||[]).slice(0,3).map(r=>r.label+' ('+r.direction+')').join('; '))}">${p.percent}% likely real risk</span>${p.flag==='likely_miss'?'<span class="ml-flag miss" title="'+esc(p.flagText)+'">Likely miss</span>':p.flag==='likely_false_alarm'?'<span class="ml-flag alarm" title="'+esc(p.flagText)+'">Likely false alarm</span>':''}`:'<span class="ml-pred faint">No prediction yet</span>';
+  const btn=(k,t)=>`<button class="ml-btn ${k}${lab&&lab.colour===k?' on':''}" data-ml-label="${k}" data-ml-id="${esc(c.id)}" type="button" title="${k==='red'?'Mark as real risk':'Mark as not a risk'}. Your mark is a training example for the model. It does not change the risk score or the route.">${t}</button>`;
+  return `<div class="ml-cell">${pred}<span class="ml-btns">${btn('red','Red')}${btn('green','Green')}</span></div>`;
+}
+async function loadLearning(){
+  if(!isCompliance())return;
+  try{
+    const [a,b]=await Promise.all([apiFetch('/api/learning/status'),apiFetch('/api/learning/predictions')]);
+    if(!a.ok||!b.ok)return;
+    LEARN.status=await a.json();const d=await b.json();
+    LEARN.preds=new Map((d.predictions||[]).map(p=>[p.entityId,p]));
+    renderLearning();renderReviews();
+    if(LEARN.status.training)setTimeout(loadLearning,15000);
+  }catch(err){}
+}
+async function labelCase(id,colour){
+  if(!isCompliance()){toast('Only a compliance officer can classify a case');return;}
+  try{
+    const res=await apiFetch('/api/learning/labels',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entityId:id,label:colour})});
+    const d=await res.json();if(!res.ok)throw new Error(d.message||d.error);
+    toast(`Marked ${colour==='red'?'red: real risk':'green: not a risk'}. ${d.label.agreesWithRules?'Same as the rules.':'This differs from the rules, which is exactly what the model learns from.'}`);
+    loadLearning();
+  }catch(err){toast(err.message);}
+}
+const pct=v=>v==null?'–':Math.round(v*100)+'%';
+function renderLearning(){
+  const st=LEARN.status,body=$('#learn-body');if(!st||!body)return;
+  $('#learn-guard').textContent=st.guardrail;
+  const L=st.labels,real=L.real.risk+L.real.no_risk,syn=L.synthetic.risk+L.synthetic.no_risk,m=st.model,tr=st.training;
+  const nMiss=[...LEARN.preds.values()].filter(p=>p.flag==='likely_miss').length;
+  const tn=$('#rev-tab-learn-n');if(tn){tn.hidden=!nMiss;tn.textContent=nMiss;}
+  const modePill=`<span class="pill plain ${st.mode==='bigquery'?'q-monitor':'q-gaps'}" title="${esc(st.modeReason||'Trained with BigQuery ML')}">${esc(st.modeLabel)}</span>`;
+  const data=`<div class="card"><div class="card-h"><h2>1. Training data</h2>${syn?'<span class="pill plain q-gaps">Includes synthetic demo data</span>':''}</div><div class="card-b">
+    <dl class="learn-kv"><dt>Your reviews · marked red (real risk)</dt><dd>${L.real.risk}</dd><dt>Your reviews · marked green (not a risk)</dt><dd>${L.real.no_risk}</dd><dt>Synthetic demo reviews</dt><dd>${syn}</dd><dt>Total labelled reviews</dt><dd>${L.total}</dd></dl>
+    <p class="faint" style="font-size:11.5px;margin:10px 0">Each labelled review is one example. The label is the right answer the model learns to reproduce: this is <b>supervised learning</b>. ${syn?`${L.syntheticShare}% of the examples are <b>synthetic demo data</b>: invented cases labelled by an invented officer, so the loop can be shown before real reviews exist. A model trained on them learns their pattern, not your officers' judgement. Each of your own reviews counts ${st.realLabelWeight} times a synthetic one.`:'Add synthetic demo data to try the loop before you have enough reviews of your own.'}</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${syn?'<button class="btn sm ghost" data-learn="clear" type="button">Remove synthetic data</button>':'<button class="btn sm" data-learn="synthetic" type="button">Add synthetic demo data (800 reviews)</button>'}</div></div></div>`;
+  const trainBtn=tr?`<button class="btn primary" type="button" disabled>Training on BigQuery ML…</button>`:`<button class="btn primary" data-learn="train" type="button" ${st.canTrain?'':'disabled'}>${m?'Retrain on all reviews':'Train the model'}</button>`;
+  const trials=m&&m.tuning?`<table class="trial-t"><thead><tr><th>Trial</th><th>Tree depth</th><th>Learning rate</th><th>Score (AUC)</th></tr></thead><tbody>${m.tuning.trials.map(t=>`<tr class="${t.is_optimal?'best':''}"><td>${t.trial_id}${t.is_optimal?' · kept':''}</td><td>${t.hyperparameters.max_tree_depth??'–'}</td><td>${t.hyperparameters.learn_rate??'–'}</td><td>${t.roc_auc??'–'}</td></tr>`).join('')}</tbody></table>`:'';
+  const train=`<div class="card"><div class="card-h"><h2>2. Training and hyperparameter tuning</h2>${modePill}</div><div class="card-b">
+    <p class="muted" style="font-size:12.5px;margin:0 0 10px">A classifier (boosted decision trees) is trained on the labelled reviews. <b>Hyperparameter tuning</b> trains several versions with different settings and keeps the one that does best on reviews held back for checking.</p>
+    ${tr?`<p style="font-size:12.5px;margin:0 0 10px"><b>Training now</b> on ${tr.rows} reviews with ${tr.trialsPlanned} tuning trials. This takes a few minutes; the page checks by itself.</p>`:''}
+    ${st.lastFailure?`<p style="font-size:12.5px;margin:0 0 10px;color:var(--high-ink)">The last training run failed: ${esc(st.lastFailure.error||'')}</p>`:''}
+    ${m?`<dl class="learn-kv"><dt>Model</dt><dd>${esc(m.backendLabel)}</dd><dt>Trained on</dt><dd>${m.rows} reviews (${m.realRows} yours, ${m.syntheticRows} synthetic)</dd><dt>Trained</dt><dd>${esc(new Date(m.trainedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}))}</dd></dl>${m.note?`<p class="faint" style="font-size:11.5px;margin:8px 0 0">${esc(m.note)}</p>`:''}<div style="margin:10px 0">${trials}</div>`:`<p class="muted" style="font-size:12.5px;margin:0 0 10px">No model yet. ${st.canTrain?'':`At least ${st.minRows} labelled reviews are needed.`}</p>`}
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${trainBtn}<span class="faint" style="font-size:11.5px">${st.trainsLeftToday==null?'':st.trainsLeftToday+' training runs left today'}</span></div></div></div>`;
+  const mt=m&&m.metrics;
+  const quality=`<div class="card"><div class="card-h"><h2>3. How good is it?</h2><span class="faint" style="font-size:12px">Measured on ${mt?mt.rows:'–'} reviews it never saw</span></div><div class="card-b">
+    ${mt?`<dl class="learn-kv"><dt>Risks the rules scored low, that officers marked red</dt><dd>${mt.missed_by_rules}</dd><dt>…of those, the model would have flagged</dt><dd>${mt.missed_caught_by_model} of ${mt.missed_by_rules}</dd><dt>Real risks it finds (recall)</dt><dd>${pct(mt.recall)}</dd><dt>When it says "risk", how often it is right (precision)</dt><dd>${pct(mt.precision)}</dd><dt>Ranking quality (AUC, 0.5 is a coin toss, 1 is perfect)</dt><dd>${mt.roc_auc??'–'}</dd><dt>Real risks it still misses (false negatives)</dt><dd>${mt.false_negatives}</dd></dl>
+    ${m.syntheticRows?'<p class="faint" style="font-size:11.5px;margin:10px 0 0">These numbers describe the model on <b>synthetic demo data</b>. They are not a measure of accuracy on real cases.</p>':''}
+    ${st.history.length>1?`<p style="font-size:12px;margin:12px 0 4px"><b>It improves as reviews are added</b></p><table class="trial-t"><thead><tr><th>Trained</th><th>Reviews</th><th>Yours</th><th>AUC</th><th>Misses caught</th></tr></thead><tbody>${st.history.slice().reverse().map(h=>`<tr><td>${esc(new Date(h.trainedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}))}</td><td>${h.rows}</td><td>${h.realRows}</td><td>${h.roc_auc??'–'}</td><td>${esc(h.missedCaught)}</td></tr>`).join('')}</tbody></table>`:''}`:'<p class="muted" style="font-size:12.5px;margin:0">Train the model to see how it does on reviews held back from training.</p>'}</div></div>`;
+  const flagged=[...LEARN.preds.values()].filter(p=>p.flag&&p.flag!=='agrees');
+  const sugg=`<div class="card"><div class="card-h"><h2>4. Predictions and suggestions</h2><span class="faint" style="font-size:12px">Flags a likely miss at ${Math.round(st.threshold*100)}% or more</span></div><div class="card-b">
+    <p class="muted" style="font-size:12.5px;margin:0 0 10px"><b>Inference</b>: the trained model is run on every open case. Its <b>prediction</b> is the probability that an officer would mark the case as real risk. Where that disagrees with the rules, it makes a <b>suggestion</b>.</p>
+    ${m?(flagged.length?flagged.map(p=>`<div class="sugg" style="margin-bottom:8px"><div><b>${esc(p.name||p.entityId)}</b> · ${p.flag==='likely_miss'?'<span class="ml-flag miss">Likely miss</span>':'<span class="ml-flag alarm">Likely false alarm</span>'}<br>Rules: ${p.ruleRisk} points, ${esc(p.ruleRoute||'')}. Prediction: <b>${p.percent}%</b> likely real risk.<br><span class="faint">Why: ${esc((p.reasons||[]).map(r=>r.label+' ('+r.direction+')').join('; ')||'no single feature stands out')}</span></div><button class="btn sm" data-learn-open="${esc(p.entityId)}" type="button">Open</button></div>`).join(''):'<p class="muted" style="font-size:12.5px;margin:0">The predictions agree with the rules on every open case.</p>'):'<p class="muted" style="font-size:12.5px;margin:0">No model yet.</p>'}
+    <p class="faint" style="font-size:11.5px;margin:10px 0 0">${esc(st.guardrail)}</p></div></div>`;
+  const gloss=`<div class="card"><div class="card-h"><h2>The words, in plain terms</h2></div><div class="card-b"><dl class="gloss" style="margin:0">${st.glossary.map(g=>`<dt>${esc(g.term)}</dt><dd>${esc(g.text)}</dd>`).join('')}</dl></div></div>`;
+  body.innerHTML=data+train+quality+sugg+gloss;
+}
+async function learnAction(kind){
+  if(LEARN.busy)return;LEARN.busy=true;
+  try{
+    const call=(path,method,body)=>apiFetch(path,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||d.error||'That did not work');return d;});
+    if(kind==='synthetic'){toast('Adding synthetic demo reviews…');await call('/api/learning/synthetic','POST',{count:800});toast('800 synthetic demo reviews added');}
+    else if(kind==='clear'){const d=await call('/api/learning/synthetic','DELETE');toast(d.removed+' synthetic reviews removed');}
+    else if(kind==='train'){toast('Training the review model…');const d=await call('/api/learning/train','POST',{});toast(d.status==='training'?'Training started on BigQuery ML. It takes a few minutes.':'Model trained. Predictions updated.');}
+  }catch(err){toast(err.message);}
+  LEARN.busy=false;loadLearning();
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-learn]');if(b){learnAction(b.dataset.learn);return;}const o=e.target.closest('[data-learn-open]');if(o)select(o.dataset.learnOpen);});
+
 /* ---------- Reviews: one section at a time ---------- */
 function showRevPane(pane){
   S.revPane=pane;
@@ -8176,7 +8278,7 @@ function boot(){
   cSel.each(function(){this.style.fill=C['land-none'];});
   refreshStatus();
   syncFromBackend();
-  initRulesCard();loadRisk();loadAlerts();loadClauses();
+  initRulesCard();loadRisk();loadAlerts();loadClauses();loadLearning();
   // Pins change when another session submits or decides a request: re-read while the tab is in view
   setInterval(()=>{if(!document.hidden){syncFromBackend();loadAlerts();}},20000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){syncFromBackend();if(!RISK.draft)loadRisk();}});

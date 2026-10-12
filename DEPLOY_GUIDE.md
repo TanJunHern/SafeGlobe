@@ -42,7 +42,7 @@ Leaving a block commented is always safe: the app uses the fallback written in t
 | --- | --- |
 | Gemini (AI Studio or Vertex AI) | Uses "Gemini disabled" mode with labelled offline samples |
 | ADK agents service | Pond-Guard shows the stored findings as an "Offline sample"; Ask Dilly uses its built-in answers; crawler agents use the built-in pattern extractor |
-| BigQuery (not built yet) | Uses local tables; forecast and anomalies show labelled samples |
+| BigQuery ML | Trains the review model inside the app ("Offline model") |
 | Pub/Sub, Cloud Scheduler | Handles events inside the app; "Run now" in the Sources tab replaces the schedule |
 | Cloud Storage | Stores page snapshots locally; on Cloud Run they reset when the app restarts |
 | Agent Search | Uses the built-in policy text, labelled "Offline fallback" |
@@ -97,7 +97,7 @@ It does all of this:
   `<env>-source-changed` for `dev` and `uat`;
 - creates the Cloud Scheduler job `duedilly-uat-rescreen-due` (daily at 06:00 Singapore time).
 
-It does **not** create: the BigQuery connection (step 6), the Document AI processor (step 9), the Agent Search data
+It does **not** create: the Document AI processor (step 9), the Agent Search data
 store (step 8), or the budget alert (step 0).
 
 Cost: the buckets, datasets, topics and the scheduler job cost cents or nothing while idle.
@@ -199,12 +199,39 @@ use ("Snapshots: Cloud Storage" or "local folder (offline fallback)").
 
 ---
 
-## Step 6: BigQuery (forecast, anomalies, name matching, calibration)
+## Step 6: BigQuery ML (the review model)
 
-**Not built yet (Phase 4).** The setup script already creates the datasets. The connection that lets BigQuery call
-Vertex AI, and the variables, are added in Phase 4 and this step will be updated.
+**What it does:** trains the review model on the cases compliance officers marked red or green. With BigQuery ML
+connected, pressing **Train the model** in Reviews > Dilly learns uploads the labelled reviews to the table
+`review_labels`, trains the model `review_risk_model` (`BOOSTED_TREE_CLASSIFIER`, with hyperparameter tuning) and
+reads its predictions with `ML.EXPLAIN_PREDICT`. Training takes a few minutes; the page checks by itself.
 
-**Fallback:** local tables, and labelled sample results.
+`scripts/gcp-setup.sh` (step 1) already created the dataset `duedilly_uat` in `asia-southeast1` and gave
+`duedilly-run` the roles it needs (`bigquery.dataEditor`, `bigquery.jobUser`). Nothing else has to be created by
+hand: the table and the model are created inside that dataset when an officer presses Train.
+
+1. In `.env.uat`:
+   ```
+   BIGQUERY=bigquery
+   ```
+   (`BIGQUERY_DATASET` defaults to `duedilly_uat` and `BIGQUERY_LOCATION` to `asia-southeast1`.)
+2. Redeploy: `bash scripts/deploy.sh uat`
+3. On the link: Reviews > **Dilly learns** > **Add synthetic demo data** > **Train the model**. The card says
+   "Training on BigQuery ML…", then shows the tuning trials and the results.
+4. Check what was created (read-only): `bq ls --models duedilly_uat` and `bq show duedilly_uat.review_labels`
+
+Cost: the labelled reviews are well under 1 MB. BigQuery's first 1 TiB of query data a month is free. Model
+training is billed by BigQuery ML; **the price of a boosted-tree training run with tuning was not confirmed from
+the pricing page** (https://cloud.google.com/bigquery/pricing#bqml), so check it before you train often. The app
+limits itself to `ML_TRAIN_DAILY_CAP` runs a day (default 6) with `ML_TUNING_TRIALS` settings each (default 6),
+and every ordinary query carries a limit of `BIGQUERY_MAX_BYTES_BILLED` (default 100 MB).
+
+Not confirmed until the first live run: that boosted-tree training and tuning are available in `asia-southeast1`.
+If they are not, the app says so and trains the offline model instead.
+
+**Fallback:** with `BIGQUERY=local` (the default), or if BigQuery cannot be reached, the model is trained inside
+the app ("Offline model": the same kind of model, boosted trees, on the same labelled reviews) and the screen
+says so.
 
 ---
 
