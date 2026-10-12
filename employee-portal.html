@@ -1855,7 +1855,9 @@ function populateKycCountries() {
     { code: 'MYS', name: 'Malaysia (MYS)' },
     { code: 'IDN', name: 'Indonesia (IDN)' },
     { code: 'RUS', name: 'Russian Federation (RUS - High Risk)' },
-    { code: 'CHN', name: 'China (CHN)' }
+    { code: 'CHN', name: 'China (CHN)' },
+    { code: 'IND', name: 'India (IND)' },
+    { code: 'MMR', name: 'Myanmar (MMR)' }
   ];
   sel.innerHTML = list.map(c => `<option value="${c.code}">${c.name}</option>`).join('');
 }

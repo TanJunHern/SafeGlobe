@@ -230,6 +230,13 @@ async function screenEntity(db, entityId, emit) {
     return offlineRun(db, entity, evidence.kinds, emit, 'The agents service could not be reached.');
   }
   if (!Object.values(ran).some(r => r.ok)) return offlineRun(db, entity, evidence.kinds, emit, 'No agent returned an answer.');
+  // An agent that did not answer has not screened anything. Storing only the others' findings would lower the
+  // score for no reason, so the stored findings are kept and the reason is shown.
+  const silent = evidence.kinds.filter(k => !ran[k] || !ran[k].ok).map(k => AGENTS[k].label);
+  if (silent.length) {
+    emit({ type: 'error', message: `${silent.join(' and ')} did not answer, so the stored findings are kept.` });
+    return offlineRun(db, entity, evidence.kinds, emit, `Not every agent answered (${silent.join(', ')}). Nothing was changed.`);
+  }
 
   // Store what was read (accepted and rejected), record which checks ran, and score
   const readAt = new Date().toISOString();
