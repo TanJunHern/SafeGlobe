@@ -87,7 +87,7 @@ def parse(value, model):
   return model.model_validate(value)
 
 
-async def _run(agent: LlmAgent, key: str, model, prompt: str):
+async def _run_once(agent: LlmAgent, key: str, model, prompt: str):
   runner = InMemoryRunner(agent=agent, app_name=APP_NAME)
   session = await runner.session_service.create_session(app_name=APP_NAME, user_id="duedilly")
   message = types.Content(role="user", parts=[types.Part(text=prompt)])
@@ -104,11 +104,22 @@ async def _run(agent: LlmAgent, key: str, model, prompt: str):
   return output, model_id
 
 
+async def _run(build, key: str, model, prompt: str, attempts: int = 3):
+  """Runs the agent, and again if the connection to the model drops. A fresh agent is built for each attempt."""
+  last = None
+  for _ in range(attempts):
+    try:
+      return await _run_once(build(), key, model, prompt)
+    except Exception as err:  # a dropped connection, usually
+      last = err
+  raise last
+
+
 async def extract(request: ExtractRequest) -> ExtractResponse:
-  output, model_id = await _run(build_extractor(request), "records_out", ExtractOutput, f"Read the page of {request.source_label}.")
+  output, model_id = await _run(lambda: build_extractor(request), "records_out", ExtractOutput, f"Read the page of {request.source_label}.")
   return ExtractResponse(records=output.records, note=output.note, model_id=model_id)
 
 
 async def propose_fix(request: ProposeFixRequest) -> ProposeFixResponse:
-  output, model_id = await _run(build_proposer(request), "fix_out", ProposeFixOutput, f"Suggest new extraction instructions for {request.source_label}.")
+  output, model_id = await _run(lambda: build_proposer(request), "fix_out", ProposeFixOutput, f"Suggest new extraction instructions for {request.source_label}.")
   return ProposeFixResponse(instructions=output.instructions[:1200], reason=output.reason, model_id=model_id)

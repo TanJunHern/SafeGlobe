@@ -1,0 +1,93 @@
+{
+  "recordedAt": "2026-10-12",
+  "size": {
+    "width": 1920,
+    "height": 1080
+  },
+  "clips": [
+    {
+      "file": "01-globe-intro.webm",
+      "kb": 4242
+    },
+    {
+      "file": "02-employee-new-request.webm",
+      "kb": 2302
+    },
+    {
+      "file": "03-employee-request-details.webm",
+      "kb": 2006
+    },
+    {
+      "file": "04-employee-submit-screened.webm",
+      "kb": 2315
+    },
+    {
+      "file": "05-employee-send-ddq.webm",
+      "kb": 2425
+    },
+    {
+      "file": "06-supplier-portal-ducks.webm",
+      "kb": 1433
+    },
+    {
+      "file": "07-supplier-74-suggestions.webm",
+      "kb": 3276
+    },
+    {
+      "file": "08-supplier-denies-pep.webm",
+      "kb": 1587
+    },
+    {
+      "file": "09-compliance-review-opens.webm",
+      "kb": 3728
+    },
+    {
+      "file": "10-answer-verification.webm",
+      "kb": 3563
+    },
+    {
+      "file": "11-copilot-draft.webm",
+      "kb": 3056
+    },
+    {
+      "file": "12-pond-guard-starts.webm",
+      "kb": 5216
+    },
+    {
+      "file": "13-pond-guard-findings.webm",
+      "kb": 4944
+    },
+    {
+      "file": "14-why-85.webm",
+      "kb": 5150
+    },
+    {
+      "file": "15-policy-search-agent-search.webm",
+      "kb": 2378
+    },
+    {
+      "file": "16-crawler-agent-publishes-change.webm",
+      "kb": 1756
+    },
+    {
+      "file": "17-ripple-and-rescreen.webm",
+      "kb": 2163
+    },
+    {
+      "file": "18-reviews-likely-miss.webm",
+      "kb": 2201
+    },
+    {
+      "file": "19-dilly-learns-bigquery-ml.webm",
+      "kb": 2866
+    },
+    {
+      "file": "20-risk-confidence-prediction.webm",
+      "kb": 1439
+    },
+    {
+      "file": "21-close-globe.webm",
+      "kb": 5473
+    }
+  ]
+}

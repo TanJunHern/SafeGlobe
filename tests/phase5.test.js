@@ -225,6 +225,11 @@ test('answer verification: which answers are compared with which findings', () =
   assert.equal(seen.some(s => s.startsWith('6.5>') || s.startsWith('7.10>')), false); // having a policy or screening is not a claim about the supplier
   assert.equal(seen.some(s => s.startsWith('7.2>')), false);                          // a Yes has already disclosed it
   assert.equal(seen.some(s => s.startsWith('3.2>')), false);                          // no PEP finding on this case
+  // A PEP owner finding is compared with "is an owner a PEP?" (3.2), not with the question about family members (3.3)
+  const pepLine = [{ findingId: 'F-pep', category: 'pep_owner', short: 'PEP owner or director', summary: 'The beneficial owner is a serving official.', quote: 'PEP declared', sourceName: 'Intake', sourceUrl: '' }];
+  const denied = verification.candidatePairs(template, { answers: { '3.2': { value: 'No' }, '3.3': { value: 'No' } }, tables: {} }, pepLine).map(p => p.questionId);
+  assert.deepEqual(denied, ['3.2']);
+  assert.equal(verification.candidatePairs(template, { answers: { '3.2': { value: 'Yes', details: 'The chairman is a serving official' }, '3.3': { value: 'No' } }, tables: {} }, pepLine).length, 0);
 });
 
 test('answer verification offline: contradictions are shown with both sides quoted and add the points once', async () => {

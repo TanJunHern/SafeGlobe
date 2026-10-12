@@ -24,7 +24,10 @@ const clean = (s, max = 300) => String(s || '').replace(/\s+/g, ' ').trim().slic
 // What kind of answer is compared with what kind of finding
 // Only questions that ask "is this true of you?" are compared; questions about having a policy or a control are not.
 const CHECKS = [
-  { id: 'pep', label: 'Politically exposed persons', question: /\bPEP\b|politically exposed/i, categories: ['pep_owner', 'pep_associate'] },
+  // "Is an owner or director a PEP?" is compared with a PEP finding about an owner or director; the question about
+  // family members and close associates only with a finding about one of those.
+  { id: 'pep', label: 'Politically exposed persons', question: /\bPEP\b|politically exposed/i, not: /family member|close associate/i, categories: ['pep_owner'] },
+  { id: 'pep_associate', label: 'Family or close associates of a PEP', question: /family member or close associate of a government official or pep/i, categories: ['pep_associate'] },
   { id: 'sanctions', label: 'Sanctions', question: /sanctioned person/i, not: /policy|screen|refused|jurisdiction/i, categories: ['sanctions_confirmed', 'sanctions_possible'] },
   { id: 'violations', label: 'Violations and adverse news', section: /violation/i, categories: ['adverse_media_severe', 'adverse_media_other'] },
   { id: 'ownership', label: 'Beneficial owners', question: /beneficial owner/i, table: true, categories: ['ownership_unclear'] },
