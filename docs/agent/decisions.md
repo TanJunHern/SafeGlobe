@@ -184,28 +184,56 @@ unless a line here changes them.
 - The other Phase 3 defaults are confirmed: automatic re-screen on a High ripple inside the daily cap; the
   12-hour policy text and the 24-hour scoring rule both left as they are; the demo page as the changed page.
 - Phase 3 work committed and pushed to `DueBilly` (`31d6f1d`) at the user's request.
-- **Phase 4 is not approved yet.** The user asked for this clean-up first.
+- Phase 4: the user said "proceed to phase 4" after the clean-up. Its plan was written and shown for approval
+  (approval before each phase). Coding starts when the plan is approved.
+
+## Change of direction (12 Oct 2026): machine learning on review labels
+
+- The user asked Gemini to **leave workflows and UI to the user and focus on the AI integration** (40% of the
+  scoring), centred on the **Reviews tab**.
+- The user asked for research on Vertex AI machine learning, and for a supervised model trained on the decisions
+  compliance officers record, aimed at false negatives, that gets better with more reviews. Vertex AutoML named.
+- This conflicts with `GEMINI.md` rule 5 (no model training; `CREATE MODEL` on hold) and section 10 (the AI never
+  sets the risk number or the route). Gemini reported the research and asked the user to confirm before training
+  anything. **Nothing has been trained and no Phase 4 code is written.**
+- The Phase 4 plan in `implementation_plan.md` is on hold until the user answers.
+
+## The review model: decisions (12 Oct 2026)
+
+The user's answers ("Do this now"):
+- **Rule 5 is lifted for this model.** Use BigQuery ML boosted trees.
+- **The model suggests; it does not score.** "Prediction as you mention": it flags a likely miss for review and
+  never changes the score or the route.
+- **Synthetic labelled data: yes**, "because of AI governance and demo purposes".
+- **Gemini updates the Reviews UI for this** (the user asked for it here, although the user owns UI in general):
+  the officer can classify a case red or green; keep it simple; add hints that explain prediction, inference,
+  suggestion and hyperparameter tuning, tied into the risk-by-confidence chart.
+- The earlier Phase 4 plan (forecast, anomalies, name matching) is **not built** and is kept as
+  `implementation_plan.phase4-bigquery-ai.md`. Features 4, 11 and 13 of `GEMINI.md` are therefore open.
+
+Choices Gemini made while building, to confirm:
+- An officer's own review counts 10 times a synthetic one in training.
+- "Likely miss" at a prediction of 50% or more (a setting); "likely false alarm" at 20% or less.
+- The synthetic officer's miss patterns include "a company whose points come from a vessel it manages", which is
+  the Halcyon Marine situation. So after Halcyon is marked red and the model is retrained, Halcyon shows as a
+  likely miss. This is by design of the synthetic data, and the screens say the data is synthetic.
+- Offline there is a real model too (boosted trees trained inside the app), labelled "Offline model".
+- BigQuery ML has **not** been called yet. Not confirmed: boosted-tree training and tuning in `asia-southeast1`,
+  the columns of `ML.TRIAL_INFO`, and the price of a training run.
+
+## BigQuery ML: first live run (12 Oct 2026)
+
+- The user set `BIGQUERY=bigquery`, deployed (revision `duedilly-uat-00006-xlt`) and pressed Train. That is the
+  section 9.1 go-ahead for BigQuery ML.
+- **It worked first time.** `CREATE MODEL` (boosted trees, 6 tuning trials) ran in `asia-southeast1` and took
+  26 min 47 s. Model `duedilly_uat.review_risk_model`, table `duedilly_uat.review_labels` (800 synthetic rows).
+- Tuning: trial 6 kept (tree depth 5, learning rate 0.4, AUC 0.775 on BigQuery's own evaluation split).
+- On the 101 held-back reviews: AUC 0.837, recall 77%, precision 76%, 18 of 28 low-scored risks flagged.
+- Predictions with reasons came back from `ML.EXPLAIN_PREDICT`. Halcyon Marine: 59%, likely miss.
+- A 403 the user saw in the browser console was `GET /api/sources/records` asked at page start before sign-in.
+  Harmless; fixed in the page (asked only when signed in as an officer, and when the Sources tab is opened).
+- The cost of the training run is not known yet (check Billing > Reports tomorrow).
 
 ## Open questions
 
-None.
-
-## Accounts phase approvals (12 Oct 2026)
-
-The plan in `implementation_plan.md` (Accounts phase) is approved with these answers:
-
-| # | Topic | Decision |
-| --- | --- | --- |
-| 1 | Employees | Keep it simple: employees only get the table-only employee portal. |
-| 2 | Role table | Approved as written. `/v1/screen` stays open for demo purposes. |
-| 3 | `COMPLIANCE_OFFICER_EMAILS` | No longer grants access. It stays in `.env.example`, marked "no longer used". An officer is whoever created the workspace or was promoted in Settings. |
-| 4 | One email, one workspace | Approved. "Create an account" is refused for an email that already has an account or a pending invitation. |
-| 5 | Cloud Run restarts | Accepted for the hackathon. Accounts and workspaces live in SQLite on the container disk and are lost on restart. A warning at the start says this is a demo version and data is not saved after a restart. A hosted database is not in scope. |
-| 6 | Reference data | Approved: default scoring rules, the default CDDQ questionnaire and default monitoring settings are part of the app and present in every new workspace, with sanctions, PEP, CPI and policies. |
-
-Built the same day. Choices made while building, to confirm:
-- Live Ask Dilly (the ADK agent) answers only in the Demo workspace for now; created workspaces get the built-in
-  answers. Reason: the agent's lookup tools do not yet carry a workspace.
-- `/api/places` (address lookup) stays open: it holds no workspace data and the counterparty page uses it.
-- The built-in VesselFinder source is present in every workspace, as part of the app.
-- Section 9.1: the first live Google sign-in has **not** been made. Asked on 12 Oct; waiting.
+- Build the rest of the old Phase 4 (forecast, anomalies, name matching), or go to Phase 5?

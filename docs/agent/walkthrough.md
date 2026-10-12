@@ -470,3 +470,106 @@ To see the live agents on your computer: `APP_ENV=uat npm run agents` in one ter
 9. Events `screening-completed` and `ddq-submitted` are published but nothing listens yet: Phase 4 (BigQuery)
    and Phase 5 (DDQ flow) use them.
 
+---
+
+## The review model: Dilly learns from officers' reviews (12 Oct 2026)
+
+Built by Gemini Code, on this computer. **Status: built and tested offline. BigQuery ML has not been called yet**
+(section 9.1: waiting for the go-ahead). Not deployed. This replaces the earlier Phase 4 plan, which is not built.
+
+### What it is, in one paragraph
+
+A compliance officer marks a case **red** (real risk) or **green** (not a risk). Each mark is a labelled example.
+A supervised classifier (boosted decision trees) is trained on the examples and then predicts, for every case,
+how likely an officer is to mark it as real risk. Where that prediction disagrees with the rules, Dilly makes a
+suggestion: a **likely miss** (the rules scored it below 50, but officers mark cases like it red) or a likely
+false alarm. The model never changes a score, a confidence or a route. A person decides.
+
+### What changed
+
+| Area | Files |
+| --- | --- |
+| The 18 features of a case, taken from its score breakdown | `src/learning/features.js` (new) |
+| Synthetic labelled reviews: seeded, marked synthetic | `src/learning/syntheticReviews.js` (new) |
+| Offline model: boosted trees trained inside the app, with tuning trials and reasons | `src/learning/localModel.js` (new) |
+| BigQuery ML: the SQL to train with tuning, read the trials, and explain predictions | `src/learning/bqModel.js` (new) |
+| Labels, training, inference, suggestions, the glossary | `src/learning/learningService.js` (new) |
+| BigQuery over REST, with a bytes limit on every ordinary query | `src/services/bigquery.js` (new) |
+| API | `src/routes/learning.js` (new), `src/server.js` |
+| Tables `review_labels`, `ml_models`, `ml_predictions` | `src/db/sqlite.js` |
+| Reviews: red and green per case, the prediction, rings on the chart, the "Dilly learns" tab | `safe-globe.html` |
+| Settings and guide | `src/config.js`, `.env.example` (6 new blocks), `scripts/deploy.sh`, `DEPLOY_GUIDE.md` step 6 |
+| Tests | `tests/learning.test.js` (new, 10 tests) |
+
+New variables: `BIGQUERY`, `BIGQUERY_DATASET`, `BIGQUERY_LOCATION`, `BIGQUERY_MAX_BYTES_BILLED`,
+`ML_TUNING_TRIALS`, `ML_TRAIN_DAILY_CAP`. No npm package was added.
+
+### How to see it (offline, today)
+
+`npm run dev`, sign in as Grace Teo, open **Reviews**.
+
+1. **Dilly learns** tab > **Add synthetic demo data (800 reviews)** > **Train the model**. About two seconds
+   offline. The four cards fill in: training data, the tuning trials (the kept one is highlighted), how good it is
+   on reviews it never saw, and the predictions and suggestions.
+2. **Case queue**: each case now shows "NN% likely real risk" and two buttons, **Red** and **Green**.
+   Hover the prediction for the reasons.
+3. **Teach it something.** Halcyon Marine scores 40 under the rules (auto-clear) and the model does not flag it
+   (49%). Press **Red** on Halcyon, go to Dilly learns, press **Retrain on all reviews**. Halcyon now
+   shows 93% and a **Likely miss** flag, and the table "It improves as reviews are added" has a second row.
+4. **Risk and confidence** tab: a solid red ring marks a likely miss, a dashed ring a likely false alarm. The text
+   under the chart explains the three signals (risk from the rules, confidence from the evidence, prediction from
+   past reviews) and uses the words prediction, inference, suggestion and hyperparameter tuning.
+5. **The words, in plain terms** card at the bottom of Dilly learns explains each term.
+
+### How it was tested
+
+- `npm test`: **215 pass, 0 fail**, offline (205 before). `npm run test:agents`: 11 pass, unchanged.
+- The new tests cover: the features of Aurora Venture; the synthetic data (same seed gives the same rows, every row
+  marked synthetic, it contains misses); training with six tuning trials and one kept; measurement on held-back
+  reviews; a known miss pattern raising a prediction with the right reason; more reviews catching more misses; the
+  suggestion rules; label, correct, train and predict end to end; **an officer's correction raising the next
+  model's prediction for that case**; **no score, confidence or route changing at any step**; the daily cap; the
+  exact BigQuery ML SQL (`BOOSTED_TREE_CLASSIFIER`, `NUM_TRIALS`, `HPARAM_RANGE`, held-back rows excluded, values
+  sent as a parameter); the parsing of predictions and trials; the whole BigQuery ML path against a stand-in,
+  including the fallback to the offline model when BigQuery refuses; and the API with role checks.
+- In Chrome on the local server: the Dilly learns tab after training, the new column in the case queue, the ring
+  on the risk-by-confidence chart for Halcyon Marine after it was marked red and the model retrained, and Halcyon
+  appearing under "Needs a person" with its flag.
+- **Not tested, because it needs the go-ahead:** any real BigQuery ML call. The likeliest first-run problems:
+  boosted-tree training or tuning not offered in `asia-southeast1`, the field names in `ML.TRIAL_INFO`, and how
+  long a tuned training run takes (expect minutes, not seconds).
+
+### Numbers from the offline model on the synthetic data (measured 12 Oct, through the API)
+
+| Trained on | Held-back test reviews | AUC | Recall | Precision | Low-scored risks caught |
+| --- | --- | --- | --- | --- | --- |
+| 200 synthetic | 25 | 0.814 | 75% | 69% | 4 of 7 |
+| 800 synthetic | 101 | 0.872 | 66% | 78% | 13 of 28 |
+| 800 synthetic + Halcyon marked red | 101 | 0.870 | 68% | 79% | 14 of 28 |
+
+Halcyon Marine's prediction: 49% after 800 synthetic reviews (no flag), 93% and "Likely miss" after it was marked
+red and the model retrained. The same reviews are held back on every run, so the rows can be compared.
+**These describe a model trained on synthetic labels. They say nothing about accuracy on real cases.**
+
+### Things you should know, and decide
+
+1. **The synthetic data decides what the model learns.** The invented officer marks seven low-scoring patterns
+   as real risk (several findings left out; a mid-risk country with unclear ownership; a broker in a weak-governance
+   country; points resting on lower-trust sources; state-owned in a low-CPI country; checks that did not run; and
+   a company whose points come from a vessel it manages). The last one is the Halcyon situation, on purpose, so
+   the demo has a case to learn. The pitch can say "this is the learning loop on synthetic reviews"; it cannot
+   claim a measured accuracy.
+2. **Your own reviews count 10 times a synthetic one.** Without that, one correction among 800 synthetic rows
+   changes nothing you can see. My choice; say if you want another weight.
+3. **Thresholds:** likely miss at 50% or more, likely false alarm at 20% or less. The first is a setting
+   (`PUT /api/learning/threshold`); there is no slider for it on the screen.
+4. **A likely miss is listed under "Needs a person"** in the Case queue, even when the rules auto-cleared it, with
+   its flag on the row. Its route and score do not change. This is the one change I made to the queue itself;
+   say if you would rather handle it in your own workflow.
+5. **Offline there is a real model too**, so the loop always works. It is labelled "Offline model". With
+   `BIGQUERY=bigquery` the same button trains on BigQuery ML and the page waits for it.
+6. **`GEMINI.md` still says "no model training" (rule 5).** You lifted it for this model; I recorded that in
+   `decisions.md` and did not edit `GEMINI.md`. Tell me if you want the file itself changed.
+7. **Not built:** Pond forecast, AIS anomaly checks and embedding name matching (features 4, 13 and 11). The old
+   plan is kept in `implementation_plan.phase4-bigquery-ai.md`.
+

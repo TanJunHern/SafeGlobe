@@ -110,6 +110,17 @@ module.exports = {
     location: (process.env.AGENT_SEARCH_LOCATION || 'global').trim(),
     dailyCap: wholeNumber(process.env.AGENT_SEARCH_DAILY_CAP, 200)
   },
+  // The review model (src/learning). local: boosted trees trained inside the app. bigquery: BigQuery ML boosted trees.
+  bigquery: {
+    mode: (process.env.BIGQUERY || 'local').toLowerCase() === 'bigquery' ? 'bigquery' : 'local',
+    dataset: (process.env.BIGQUERY_DATASET || '').trim(),
+    location: (process.env.BIGQUERY_LOCATION || process.env.GCP_REGION || 'asia-southeast1').trim(),
+    // No ordinary query may bill more than this; a mistake fails instead of costing money
+    maxBytesBilled: wholeNumber(process.env.BIGQUERY_MAX_BYTES_BILLED, 100 * 1024 * 1024)
+  },
+  // Training runs allowed per day across all users, and how many settings the tuning tries. 0 = no cap.
+  mlTrainDailyCap: wholeNumber(process.env.ML_TRAIN_DAILY_CAP, 6),
+  mlTuningTrials: Math.max(1, Math.min(20, wholeNumber(process.env.ML_TUNING_TRIALS, 6))),
   // Cloud Storage bucket for page snapshots when DOCUMENT_STORAGE=gcs. Empty: a local folder.
   gcsBucket: (process.env.GCS_BUCKET || '').trim(),
   // Supporting documents: 'local' disk for now; 'firebase' is a placeholder driver (services/documentStorage.js)
