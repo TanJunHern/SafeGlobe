@@ -120,15 +120,15 @@ router.post('/assistant', aiRateLimit, guest((body, state) => {
 }));
 
 // POST /api/ddq/prefill  { token, filename, mimeType, base64Data | fileContent }
-router.post('/prefill', aiRateLimit, guest((body, state) => {
+// Duck-Scanner: Document AI reads the file and Gemini maps it to the questions, each answer with a confidence.
+// Tables (for example the beneficial owners) still come from the earlier reader. Nothing is submitted.
+router.post('/prefill', aiRateLimit, guest(async (body, state) => {
   const assistant = require('../services/ddqAssistantService');
-  return assistant.prefillFromDocument({
-    template: state.template,
-    filename: body.filename,
-    mimeType: body.mimeType || '',
-    base64Data: body.base64Data || '',
-    fileContent: body.fileContent || ''
-  });
+  const scanner = require('../services/duckScannerService');
+  const input = { template: state.template, filename: body.filename, mimeType: body.mimeType || '', base64Data: body.base64Data || '', fileContent: body.fileContent || '' };
+  const [scan, earlier] = await Promise.all([scanner.scan(getDb(), input), assistant.prefillFromDocument(input).catch(() => null)]);
+  if (!scan.success) return scan;
+  return Object.assign({}, scan, { tables: (earlier && earlier.success && earlier.tables) || {} });
 }, { requireOpen: true }));
 
 // POST /api/ddq/translate  { token, language }
@@ -138,6 +138,23 @@ router.post('/translate', aiRateLimit, guest((body, state) => {
 }));
 
 // GET /api/ddq/:id
+// GET /api/ddq/verification/:kycId   the stored comparison of a returned questionnaire with the findings
+router.get('/verification/:kycId', officerOnly, (req, res) => {
+  const result = getDb().getDdqVerification(req.params.kycId);
+  if (!result) return res.status(404).json({ error: 'This questionnaire has not been checked yet' });
+  res.json(result);
+});
+
+// POST /api/ddq/verification/:kycId   answer verification (feature 7): run it again
+router.post('/verification/:kycId', aiRateLimit, officerOnly, async (req, res) => {
+  try {
+    res.json(await require('../services/answerVerificationService').verify(getDb(), req.params.kycId));
+  } catch (err) {
+    if (!err.status) console.error('[Answer verification]', err);
+    res.status(err.status || 500).json({ error: err.status ? err.message : 'The answers could not be checked' });
+  }
+});
+
 router.get('/:id', officerOnly, (req, res) => {
   const db = getDb();
   const entity = db.getEntityById(req.params.id);
@@ -212,7 +229,7 @@ router.post('/submit', async (req, res) => {
 
   try {
     const result = await submitKycDdqAnswers(token, responses || req.body);
-    try { require('../events/bus').publish('ddq-submitted', { kycId: (result && (result.id || (result.request && result.request.id))) || null, submittedAt: new Date().toISOString() }); } catch (e) {}
+    try { require('../events/bus').publish('ddq-submitted', { kycId: (result && (result.request_id || result.id || (result.request && result.request.id))) || null, submittedAt: new Date().toISOString() }); } catch (e) {}
     res.json(result);
   } catch (err) {
     console.error('Error submitting DDQ answers:', err);

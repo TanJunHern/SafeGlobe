@@ -5,7 +5,8 @@
  *   source-changed       each counterparty a changed page newly names gets a ripple
  *   screening-requested  Pond-Guard screens the counterparty again (inside the daily cap), else its score is re-computed
  *   rescreen-due         the monitored requests that are due are re-screened
- *   screening-completed, ddq-submitted   published for the analytics tables (Phase 4) and the DDQ flow (Phase 5)
+ *   ddq-submitted        the returned answers are compared with the findings (answer verification)
+ *   screening-completed  published; nothing listens yet
  */
 const bus = require('./bus');
 const { getDb } = require('../db');
@@ -70,6 +71,11 @@ function register() {
   bus.on('source-changed', onSourceChanged);
   bus.on('screening-requested', onScreeningRequested);
   bus.on('rescreen-due', onRescreenDue);
+  // A returned questionnaire is compared with the findings of its case (answer verification)
+  bus.on('ddq-submitted', async payload => {
+    if (!payload.kycId) return;
+    try { await require('../services/answerVerificationService').verify(getDb(), payload.kycId); } catch (err) { if (err.status !== 404) throw err; }
+  });
 }
 
 module.exports = { register, matchEntity, onSourceChanged, onScreeningRequested };

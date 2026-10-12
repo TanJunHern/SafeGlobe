@@ -83,6 +83,16 @@
 - [x] Reviews: red and green per case, prediction and suggestion, rings on the chart, "Dilly learns" tab, hints
 - [x] `.env.example`, `scripts/deploy.sh`, `DEPLOY_GUIDE.md` step 6
 - [x] Tests pass offline (215 Node, 11 Python)
-- [ ] Section 9.1 checkpoint: BigQuery ML (asked 12 Oct, waiting)
-- [ ] First live training run; fixes if needed
+- [x] Section 9.1 go-ahead for BigQuery ML; first live training run worked on UAT (26 min 47 s, no fix needed)
 - [ ] Not built: Pond forecast (4), name matching (11), AIS anomalies (13). Old plan kept, user to decide
+
+## Phase 5, in part: reviewer copilot, Duck-Scanner, answer verification (user chose "A and C", 12 Oct)
+- [x] Reviewer copilot (5): Gemini draft with checked citations, computed route only, draft and final stored
+- [x] Duck-Scanner (14): Document AI Form Parser then Gemini mapping with confidence; checks; "not sure" marker
+- [x] Answer verification (7): fixed pairings, Gemini judges each pair, points once, runs on `ddq-submitted`
+- [x] Review dialog and supplier portal hooks; `.env.example`, `scripts/deploy.sh`, `DEPLOY_GUIDE.md` step 9
+- [x] Tests pass offline (225 Node, 11 Python); copilot, verification and scanner run live on Vertex AI locally
+- [x] Section 9.1 go-ahead for Document AI; first live call worked (1 page, 8 form fields, 12 answers, 8.9 s)
+- [ ] Deployed to UAT by the user
+- [ ] Not built: Quack-Back (6), automatic DDQ email (16), Request more info (17), "How Dilly works" (15)
+

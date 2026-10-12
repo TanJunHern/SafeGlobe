@@ -86,6 +86,8 @@ app.use('/api/monitoring', require('./routes/monitoring'));
 app.use('/api/risk', officerOnly, require('./routes/risk'));
 app.get('/risk/source', require('./routes/auth').pageSession, require('./routes/risk').sourcePage);
 // Pond-Guard screening and Ask Dilly through the ADK agents service, with the read-only tools that agent may call
+// Reviewer copilot: an AI draft of the case summary and decision reason; a person confirms or edits it
+app.use('/api/copilot', officerOnly, require('./routes/copilot'));
 // The review model: officers' red and green labels, training, predictions (src/learning)
 app.use('/api/learning', officerOnly, require('./routes/learning'));
 app.use('/api/pond-guard', require('./routes/pondGuard'));
