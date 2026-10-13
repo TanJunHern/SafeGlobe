@@ -79,6 +79,12 @@ async function crawlerProposeFix(payload, { timeoutMs = 60000 } = {}) {
   try { return await res.json(); } finally { done(); }
 }
 
+/** Country risk agent: the countries one page names, each with a category and a quote. { countries: [{ name, category, evidence_quote }], note, model_id } */
+async function countryRiskExtract(payload, { timeoutMs = 150000 } = {}) {
+  const { res, done } = await post('/country-risk/extract', payload, timeoutMs);
+  try { return await res.json(); } finally { done(); }
+}
+
 async function health({ timeoutMs = 5000 } = {}) {
   if (!config.agentsServiceUrl) return null;
   try {
@@ -89,4 +95,4 @@ async function health({ timeoutMs = 5000 } = {}) {
   }
 }
 
-module.exports = { configured, screen, ask, crawlerExtract, crawlerProposeFix, health };
+module.exports = { configured, screen, ask, crawlerExtract, crawlerProposeFix, countryRiskExtract, health };

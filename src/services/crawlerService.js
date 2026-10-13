@@ -131,12 +131,13 @@ async function polite(host, gapMs) {
   lastRequestAt.set(host, Date.now());
 }
 
-async function readBody(res, maxBytes) {
+// whole: a data file is read completely or not at all (null), never cut short
+async function readBody(res, maxBytes, whole = false) {
   const chunks = [];
   let size = 0;
   for await (const chunk of res.body) {
     size += chunk.length;
-    if (size > maxBytes) break;
+    if (size > maxBytes) { if (whole) return null; break; }
     chunks.push(Buffer.from(chunk));
   }
   return Buffer.concat(chunks).toString('utf8');
@@ -148,7 +149,9 @@ const looksLikeSignIn = pathname => /\/(login|log-in|signin|sign-in|sso|auth|oau
  * Reads one page, or says why it was not read.
  * Returns { status: 'read' | 'blocked' | 'needs_sign_in' | 'failed', reason, html, finalUrl, robots }.
  */
-async function fetchPage(db, pageUrl, { fetchImpl = fetch, lookup = dns.lookup, gapMs = LIMITS.gapMs, demoPage = false } = {}) {
+async function fetchPage(db, pageUrl, { fetchImpl = fetch, lookup = dns.lookup, gapMs = LIMITS.gapMs, demoPage = false, file = null } = {}) {
+  // file: a data file instead of a web page (country risk views): { types: RegExp, maxBytes, timeoutMs, accept }
+  const timeoutMs = (file && file.timeoutMs) || LIMITS.timeoutMs;
   let url;
   try { url = new URL(pageUrl); } catch (err) { return { status: 'failed', reason: 'That is not a web address.' }; }
 
@@ -160,7 +163,7 @@ async function fetchPage(db, pageUrl, { fetchImpl = fetch, lookup = dns.lookup, 
   }
 
   const robotsCache = new Map();
-  const headers = { 'User-Agent': userAgent(), Accept: 'text/html,text/plain;q=0.9' };
+  const headers = { 'User-Agent': userAgent(), Accept: (file && file.accept) || 'text/html,text/plain;q=0.9' };
   for (let hop = 0; hop <= LIMITS.maxRedirects; hop++) {
     const refused = await publicHost(url, lookup);
     if (refused) return { status: 'failed', reason: refused };
@@ -184,7 +187,7 @@ async function fetchPage(db, pageUrl, { fetchImpl = fetch, lookup = dns.lookup, 
     let res;
     try {
       // No cookies and no credentials are ever sent. Redirects are followed by hand so each hop is checked.
-      res = await fetchImpl(url.href, { headers, redirect: 'manual', credentials: 'omit', signal: AbortSignal.timeout(LIMITS.timeoutMs) });
+      res = await fetchImpl(url.href, { headers, redirect: 'manual', credentials: 'omit', signal: AbortSignal.timeout(timeoutMs) });
     } catch (err) {
       return { status: 'failed', reason: err.name === 'TimeoutError' ? 'The site did not answer in time.' : 'The site could not be reached.' };
     }
@@ -199,6 +202,13 @@ async function fetchPage(db, pageUrl, { fetchImpl = fetch, lookup = dns.lookup, 
     }
     if (!res.ok) return { status: 'failed', reason: `The site answered ${res.status}.` };
     const type = (res.headers.get('content-type') || '').toLowerCase();
+    if (file) {
+      if (type && !file.types.test(type)) return { status: 'failed', reason: `The file is not of the expected kind (the site sent ${type.split(';')[0]}).` };
+      let body;
+      try { body = await readBody(res, file.maxBytes, true); } catch (err) { return { status: 'failed', reason: 'The download stopped before the end of the file.' }; }
+      if (body === null) return { status: 'failed', reason: `The file is larger than the limit of ${Math.round(file.maxBytes / 1048576)} MB.` };
+      return { status: 'read', html: body, finalUrl: url.href, robots: 'allowed', contentType: type };
+    }
     if (type && !/text\/html|text\/plain|application\/xhtml/.test(type)) return { status: 'failed', reason: 'The page is not a web page or plain text.' };
     const html = await readBody(res, LIMITS.maxBytes);
     const text = stripHtml(html);

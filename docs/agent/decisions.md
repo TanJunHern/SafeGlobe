@@ -255,6 +255,50 @@ Choices Claude made while building, to confirm:
 - Cost: one page.
 - Deploy: `CLAUDE.md` rule 4 says the user runs deploys. Claude did not run it and gave the command.
 
+## Country risk views on the Globe (13 and 14 Oct 2026)
+
+The user's answers to the plan's questions, in the user's words, and how Claude read them:
+
+| # | Answer | Reading |
+| --- | --- | --- |
+| 1 | "Ok do the 4 first." | FATF, OFAC, EU and CPI. CPI is the existing "CPI 2025" fill, left as it is (21 countries). FSI and CTHI are not built. |
+| 2 | "Ignore since wont be using." | Basel AML Index and TRACE are left out. |
+| 3 | "Colour depends on them, you can create a legend to show what the colour means." | The colour comes from each view's categories, and the legend explains it. Claude's choice, to confirm: FATF call for action red, increased monitoring amber; "named in an OFAC programme" and "named in an EU regime" amber, because a programme name can mention a country that is not its target. One line in `views.config.js` changes it. |
+| 4 | "Yes at the moment make it a weekly default." | Weekly. |
+| 5 | "Just reflect it on the globe." | Display only. No points row. |
+| 6 | "Add a fallback if the weekly rescreen doesnt run." | Question 6 (where the fetch runs) was not answered directly. Built as recommended: the app fetches with the feature 3 guards, the ADK agent extracts. Fallback built: if the scheduled tick has not come 6 hours after a view fell due, opening the Globe starts the check. To confirm. |
+| 7 | "Make sure the connections work." | Go-ahead to connect to the three sites, read-only, from this computer, including the app's first live fetch (section 9.1). |
+| - | "Try not to hard code anything and utilise google adk." | No country is in the code. OFAC is read by the ADK agent instead of a hand-written name match. The EU download link is read from the data portal's dataset record, not written in the code. |
+
+Questions 8 and 9 were not answered; the recommended defaults are used: the "How Dilly works" line is served by the
+API and shown in the Layers panel until feature 15 exists, and CPI keeps its 21 countries.
+
+What the connections showed (13 and 14 Oct, user agent `DueDillyBot/1.0`):
+- **FATF**: `robots.txt` and the page both answer 403 with a Cloudflare "Just a moment..." challenge. Not worked
+  around. The view is "Needs upload": an officer saves the page in a browser and uploads it; the ADK agent reads it.
+- **OFAC**: the address in the request redirects to `ofac.treasury.gov`. The page read is
+  `https://ofac.treasury.gov/sanctions-programs-and-country-information` (65 KB, `robots.txt` allows it). First live
+  run: 1 Gemini call (`gemini-3.5-flash` on Vertex AI, about 65 s), 22 countries, none rejected; second run
+  "unchanged", no call. No terms of use were read; the JSON's `licence_note` says so.
+- **EU**: the dataset page is a JavaScript app. The data portal's API record for the dataset names the files; the
+  newest CSV ("Consolidated Financial Sanctions File 1.1", 25 MB, on `webgate.ec.europa.eu`, which has no
+  `robots.txt`) is read. Licence on the record: European Commission reuse notice. First live run: 24 countries, 10
+  thematic regime codes left out and listed (TERR, TAQA, EUAQ, CHEM, CYB, HR, HAM, SDNZ, RUSDA, UNLI). One earlier
+  attempt failed on a `robots.txt` timeout and was marked failed, as designed.
+
+How the OFAC and EU country views are derived:
+- **OFAC**: the agent returns, for each programme on the page whose name refers to a country, that country and the
+  programme name as the quote. Code checks the quote is on the page and maps the name to ISO-3. So "Burma-Related
+  Sanctions" gives MMR and "Ukraine-/Russia-related Sanctions" gives both UKR and RUS. Programmes that name no
+  country (for example the one for Syria's former government, "PAARSS") give nothing.
+- **EU**: every row carries a regime code (`Entity_Regulation_Programme`). A code that is an ISO alpha-3 code is
+  that country. The quote is the regime's newest regulation and the code as they stand in the file. `UKR` is the
+  regime about Ukraine's territorial integrity, so Ukraine is coloured as well as Russia (`RUS`).
+
+Differences from the plan: no "one level of same-site links" and no PDF reading (FATF could not be fetched at all,
+so neither could be tried); the upload button is in the Layers panel, not the Sources tab; a failed check is tried
+again the next day; new setting `COUNTRY_RISK_FETCH` (off unless `live`) so dev and the tests contact no website.
+
 ## Open questions
 
 - Build the rest of the old Phase 4 (forecast, anomalies, name matching), or go to Phase 5?

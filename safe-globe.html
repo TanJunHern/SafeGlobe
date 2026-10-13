@@ -281,7 +281,7 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px
 .zoom-stack button:hover{background:var(--surface-2);color:var(--fg)}
 .layers-btn{height:38px;padding:0 12px;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500}
 .layers-btn.on{color:var(--accent)}
-.layers{width:264px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.layers{width:264px;padding:12px;display:flex;flex-direction:column;gap:4px;max-height:calc(100vh - 170px);overflow-y:auto}
 .layers h3{margin:2px 2px 6px;font-size:11px}
 .l-row{display:flex;align-items:center;gap:10px;padding:7px 4px;border-radius:8px}
 .l-row label{flex:1;display:flex;flex-direction:column;cursor:pointer;font-size:13px;font-weight:500}
@@ -306,6 +306,27 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px
 .legend-tune label{display:grid;grid-template-columns:1fr auto;font-size:11.5px;color:var(--fg-2);gap:2px 8px;align-items:center}
 .legend-tune input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}
 .legend.cov .legend-cpi,.legend:not(.cov) .legend-cov{display:none}
+/* Country risk views (src/countryRisk): the view list, the legend block and the refresh control */
+.legend.crv .legend-cpi,.legend.crv .legend-cov,.legend:not(.crv) .legend-crv{display:none}
+.legend-crv .crv-key{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:2px 0}
+.legend-crv .crv-key i{width:10px;height:10px;border-radius:3px;flex:none;border:1px solid var(--line-2)}
+.legend-crv .crv-key span{flex:1}
+.legend-crv dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:8px 0 0;font-size:10.5px;color:var(--fg-3)}
+.legend-crv dd{margin:0;color:var(--fg-2)}
+.legend-crv p{margin:6px 0 0;font-size:10.5px;color:var(--fg-3)}
+.legend-crv .warn{color:var(--mid-ink)}
+.crv-list{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.crv-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--fg);font:500 13px var(--f-body);cursor:pointer;text-align:left}
+.crv-opt:hover{background:var(--surface-2)}
+.crv-opt.on{background:var(--surface-2);border-color:var(--line-2)}
+.crv-opt span{flex:1}
+.crv-opt small{font-size:10.5px;color:var(--fg-3);font-weight:400}
+.crv-opt small.warn,.crv-refresh small.warn{color:var(--mid-ink)}
+.crv-refresh{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.crv-refresh select{height:28px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);font-size:12px;padding:0 6px}
+.crv-refresh .crv-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px;color:var(--fg-2)}
+.crv-refresh .crv-up{align-self:flex-start;margin:0 0 4px 0}
+.crv-refresh p{margin:0 4px;font-size:11px;color:var(--fg-3)}
 
 .ticker{position:absolute;z-index:5;left:var(--wl);right:calc(14px + var(--dr));bottom:14px;height:36px;display:flex;align-items:center;gap:10px;padding:0 6px 0 12px;overflow:hidden;transition:left .35s ease,right .4s cubic-bezier(.2,.8,.2,1)}
 .ticker .live{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--accent);white-space:nowrap;text-transform:uppercase}
@@ -1156,6 +1177,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
             <button data-fill="cov" type="button" style="flex:1;justify-content:center">Coverage</button>
             <button data-fill="off" type="button" style="flex:1;justify-content:center">Off</button>
           </div>
+          <div class="crv-list" id="crv-list"></div>
           <div class="l-sep"></div>
           <h3 class="eyebrow">Overlays</h3>
           <div class="l-row"><label for="ly-org">Organisations<small>Registered and operating addresses</small></label><span class="switch"><input id="ly-org" type="checkbox" checked><span></span></span></div>
@@ -1163,6 +1185,9 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           <div class="l-row"><label for="ly-arc">Duckling trail<small>Web agent · registry, filing, news</small></label><span class="switch"><input id="ly-arc" type="checkbox" checked><span></span></span></div>
           <div class="l-row"><label for="ly-wx"><span>Pond forecast <span class="beta">BETA</span></span><small>Forecast agent · 90-day outlook</small></label><span class="switch"><input id="ly-wx" type="checkbox"><span></span></span></div>
           <div class="l-row"><label for="ly-lbl">Country names</label><span class="switch"><input id="ly-lbl" type="checkbox" checked><span></span></span></div>
+          <div class="l-sep"></div>
+          <h3 class="eyebrow">Country risk data</h3>
+          <div class="crv-refresh" id="crv-refresh"><p>Loading the country risk views.</p></div>
         </div>
         <div class="zoom-stack panel">
           <button id="z-in" type="button" aria-label="Zoom in"><svg class="ic"><use href="#i-plus"/></svg></button>
@@ -1192,6 +1217,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           </div>
           <div class="legend-src"><span>Lowers profile confidence where weak</span></div>
         </div>
+        <div class="legend-crv" id="legend-crv"></div>
       </div>
 
       <div class="ticker panel" id="ticker">
@@ -2438,6 +2464,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
 <script src="/duck-tour.js"></script>
 <script src="/dilly-loader.js"></script>
 <script src="/monitoring-ui.js"></script>
+<script src="/country-risk-views.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
 /* =====================================================================
@@ -2711,11 +2738,21 @@ const COV_OVERRIDE={GBR:1,DNK:1,SYC:3,PAN:3};
 function coverage(p){if(p.cpi==null)return 0;if(p.a3&&COV_OVERRIDE[p.a3])return COV_OVERRIDE[p.a3];return p.cpi>=60?1:p.cpi>=40?2:3;}
 const covLabel=['No data','Strong','Partial','Limited'];
 
+// Country risk views: state and lookups (the rest is under "country risk views" further down)
+const CRV={meta:null,views:[],data:new Map(),by:new Map()};
+const crvId=()=>S.fill.startsWith('crv:')?S.fill.slice(4):null;
+const crvView=()=>CRV.views.find(v=>v.id===crvId())||null;
+const crvCountry=a3=>{const m=CRV.by.get(crvId());return m?m.get(a3)||null:null;};
+const crvDate=d=>d?new Date(d).toLocaleDateString('en-SG',{day:'numeric',month:'short',year:'numeric'}):'never';
+const crvStatus=v=>v.status==='stale'?`Stale since ${crvDate(v.staleSince)}`:v.status==='needs_upload'||(v.status==='no_data'&&v.canUpload)?'Needs upload':v.status==='sample'?'Sample':v.status==='no_data'?'No data yet':'';
+const crvCat=(v,c)=>(v.categories.find(x=>x.id===c.category)||{label:c.category||'',level:'none'});
+const crvValue=(v,c)=>v.kind==='score'?String(c.score):crvCat(v,c).label;
 let C={};
 function readColors(){const cs=getComputedStyle(document.documentElement);['low','low-soft','mid','mid-soft','high','high-soft','land-none','cov-1','cov-2','cov-3'].forEach(k=>C[k]=cs.getPropertyValue('--'+k).trim());}
 function fillFor(f){
   const p=f.properties;
   if(S.fill==='off')return C['land-none'];
+  if(crvId())return CountryRiskViews.colour(crvView(),crvCountry(p.a3),C,d3.interpolateRgb);
   if(S.fill==='cov'){const c=coverage(p);return c?C['cov-'+c]:C['land-none'];}
   const s=p.cpi;if(s==null)return C['land-none'];
   const b=band(s);let t;
@@ -3227,6 +3264,7 @@ function moveTip(e){const r=wrap.getBoundingClientRect();let x=e.clientX-r.left+
 function hideTip(){tip.classList.remove('on');}
 function countryTip(f){
   const p=f.properties;const n=ORGS.filter(o=>o.a3===p.a3&&p.name!=='Somaliland').length;
+  if(crvId())return crvTip(p);
   if(S.fill==='cov'&&p.cpi!=null){const c=coverage(p);return `<div class="tt-name">${esc(p.display)}</div><div class="tt-row"><span>Data coverage</span><b>${covLabel[c]}</b></div><div class="tt-row"><span>CPI 2025</span><b class="mono">${p.cpi}/100</b></div><div class="faint" style="margin-top:6px;font-size:11px">Demo estimate</div>`;}
   if(p.cpi==null)return `<div class="tt-name">${esc(p.display)}</div><div class="faint">No CPI 2025 score in the loaded sample</div>`;
   const b=band(p.cpi);const fc=FORECAST.find(x=>x.a3===p.a3);
@@ -3466,7 +3504,7 @@ function countryDrawer(f){
   const note=COUNTRY_NOTES[p.a3];
   const radar=ALERTS.filter(a=>{const e=ENT.get(a.id);return e&&e.a3===p.a3;});
   const chips=s!=null?`<span class="pill b-${b}">${bandLabel[b]}</span><span class="chip">CPI 2025 rank ${p.rank} of 182</span>`:`<span class="pill b-none">No score loaded</span>`;
-  const body=`${s!=null?`<div class="ctx"><div class="big num">${s}<small>/100</small></div><div><div class="eyebrow">Corruption Perceptions Index 2025</div><div class="muted" style="font-size:12.5px;margin-top:4px">${s>=S.th.low?'Perceived as relatively clean. High scores do not mean a country is free of corruption.':s>=S.th.high?'Elevated perceived public-sector corruption.':'High perceived public-sector corruption.'}</div></div></div>${scaleHTML(s)}`:`<div class="privacy">${ic('alert')}<span>No CPI 2025 score is loaded for this country. This mockup ships with a small sample; add the full 182 rows to the CPI_2025 array.</span></div>`}
+  const body=`${crvSection(p)}${s!=null?`<div class="ctx"><div class="big num">${s}<small>/100</small></div><div><div class="eyebrow">Corruption Perceptions Index 2025</div><div class="muted" style="font-size:12.5px;margin-top:4px">${s>=S.th.low?'Perceived as relatively clean. High scores do not mean a country is free of corruption.':s>=S.th.high?'Elevated perceived public-sector corruption.':'High perceived public-sector corruption.'}</div></div></div>${scaleHTML(s)}`:`<div class="privacy">${ic('alert')}<span>No CPI 2025 score is loaded for this country. This mockup ships with a small sample; add the full 182 rows to the CPI_2025 array.</span></div>`}
   <div class="sec"><div class="sec-h"><h3>Your counterparties here</h3><span class="faint mono" style="font-size:12px">${here.length}</span></div>${here.length?here.map(o=>{const oq=quad(o);return `<button class="link-row" data-open="${o.id}" type="button">${ic('org')}<div class="lr-main"><div>${esc(o.name)}</div><small>${esc(o.role)} · ${esc(o.city)}</small></div><span class="pill q-${oq}">${Q[oq].short}</span></button>`;}).join(''):'<p class="faint" style="margin:0;font-size:12.5px">None on the watchlist.</p>'}</div>
   <div class="sec"><div class="sec-h"><h3>Law and sanctions</h3><span class="agent">Ripples</span></div>${note?`<p style="margin:0;font-size:13px">${esc(note)}</p>`:''}${radar.map(a=>`<div class="finding"><div class="finding-top"><span class="agent">${esc(a.agent)}</span><time class="mono faint" style="font-size:11px">${esc(a.t)}</time></div><p style="color:var(--fg)">${esc(a.x)}</p></div>`).join('')}${!note&&!radar.length?'<p class="faint" style="margin:0;font-size:12.5px">No changes affecting your counterparties in the last 30 days.</p>':''}</div>
   ${fc?`<div class="sec"><div class="sec-h"><h3>Pond forecast <span class="beta">BETA</span></h3><span class="agent">Forecast</span></div><div class="meter"><div class="m-top"><span class="eyebrow">Chance of higher risk, 90 days</span><b class="num" style="font-size:22px">${Math.round(fc.p*100)}%</b></div><div class="bar"><i data-w="${Math.round(fc.p*100)}" style="width:0;background:var(--high)"></i></div><small class="faint">Main signal: ${esc(fc.d.toLowerCase())}. Demo outlook.</small></div></div>`:''}
@@ -3533,11 +3571,103 @@ if(vesToggle){
     toast(S.layers.ves ? 'Vessel tracking & route paths: ON' : 'Vessel tracking & route paths: OFF');
   });
 }
-$('#fill-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.fill=b.dataset.fill;$$('#fill-seg button').forEach(x=>x.classList.toggle('on',x===b));$('#legend').classList.toggle('cov',S.fill==='cov');$('#legend').hidden=S.fill==='off';recolor();});
+$('#fill-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.fill=b.dataset.fill;$$('#fill-seg button').forEach(x=>x.classList.toggle('on',x===b));$$('#crv-list button').forEach(x=>x.classList.remove('on'));$('#legend').classList.remove('crv');$('#legend').classList.toggle('cov',S.fill==='cov');$('#legend').hidden=S.fill==='off';recolor();});
 function recolor(stagger){
   cSel.each(function(f){const c=fillFor(f);if(stagger){this.style.transitionDelay=Math.round(((f.cent[0]+180)/360)*1100)+'ms';}else this.style.transitionDelay='';this.style.fill=c;});
   if(stagger)setTimeout(()=>cSel.each(function(){this.style.transitionDelay='';}),1800);
 }
+/* ===================== country risk views (src/countryRisk) =====================
+   The list, the legend and the colours all come from GET /api/country-risk/views: nothing about a view, and no
+   country, is written in this page. Colours: /country-risk-views.js (higher risk is redder, no data is grey). */
+async function loadCountryRisk(){
+  try{const r=await apiFetch('/api/country-risk/views');if(!r.ok)return;crvApply(await r.json());}catch(e){}
+}
+function crvApply(meta,changed){
+  CRV.meta=meta;CRV.views=meta.views;
+  if(changed){CRV.data.clear();CRV.by.clear();}
+  renderCrvList();renderCrvRefresh();
+  if(crvId())selectCrv(crvId());
+  // A check started in the background (the scheduled one did not come): look again when it should be done
+  if(meta.checking)setTimeout(()=>{CRV.data.clear();CRV.by.clear();loadCountryRisk();},90000);
+}
+function renderCrvList(){
+  $('#crv-list').innerHTML=CRV.views.map(v=>{const st=crvStatus(v);return `<button class="crv-opt${crvId()===v.id?' on':''}" data-crv="${esc(v.id)}" type="button" title="${esc(v.summary)}"><span>${esc(v.label)}</span>${st?`<small class="${v.status==='sample'?'':'warn'}">${esc(st)}</small>`:''}</button>`;}).join('');
+}
+async function selectCrv(id){
+  S.fill='crv:'+id;
+  $$('#fill-seg button').forEach(x=>x.classList.remove('on'));
+  $$('#crv-list button').forEach(x=>x.classList.toggle('on',x.dataset.crv===id));
+  if(!CRV.data.has(id)){
+    try{const r=await apiFetch('/api/country-risk/views/'+encodeURIComponent(id));const j=r.ok?await r.json():null;const d=j&&j.data;CRV.data.set(id,d||null);CRV.by.set(id,new Map(((d&&d.countries)||[]).map(c=>[c.iso3,c])));}catch(e){CRV.data.set(id,null);CRV.by.set(id,new Map());}
+  }
+  if(crvId()!==id)return;
+  const lg=$('#legend');lg.classList.remove('cov');lg.classList.add('crv');lg.hidden=false;
+  renderCrvLegend();recolor();if(drawerOpen())renderDrawer();
+}
+$('#crv-list').addEventListener('click',e=>{const b=e.target.closest('button[data-crv]');if(b)selectCrv(b.dataset.crv);});
+function renderCrvLegend(){
+  const v=crvView(),el=$('#legend-crv');if(!v){el.innerHTML='';return;}
+  const d=CRV.data.get(v.id);const tok={high:'var(--high)',mid:'var(--mid)',low:'var(--low)'};
+  const n=id=>d?d.countries.filter(c=>c.category===id).length:0;
+  const keys=v.kind==='score'
+    ?`<div class="legend-bar"><i style="width:100%;background:linear-gradient(90deg,var(--low),var(--mid),var(--high))"></i></div><p>Scale ${v.scale.min} to ${v.scale.max} in the source's own numbers. ${v.scale.lowIsBad?'A low number is riskier, so it is turned round':'A high number is riskier'}: redder is always riskier.</p>`
+    :v.categories.map(c=>`<div class="crv-key"><i style="background:${tok[c.level]}"></i><span>${esc(c.label)}</span><b class="mono">${n(c.id)}</b></div>`).join('')+'<p>Redder is riskier.</p>';
+  const note=v.status==='stale'?`<p class="warn">Stale since ${crvDate(v.staleSince)}: ${esc(v.problem)}</p>`:v.sample?`<p class="warn">Sample data, may be out of date (${crvDate(v.fetchedAt)})</p>`:!d?`<p class="warn">${esc(v.problem||(v.canUpload?'No data yet. A compliance officer uploads the page under Layers.':'No data yet.'))}</p>`:'';
+  el.innerHTML=`<div class="legend-head"><b>${esc(v.label)}</b><span class="chip" style="height:18px;font-size:10.5px">${esc(v.methodLabel)}</span></div>
+    ${keys}<div class="crv-key"><i style="background:var(--land-none)"></i><span>${esc(v.notListed)}, or no data</span></div>
+    <dl><dt>Source</dt><dd><a href="${esc((d&&d.read_url)||v.sourceUrl)}" target="_blank" rel="noopener">${esc(v.sourceName)}</a></dd>
+    <dt>Last fetched</dt><dd>${crvDate(v.fetchedAt)}</dd><dt>Last changed</dt><dd>${crvDate(v.lastChangedAt)}</dd>
+    <dt>Method</dt><dd>${esc(v.methodLabel)}${v.modelId?` (${esc(v.modelId)})`:''}</dd></dl>
+    ${note}<p>${esc(v.summary)} ${esc(v.caveat)} Display only: adds no risk points.</p>`;
+}
+function crvTip(p){
+  const v=crvView(),c=crvCountry(p.a3);
+  if(!v||!c)return `<div class="tt-name">${esc(p.display)}</div><div class="faint">${esc(v?v.notListed+', or no data ('+v.sourceName+')':'No data')}</div>`;
+  const b=CountryRiskViews.band(CountryRiskViews.risk(v,c));
+  return `<div class="tt-name">${esc(p.display)} <span class="pill b-${b}">${esc(v.label)}</span></div><div class="tt-row"><span>${v.kind==='score'?'Value in the source':'Category'}</span><b>${esc(crvValue(v,c))}</b></div><div class="faint" style="margin-top:6px;font-size:11px;max-width:280px">“${esc(c.evidence_quote)}”</div>`;
+}
+function crvSection(p){
+  const v=crvView();if(!v)return '';
+  const c=crvCountry(p.a3),d=CRV.data.get(v.id);
+  const link=`<a href="${esc((d&&d.read_url)||v.sourceUrl)}" target="_blank" rel="noopener">Open the source</a>`;
+  const more=c&&c.other_evidence?c.other_evidence.map(q=>`<p style="color:var(--fg)">“${esc(q)}”</p>`).join(''):'';
+  return `<div class="sec"><div class="sec-h"><h3>${esc(v.label)}</h3><span class="agent">${esc(v.methodLabel)}</span></div>${c
+    ?`<dl class="kv"><dt>${v.kind==='score'?'Value':'Category'}</dt><dd>${esc(crvValue(v,c))}</dd><dt>Source</dt><dd>${esc(v.sourceName)}, read ${crvDate(v.fetchedAt)}</dd></dl><div class="finding" style="margin-top:8px"><span class="eyebrow">Evidence, word for word</span><p style="color:var(--fg)">“${esc(c.evidence_quote)}”</p>${more}</div>`
+    :`<p class="faint" style="margin:0;font-size:12.5px">${esc(v.notListed)}, or the source has no data for this country.</p>`}
+    <p class="faint" style="margin:8px 0 0;font-size:11.5px">${esc(v.caveat)} ${v.sample?'Sample data, may be out of date ('+crvDate(v.fetchedAt)+'). ':''}For display only: it adds no risk points. ${link}</p></div>`;
+}
+function renderCrvRefresh(){
+  const m=CRV.meta,el=$('#crv-refresh');if(!m)return;
+  const can=m.canEdit;
+  el.innerHTML=`<div class="l-row" style="padding:2px 4px"><label for="crv-freq">Refresh<small>${m.live?'How often DueDilly checks the sources':esc(m.offlineNote)}</small></label><select id="crv-freq" ${can?'':'disabled'}>${m.refresh.options.map(o=>`<option value="${esc(o.id)}"${o.id===m.refresh.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></div>
+    ${m.views.map(v=>{const st=crvStatus(v);return `<div class="l-row" style="padding:2px 4px"><label for="crv-en-${esc(v.id)}">${esc(v.label)}<small>Last checked ${crvDate(v.lastCheckedAt)} · Next check ${!v.enabled?'off':v.nextCheckAt?crvDate(v.nextCheckAt):'manual'}</small>${st?`<small class="${v.status==='sample'?'':'warn'}">${esc(st)}${v.problem&&v.status!=='sample'?': '+esc(v.problem):''}</small>`:''}</label><span class="switch" title="Refresh this view"><input id="crv-en-${esc(v.id)}" data-crv-en="${esc(v.id)}" type="checkbox" ${v.enabled?'checked':''} ${can?'':'disabled'}><span></span></span></div>${can&&v.canUpload?`<button class="btn ghost sm crv-up" data-crv-up="${esc(v.id)}" data-accept="${esc(v.uploadExtensions.map(x=>'.'+x).join(','))}" title="${esc(v.uploadHint)}" type="button">Upload the page</button>`:''}`;}).join('')}
+    <div class="crv-foot"><span>LLM calls this month: <b class="mono">${m.llmCallsThisMonth}</b></span>${can?`<button class="btn sm" id="crv-now" type="button">Refresh now</button>`:''}</div>
+    <p>${esc(m.agent.name)} (${esc(m.agent.technology)}): ${esc(m.agent.status)}. Gemini is called only when a page has changed.${can?'':' Only a compliance officer can change these settings.'}</p>
+    <input type="file" id="crv-file" hidden>`;
+}
+async function crvSend(path,method,body){
+  const r=await apiFetch('/api/country-risk'+path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){toast(j.message||'That could not be done.');loadCountryRisk();return null;}
+  crvApply(j,true);return j;
+}
+$('#crv-refresh').addEventListener('change',async e=>{
+  if(e.target.id==='crv-freq'){if(await crvSend('/settings','PUT',{refresh:e.target.value}))toast('Refresh setting saved');}
+  else if(e.target.dataset.crvEn){await crvSend('/views/'+e.target.dataset.crvEn,'PUT',{enabled:e.target.checked});}
+  else if(e.target.id==='crv-file'&&e.target.files[0]){
+    const file=e.target.files[0],id=e.target.dataset.view;toast('Reading the uploaded page');
+    const j=await crvSend('/views/'+id+'/upload','POST',{filename:file.name,content:await file.text()});
+    if(j)toast(j.result.result==='updated'?'Uploaded and checked':j.result.result==='unchanged'?'Same page as before: nothing to do':'Not used: '+j.result.reason);
+  }
+});
+$('#crv-refresh').addEventListener('click',async e=>{
+  const up=e.target.closest('[data-crv-up]');
+  if(up){const f=$('#crv-file');f.dataset.view=up.dataset.crvUp;f.accept=up.dataset.accept;f.value='';f.click();return;}
+  const now=e.target.closest('#crv-now');if(!now)return;
+  now.disabled=true;now.textContent='Checking';
+  const j=await crvSend('/refresh','POST',{});
+  if(j){const r=j.results||[];toast(r.length?r.map(x=>`${x.label}: ${({updated:'updated',unchanged:'no change',failed:'failed',needs_upload:'needs upload',offline:'offline'})[x.result]||x.result}`).join(' · '):'Offline sample: the sources are not being read');}
+});
 function renderLegend(){
   $('#legend-count').textContent=`Sample: ${CPI_2025.length} of 182 countries`;
   const h=S.th.high,l=S.th.low;
@@ -6670,6 +6800,7 @@ const isDemoSession = () => Boolean(session && (session.demoAccount || !session.
 function applySession() {
   if (!session) return;
   refreshKpis();
+  loadCountryRisk();
   initMonitoringPanels();
   const comp = isCompliance();
   const initials = String(session.name || session.email).split(/[\s.@]+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');

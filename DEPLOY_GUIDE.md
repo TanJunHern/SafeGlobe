@@ -46,6 +46,7 @@ Leaving a block commented is always safe: the app uses the fallback written in t
 | Pub/Sub, Cloud Scheduler | Handles events inside the app; "Run now" in the Sources tab replaces the schedule |
 | Cloud Storage | Stores page snapshots locally; on Cloud Run they reset when the app restarts |
 | Agent Search | Uses the built-in policy text, labelled "Offline fallback" |
+| Country risk views (`COUNTRY_RISK_FETCH`) | Colours the map from saved samples, labelled "Sample data, may be out of date"; contacts no website |
 | Document AI | Gemini reads the uploaded file directly, and the result says so |
 | Gmail API (not built yet) | Shows the "copy link" button, as today |
 | Google sign-in | Shows "not set up" on the two Google options; the demo accounts work (with `DEMO_MODE=true`) |
@@ -276,6 +277,32 @@ that needs a sign-in is never read and no cookie is ever sent; one request at a 
 only public web addresses. `CRAWLER_DAILY_CAP` (default 50) and `TRIAGE_DAILY_CAP` (default 200) limit the AI
 calls per day.
 
+**Country risk views on the Globe (FATF lists, OFAC sanctions, EU sanctions).** No new job, topic or bucket: the
+daily 06:00 `rescreen-due` event also checks which views are due under the refresh setting a compliance officer
+chose in the Globe's Layers panel (Manual only, Daily, Weekly by default, Monthly). The app never creates or edits
+a scheduler job. If the daily event does not come, opening the Globe starts the check once a view is more than
+6 hours overdue.
+
+1. In `.env.uat`:
+   ```
+   COUNTRY_RISK_FETCH=live
+   ```
+2. Redeploy: `bash scripts/deploy.sh uat`
+3. In the app: Globe, Layers, **Refresh now** (compliance officer). OFAC and EU are read; FATF answers robots with
+   a challenge page, which DueDilly does not get around: open the FATF page in your browser, save it as HTML, and
+   use **Upload the page** under FATF lists in the same panel.
+
+What is read: the OFAC "Sanctions Programs and Country Information" page (one Gemini call through the ADK country
+risk agent, only when the page text has changed) and the EU consolidated list CSV named by the data.europa.eu
+dataset record (about 25 MB, parsed in code, no Gemini). Snapshots go to the bucket of step 5 under
+`snapshots/<workspace>/country-risk/`, and each view's JSON to `country-risk/<workspace>/<view_id>.json`.
+`COUNTRY_RISK_DAILY_CAP` (default 20) limits the Gemini calls per day. Needs the agents service (step 13) for OFAC
+and FATF; the EU view works without it.
+
+**Fallback:** with `COUNTRY_RISK_FETCH` left commented no website is contacted and the map uses the saved samples
+in `src/countryRisk/samples/`, labelled "Sample data, may be out of date". A failed check keeps the last good data
+and the view says "Stale since <date>" with the reason.
+
 ---
 
 ## Step 8: Agent Search for policies (formerly Vertex AI Search)
@@ -464,7 +491,7 @@ What the script sets, so you do not have to:
 - the agents: no public access, only `duedilly-run` may call it, scales to zero, `GOOGLE_GENAI_USE_VERTEXAI=TRUE`,
   `AGENTS_MODEL`, `AGENTS_THINKING_LEVEL` when it is set, and `DUEDILLY_INTERNAL_URL` (the app's link, for Ask Dilly's read-only tools).
 
-Settings you can add to `.env.uat` (all optional): `COPILOT_DAILY_CAP` (default 100), `CRAWLER_DAILY_CAP` (default 50), `TRIAGE_DAILY_CAP`
+Settings you can add to `.env.uat` (all optional): `COPILOT_DAILY_CAP` (default 100), `CRAWLER_DAILY_CAP` (default 50), `COUNTRY_RISK_DAILY_CAP` (default 20), `TRIAGE_DAILY_CAP`
 (default 200), `AGENT_SEARCH_DAILY_CAP` (default 200), `POND_GUARD_DAILY_CAP` (default 30), `AI_RATE_LIMIT_MAX`
 (default 20) and `AI_RATE_LIMIT_WINDOW_MINUTES` (default 10), `WORKSPACE_NAME`, `CONFIDENCE_THRESHOLD`,
 `CORS_ORIGIN`, `VESSELFINDER_LOOKUP`.

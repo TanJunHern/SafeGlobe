@@ -103,6 +103,38 @@ class ProposeFixResponse(ProposeFixOutput):
   model_id: str = ""
 
 
+class CountryRiskCategory(BaseModel):
+  id: str
+  label: str
+  description: str = ""
+
+
+class CountryRiskRequest(BaseModel):
+  """One page the country risk agent reads for one view of the Globe. The app fetched the page; the agent only reads its text."""
+
+  view_id: str = Field(min_length=1, max_length=60)
+  source_name: str = Field(min_length=1, max_length=200)
+  url: str = ""
+  instructions: str = Field(default="", max_length=2000)
+  categories: list[CountryRiskCategory] = Field(min_length=1)
+  text: str = Field(min_length=1, max_length=120000)
+
+
+class CountryRiskCountry(BaseModel):
+  name: str = Field(description="The country, by its usual English name.")
+  category: str = Field(description="The id of one of the allowed categories.")
+  evidence_quote: str = Field(description="Exact words copied from the page that put the country in that category, at most 300 characters.")
+
+
+class CountryRiskOutput(BaseModel):
+  countries: list[CountryRiskCountry] = Field(default_factory=list)
+  note: str = Field(default="", description="One sentence on what the page is, for the reviewer.")
+
+
+class CountryRiskResponse(CountryRiskOutput):
+  model_id: str = ""
+
+
 class AskRequest(BaseModel):
   question: str = Field(min_length=1, max_length=2000)
   user_role: str = "employee"

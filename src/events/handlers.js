@@ -58,7 +58,10 @@ async function onScreeningRequested(payload) {
 }
 
 async function onRescreenDue() {
-  return require('../services/monitoringService').runDue();
+  const result = await require('../services/monitoringService').runDue();
+  // The same daily tick checks which country risk views are due (the app never creates or edits a scheduler job)
+  try { await require('../countryRisk/countryRiskService').checkViews(getDb(), { trigger: 'schedule' }); } catch (err) { console.error('[Country risk] scheduled check:', err.message); }
+  return result;
 }
 
 let registered = false;
