@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from google.adk import __version__ as ADK_VERSION
 
 from . import settings
-from .models import AskRequest, AskResponse, ExtractRequest, ExtractResponse, Health, ProposeFixRequest, ProposeFixResponse, ScreenRequest
+from .models import AskRequest, AskResponse, CountryRiskRequest, CountryRiskResponse, ExtractRequest, ExtractResponse, Health, ProposeFixRequest, ProposeFixResponse, ScreenRequest
 
 app = FastAPI(title="DueDilly agents", version="1.0.0")
 
@@ -71,3 +71,13 @@ async def crawler_propose_fix(request: ProposeFixRequest) -> ProposeFixResponse:
     return await propose_fix(request)
   except Exception as err:
     raise HTTPException(status_code=502, detail=f"The crawler agent could not suggest a fix: {str(err)[:200]}")
+
+
+@app.post("/country-risk/extract", response_model=CountryRiskResponse, dependencies=[Depends(caller_is_duedilly), Depends(backend_ready)])
+async def country_risk_extract(request: CountryRiskRequest) -> CountryRiskResponse:
+  from .country_risk import extract
+
+  try:
+    return await extract(request)
+  except Exception as err:  # the app then keeps its last good data
+    raise HTTPException(status_code=502, detail=f"The country risk agent could not read the page: {str(err)[:200]}")

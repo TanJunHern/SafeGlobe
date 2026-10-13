@@ -96,3 +96,20 @@
 - [ ] Deployed to UAT by the user
 - [ ] Not built: Quack-Back (6), automatic DDQ email (16), Request more info (17), "How Dilly works" (15)
 
+
+## Country risk views on the Globe (requested 13 Oct 2026, built 14 Oct)
+- [x] Repo read; plan written (`implementation_plan.md`); review-model plan kept as `implementation_plan.review-model.md`
+- [x] Questions answered by the user; answers and my readings of them recorded in `decisions.md`
+- [x] Connections checked with the bot's user agent: OFAC and EU reachable, FATF refuses robots (403 challenge)
+- [x] View registry, ISO 3166-1 list, validation, two tables, service, API, role checks
+- [x] Layers panel view list, colours, legend, tooltip, country panel, refresh control, upload button
+- [x] File downloads in the fetcher; dataset record to newest CSV; due-check on the daily tick; fallback when the tick does not come
+- [x] ADK `country_risk` agent and `POST /country-risk/extract`
+- [x] First live reads: EU (parsed, no model) and OFAC (ADK agent on Vertex AI, 1 call); both saved as the samples
+- [x] `.env.example`, `scripts/deploy.sh`, `DEPLOY_GUIDE.md` steps 7 and 13, README
+- [x] Tests pass offline (239 Node, 13 Python)
+- [x] `walkthrough.md`: switch views, change the refresh setting, trigger a refresh
+- [ ] FATF: no data until a compliance officer uploads the saved page (the site refuses robots); upload not yet tried with a real FATF page
+- [ ] Not built: Basel, TRACE, FSI, CTHI (user: not used); following links one level deep; PDF statements; upload block in the Sources tab (it is in the Layers panel)
+- [ ] "How Dilly works" line: served by the API and shown in the Layers panel; the page itself (feature 15) is not built
+- [ ] Deployed to UAT by the user, with `COUNTRY_RISK_FETCH=live`

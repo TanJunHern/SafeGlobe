@@ -37,6 +37,20 @@ DueDilly is an AI-native global screening platform built according to the **Prod
 
 ---
 
+## 🌍 Country risk views on the Globe
+
+In the Globe's Layers panel, under "Country fill", pick **FATF lists**, **OFAC sanctions** or **EU sanctions**
+(next to CPI 2025, Coverage and Off). Higher risk is redder; a country with no data is neutral, never green.
+The views are for display only and add no risk points.
+
+- **Google ADK** country risk agent (`agents/app/country_risk.py`) reads the OFAC programmes page and an uploaded
+  FATF page, and returns each country with a quote. Code then checks that every quote is in the saved snapshot
+  word for word and maps every name to its ISO 3166-1 code from a fixed list. The EU list is a CSV parsed in code.
+- Gemini is called only when a page's hash has changed. A failed check keeps the last good data ("Stale since").
+- A compliance officer sets the refresh (Manual only, Daily, Weekly, Monthly) at the bottom of the Layers panel.
+- Which country is on which list is never written in the code: `src/countryRisk/views.config.js` only says where
+  each view's data comes from and what its categories mean.
+
 ## 🦆 Architecture names
 
 | Code name | What it is in this codebase |

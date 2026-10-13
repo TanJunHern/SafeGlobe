@@ -104,6 +104,10 @@ module.exports = {
   // Crawler agents (feature 3): live page extractions per day, and Ripples triage calls per day. 0 = no cap.
   crawlerDailyCap: wholeNumber(process.env.CRAWLER_DAILY_CAP, 50),
   triageDailyCap: wholeNumber(process.env.TRIAGE_DAILY_CAP, 200),
+  // Country risk views on the Globe (src/countryRisk). live: the sources are read on the refresh schedule.
+  // Anything else: the saved samples only, and no website is contacted. The cap counts Gemini calls per day; 0 = no cap.
+  countryRiskFetch: (process.env.COUNTRY_RISK_FETCH || 'off').toLowerCase() === 'live' ? 'live' : 'off',
+  countryRiskDailyCap: wholeNumber(process.env.COUNTRY_RISK_DAILY_CAP, 20),
   // Agent Search (formerly Vertex AI Search) for policy search. Empty data store: the built-in policy text is used.
   agentSearch: {
     dataStore: (process.env.AGENT_SEARCH_DATA_STORE || '').trim(),

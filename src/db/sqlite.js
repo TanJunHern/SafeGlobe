@@ -310,6 +310,29 @@ class SqliteDatabase {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // Country risk views on the Globe (src/countryRisk): the last validated data per view, and every check made
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS country_risk_views (
+        view_id TEXT PRIMARY KEY,
+        data_json TEXT,
+        content_hash TEXT,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        last_checked_at TEXT,
+        last_ok_at TEXT,
+        last_changed_at TEXT,
+        problem TEXT,
+        problem_kind TEXT
+      );
+      CREATE TABLE IF NOT EXISTS country_risk_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        view_id TEXT NOT NULL,
+        at TEXT NOT NULL,
+        result TEXT NOT NULL,
+        reason TEXT,
+        llm_calls INTEGER NOT NULL DEFAULT 0,
+        trigger TEXT
+      );
+    `);
     // The review model (src/learning): what officers labelled, the models trained on it, and what the model predicts
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS review_labels (
@@ -925,6 +948,45 @@ class SqliteDatabase {
 
   setSourceCost(id, cost) {
     return this.db.prepare('UPDATE sources SET cost_per_screen = ? WHERE id = ?').run(cost, id).changes > 0;
+  }
+
+  // Country risk views: one row per view. data is the last validated JSON; a failed check never replaces it.
+  getCountryRiskView(viewId) {
+    const row = this.db.prepare('SELECT * FROM country_risk_views WHERE view_id = ?').get(viewId);
+    if (!row) return null;
+    let data = null;
+    try { data = row.data_json ? JSON.parse(row.data_json) : null; } catch (e) { data = null; }
+    return {
+      viewId: row.view_id, data, contentHash: row.content_hash || '', enabled: row.enabled !== 0,
+      lastCheckedAt: row.last_checked_at || null, lastOkAt: row.last_ok_at || null, lastChangedAt: row.last_changed_at || null,
+      problem: row.problem || '', problemKind: row.problem_kind || ''
+    };
+  }
+
+  saveCountryRiskView(viewId, patch) {
+    const columns = { data: 'data_json', contentHash: 'content_hash', enabled: 'enabled', lastCheckedAt: 'last_checked_at', lastOkAt: 'last_ok_at', lastChangedAt: 'last_changed_at', problem: 'problem', problemKind: 'problem_kind' };
+    this.db.prepare('INSERT OR IGNORE INTO country_risk_views (view_id) VALUES (?)').run(viewId);
+    for (const [key, value] of Object.entries(patch)) {
+      if (!columns[key]) continue;
+      const stored = key === 'data' ? (value ? JSON.stringify(value) : null) : key === 'enabled' ? (value ? 1 : 0) : value;
+      this.db.prepare(`UPDATE country_risk_views SET ${columns[key]} = ? WHERE view_id = ?`).run(stored, viewId);
+    }
+    return this.getCountryRiskView(viewId);
+  }
+
+  addCountryRiskLog({ viewId, at, result, reason = '', llmCalls = 0, trigger = '' }) {
+    this.db.prepare('INSERT INTO country_risk_log (view_id, at, result, reason, llm_calls, trigger) VALUES (?, ?, ?, ?, ?, ?)').run(viewId, at, result, reason, llmCalls, trigger);
+  }
+
+  getCountryRiskLog({ viewId = null, limit = 20 } = {}) {
+    const rows = viewId
+      ? this.db.prepare('SELECT * FROM country_risk_log WHERE view_id = ? ORDER BY id DESC LIMIT ?').all(viewId, limit)
+      : this.db.prepare('SELECT * FROM country_risk_log ORDER BY id DESC LIMIT ?').all(limit);
+    return rows.map(r => ({ viewId: r.view_id, at: r.at, result: r.result, reason: r.reason || '', llmCalls: r.llm_calls, trigger: r.trigger || '' }));
+  }
+
+  countCountryRiskLlmCalls(sinceIso) {
+    return this.db.prepare('SELECT COALESCE(SUM(llm_calls), 0) AS n FROM country_risk_log WHERE at >= ?').get(sinceIso).n;
   }
 
   getSetting(key, fallback = null) {

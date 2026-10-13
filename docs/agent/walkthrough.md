@@ -659,3 +659,75 @@ New variables: `DOCUMENT_AI_DAILY_CAP`, `COPILOT_DAILY_CAP`. The three `DOCUMENT
 6. **Still open from `GEMINI.md`:** Quack-Back chat (6), automatic DDQ email (16), Request more info (17), the
    "How Dilly works" page (15), and the old Phase 4 features (4, 11, 13).
 
+
+---
+
+## Country risk views on the Globe (14 Oct 2026)
+
+Plan: `implementation_plan.md`. Answers and readings: `decisions.md`, "Country risk views on the Globe".
+
+### What changed
+
+- Three new country fills on the Globe: **FATF lists**, **OFAC sanctions**, **EU sanctions**. CPI 2025, Coverage
+  and Off are unchanged.
+- One definition of the views: `src/countryRisk/views.config.js`. No country is written anywhere in the code.
+- `src/countryRisk/countryRiskService.js` reads a source with the crawler's rules, hashes the snapshot, and only on
+  a change parses the file (EU) or asks the ADK agent (OFAC, uploaded FATF). `validate.js` then rejects any country
+  with no quote, a quote that is not in the snapshot word for word, a name that is not in the fixed ISO 3166-1 list
+  (`iso3166.js`), or an unknown category. A failed check keeps the last good data.
+- ADK agent `country_risk_<view>` in `agents/app/country_risk.py`, endpoint `POST /country-risk/extract`. No tools.
+- Tables `country_risk_views` and `country_risk_log`; setting `country_risk_refresh` per workspace.
+- API `/api/country-risk` (`src/routes/countryRisk.js`). Colours: `country-risk-views.js`, shared by page and tests.
+- The daily `rescreen-due` event also checks which views are due. No scheduler job was added or changed.
+- No risk score, points row, confidence or route is touched (tested).
+
+### How to see it (offline, today)
+
+1. `npm run dev`, sign in with either demo account, open **Globe**, press **Layers**.
+2. **Switch views:** under "Country fill" pick OFAC sanctions or EU sanctions. The map is coloured from the saved
+   samples; the legend says "Sample data, may be out of date (<date>)", with the source, last fetched, last changed
+   and the method (AI extracted, Parsed file). FATF lists says "Needs upload" and the map stays neutral.
+3. Hover a country for its category and quote. Click it: the country panel shows the category, the evidence quote
+   word for word and a link to the source.
+4. **Change the refresh setting:** at the bottom of the Layers panel, as Grace Teo (compliance officer), choose
+   Manual only, Daily, Weekly or Monthly, and switch a single view's refresh off with its switch. As John Doe
+   (employee) the same controls are shown but disabled.
+5. **Trigger a refresh:** "Refresh now" in the same place. Offline it answers "offline" and contacts nothing.
+
+### How to see it live
+
+1. `.env.uat`: add `COUNTRY_RISK_FETCH=live`. Start `APP_ENV=uat npm run agents` and `npm run uat`.
+2. Globe, Layers, **Refresh now**. EU takes about 20 seconds (25 MB file), OFAC about a minute (one Gemini call).
+   "LLM calls this month" goes up by one. Press it again: both say "no change" and the count stays.
+3. FATF: open the FATF page in your browser, save it as "Web page, HTML only", press **Upload the page**.
+4. On Cloud Run: `DEPLOY_GUIDE.md` step 7.
+
+### How it was tested
+
+- `npm test`: 239 pass (14 new, `tests/country-risk.test.js`), offline, Gemini disabled, no website contacted.
+  `npm run test:agents`: 13 pass (2 new).
+- The new tests cover: ISO-3 mapping; a country with no quote, or a quote not in the snapshot, is rejected; the
+  JSON shape; the EU parser; an unchanged hash makes no agent call; a failed refresh (site error, invented quotes,
+  half-read page, no agents service) keeps the last good data and shows "Stale since"; a site that refuses robots
+  becomes "Needs upload" and an upload is read once; the newest CSV is chosen and a file on another site is refused;
+  what is due for each refresh choice, and the fallback; every view's colours put higher risk redder and no data
+  grey; no score changes; only a compliance officer can change the setting, switch a view, refresh or upload.
+- Live, from this computer, 14 Oct: EU "updated" then "unchanged"; OFAC "updated" with 1 call then "unchanged" with
+  none. Both results are the shipped samples.
+- In the browser, on samples: the EU view coloured the map and the legend and refresh control rendered, with no
+  console error. Not tried in the browser: the upload button, "Refresh now" live, the tooltip and the country panel.
+
+### Things you should know, and decide
+
+- **FATF has no data.** The site refuses robots, and I did not get around it. It needs your upload. The upload
+  path is tested with a made-up page only, not with the real FATF page.
+- **Amber for OFAC and EU** is my choice (decisions.md). Say if you want red.
+- **Ukraine is coloured in both sanctions views**, and Iraq, Lebanon and others in OFAC, because a programme is
+  named after them. The legend and the country panel say so. Syria is not in the OFAC view: no programme on the
+  page has Syria in its name.
+- **The OFAC result depends on the model's reading** of programme names. Every quote is checked, but which country
+  a name refers to is the agent's call ("Chinese Military Companies Sanctions" gave China).
+- The EU file is 25 MB and is downloaded on every check, since its hash is the only way to know it changed.
+- Not built: Basel, TRACE, FSI, CTHI; following links one level deep; PDF statements; an upload block in the
+  Sources tab; the "How Dilly works" page (its line is in the Layers panel and in `GET /api/country-risk/views`).
+- Not deployed. `scripts/deploy.sh` passes the two new settings; you run it.
