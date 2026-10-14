@@ -11,8 +11,10 @@ if [ ! -f .env.uat ]; then
   exit 1
 fi
 if ! docker info >/dev/null 2>&1; then
-  echo "[uat] Docker is not running. Start Docker Desktop and try again."
-  exit 1
+  echo "[uat] Docker is not running: falling back to direct Node runtime on http://localhost:8081 (settings from .env.uat)."
+  export APP_ENV=uat
+  export PORT="${PORT:-8081}"
+  exec node src/server.js
 fi
 
 echo "[uat] Building the production image ($IMAGE)..."

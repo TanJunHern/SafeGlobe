@@ -1127,9 +1127,8 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
     <button data-view="reviews" type="button"><svg class="ic"><use href="#i-review"/></svg>Reviews<span class="count" id="rail-count">6</span></button>
     <button data-view="employee" type="button"><svg class="ic"><use href="#i-employee"/></svg>Employee<span class="count" id="rail-emp-count" style="background:var(--accent);color:#fff">5</span></button>
     <button data-view="compliance" type="button"><svg class="ic"><use href="#i-shield"/></svg>Compliance<span class="count" id="rail-comp-count" style="background:var(--high);color:#fff">3</span></button>
-    <button id="rail-ddq-manager" type="button" title="DDQ Manager: edit the questionnaire sent to counterparties"><svg class="ic"><use href="#i-doc"/></svg>DDQ</button>
-    <button data-view="sources" type="button"><svg class="ic"><use href="#i-plug"/></svg>Sources</button>
-    <button data-view="policies" type="button"><svg class="ic"><use href="#i-policy"/></svg>Policies</button>
+    <button id="rail-ddq-manager" data-view="ddq-manager" type="button" title="DDQ Manager: edit the questionnaire sent to counterparties"><svg class="ic"><use href="#i-doc"/></svg>DDQ</button>
+    <button data-view="governance" type="button" title="Governance: Policies & Sources"><svg class="ic"><use href="#i-policy"/></svg>Governance</button>
     <button data-view="settings" id="rail-settings" type="button" style="display:none" title="Settings: accounts and invitations (compliance officers only)"><svg class="ic"><use href="#i-user"/></svg>Settings</button>
     <div class="spacer"></div>
   </nav>
@@ -1284,15 +1283,46 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
       </div></div>
     </section>
 
-    <!-- SOURCES -->
-    <section class="view" id="view-sources" aria-label="Sources">
+    <!-- GOVERNANCE (POLICIES & SOURCES) -->
+    <section class="view" id="view-governance" aria-label="Governance">
       <div class="page"><div class="page-in">
+        <!-- Top switcher for Policies & Sources -->
+        <div class="gov-top-bar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 0 16px;margin-bottom:20px;border-bottom:1px solid var(--line)">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="eyebrow" style="font-weight:600;font-size:11px;letter-spacing:.08em;color:var(--fg-3)">Governance Area</span>
+            <div class="seg" id="gov-tab-seg" role="tablist" aria-label="Governance navigation">
+              <button class="on" data-gov-tab="policies" type="button"><svg class="ic sm"><use href="#i-policy"/></svg>Policies</button>
+              <button data-gov-tab="sources" type="button"><svg class="ic sm"><use href="#i-plug"/></svg>Sources</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- POLICIES PANE -->
+        <div id="gov-pane-policies">
+        <div class="page-head">
+          <div><div class="eyebrow">Policy compiler</div><h1>Policies</h1><p>Upload your internal guidelines. DueDilly turns each clause into a rule checked against every counterparty, and flags gaps and conflicts between policies.</p></div>
+          <button class="btn" id="upload-pol" type="button"><svg class="ic sm"><use href="#i-upload"/></svg>Upload policy</button>
+          <input type="file" id="upload-pol-file" accept=".pdf, .docx, .doc, .txt, application/pdf, text/plain" style="display:none">
+        </div>
+        <div class="pol-grid">
+          <div class="card doc-card">
+            <div class="doc-thumb" aria-hidden="true"><b>Third-Party Risk Policy</b><span class="faint" style="font-size:11px"><span data-ws-name>Meridian Commodities</span> · v4.2</span><i style="width:90%"></i><i style="width:76%"></i><i class="hl" style="width:84%"></i><i style="width:60%"></i><i style="width:88%"></i><i class="hl" style="width:70%"></i><i style="width:80%"></i><i style="width:52%"></i><i style="width:86%"></i><i class="hl" style="width:64%"></i><i style="width:74%"></i></div>
+            <dl class="kv"><dt>File</dt><dd>third-party-risk-policy-v4.2.pdf</dd><dt>Pages</dt><dd>23</dd><dt>Compiled</dt><dd>29 Sep 2026, 16:20</dd><dt>Rules</dt><dd id="pol-count">14</dd><dt>Owner</dt><dd>Grace Teo</dd></dl>
+            <div class="callout gap"><svg class="ic"><use href="#i-alert"/></svg><b>Gap</b><p>No rule covers minority stakes below 50% held by state-owned or state-linked companies. Severny Agro Export LLC is 51% state-owned and triggers R2.</p></div>
+            <div class="callout conflict" id="conflict-callout"><svg class="ic"><use href="#i-alert"/></svg><b>Conflict</b><p></p></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h2>Compiled rules</h2><span class="faint" style="font-size:12px">Checked against every counterparty on each re-screen</span></div>
+            <div id="rules"></div>
+          </div>
+        </div>
+        </div>
+
+        <!-- SOURCES PANE -->
+        <div id="gov-pane-sources" style="display:none">
         <div class="page-head">
           <div><div class="eyebrow">Custom data sources</div><h1>Sources</h1><p>Plug your own lists, feeds and PDF documents into screening next to DueDilly's built-in data. Every finding carries the label of the source it came from.</p></div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="btn" id="upload-src-pdf-btn" type="button"><svg class="ic sm"><use href="#i-upload"/></svg>Upload PDF document</button>
-            <button class="btn primary" id="add-src" type="button"><svg class="ic sm"><use href="#i-plus"/></svg>Add source</button>
-          </div>
+          <button class="btn primary" id="add-src" type="button"><svg class="ic sm"><use href="#i-plus"/></svg>Add source</button>
         </div>
         <div class="src-grid" id="src-grid"></div>
         <div id="src-cost-host"></div>
@@ -1358,10 +1388,10 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           </div>
         </div>
 
+        </div>
       </div></div>
     </section>
 
-    <!-- POLICIES -->
     <!-- SETTINGS (compliance officers only; the server checks the role on every call) -->
     <section class="view" id="view-settings" aria-label="Settings">
       <div class="page"><div class="page-in">
@@ -1390,34 +1420,8 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
         </div>
       </div></div>
     </section>
+        </div>
 
-    <section class="view" id="view-policies" aria-label="Policies">
-      <div class="page"><div class="page-in">
-        <div class="page-head">
-          <div><div class="eyebrow">Policy compiler</div><h1>Policies</h1><p>Upload your internal guidelines. DueDilly turns each clause into a rule checked against every counterparty, and flags gaps and conflicts between policies.</p></div>
-          <button class="btn" id="upload-pol" type="button"><svg class="ic sm"><use href="#i-upload"/></svg>Upload policy</button>
-          <input type="file" id="upload-pol-file" accept=".pdf, .docx, .doc, .txt, application/pdf, text/plain" style="display:none">
-        </div>
-        <div class="card" id="pol-search-card" style="margin-bottom:20px">
-          <div class="card-h"><h2>Policy search</h2><span class="pill plain" id="pol-search-via">Checking…</span></div>
-          <div class="card-b">
-            <form id="pol-search-form" style="display:flex;gap:10px;flex-wrap:wrap"><input id="pol-search-q" type="search" placeholder="Ask about the policies, for example: when is a vessel questionnaire required?" style="flex:1;min-width:240px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:8px 12px;font-size:13px;color:inherit" autocomplete="off"><button class="btn primary" type="submit"><svg class="ic sm"><use href="#i-search"/></svg>Search</button></form>
-            <div id="pol-search-results" style="margin-top:10px"></div>
-            <details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px">Policy clauses the scoring rules rely on</summary><div id="pol-clauses"></div></details>
-          </div>
-        </div>
-        <div class="pol-grid">
-          <div class="card doc-card">
-            <div class="doc-thumb" aria-hidden="true"><b>Third-Party Risk Policy</b><span class="faint" style="font-size:11px"><span data-ws-name>Meridian Commodities</span> · v4.2</span><i style="width:90%"></i><i style="width:76%"></i><i class="hl" style="width:84%"></i><i style="width:60%"></i><i style="width:88%"></i><i class="hl" style="width:70%"></i><i style="width:80%"></i><i style="width:52%"></i><i style="width:86%"></i><i class="hl" style="width:64%"></i><i style="width:74%"></i></div>
-            <dl class="kv"><dt>File</dt><dd>third-party-risk-policy-v4.2.pdf</dd><dt>Pages</dt><dd>23</dd><dt>Compiled</dt><dd>29 Sep 2026, 16:20</dd><dt>Rules</dt><dd id="pol-count">14</dd><dt>Owner</dt><dd>Grace Teo</dd></dl>
-            <div class="callout gap"><svg class="ic"><use href="#i-alert"/></svg><b>Gap</b><p>No rule covers minority stakes below 50% held by state-owned or state-linked companies. Severny Agro Export LLC is 51% state-owned and triggers R2.</p></div>
-            <div class="callout conflict" id="conflict-callout"><svg class="ic"><use href="#i-alert"/></svg><b>Conflict</b><p></p></div>
-          </div>
-          <div class="card">
-            <div class="card-h"><h2>Compiled rules</h2><span class="faint" style="font-size:12px">Checked against every counterparty on each re-screen</span></div>
-            <div id="rules"></div>
-          </div>
-        </div>
       </div></div>
     </section>
 
@@ -1502,7 +1506,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
             <p>Global triage across all employee onboardings, Gemini policy checks, and counterparty DDQ disclosures.</p>
           </div>
           <div class="emp-head-actions">
-            <a class="btn" href="/portal/ddq-manager" title="Edit the questionnaire sent to counterparties"><svg class="ic sm"><use href="#i-doc"/></svg>DDQ Manager</a>
+            <button class="btn" type="button" onclick="showView('ddq-manager')" title="Edit the questionnaire sent to counterparties"><svg class="ic sm"><use href="#i-doc"/></svg>DDQ Manager</button>
             <button class="btn" id="comp-export-btn" type="button" title="Export global audit log to Excel (.xlsx)"><svg class="ic sm"><use href="#i-excel"/></svg>Export Audit (.xlsx)</button>
             <button class="icon-btn" id="comp-refresh-btn" type="button" title="Refresh queue" style="width:36px;height:36px;border:1px solid var(--line)"><svg class="ic sm"><use href="#i-refresh"/></svg></button>
           </div>
@@ -1667,6 +1671,11 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           </div>
         </form>
       </div>
+    </section>
+
+    <!-- DDQ MANAGER -->
+    <section class="view" id="view-ddq-manager" aria-label="DDQ Manager" style="overflow:hidden">
+      <iframe id="ddq-manager-frame" src="/portal/ddq-manager?embed=1" style="width:100%;height:100%;border:none;display:block;background:var(--bg);" title="DDQ Manager" onload="if(typeof syncDdqManagerFrame==='function')syncDdqManagerFrame();"></iframe>
     </section>
   </main>
 </div>
@@ -4348,14 +4357,6 @@ function renderSrcModal(){
 }
 
 $('#add-src').addEventListener('click',()=>{srcState={step:1,type:'API',file:null};renderSrcModal();$('#src-modal').hidden=false;});
-const upSrcPdfBtn=$('#upload-src-pdf-btn');
-if(upSrcPdfBtn){
-  upSrcPdfBtn.addEventListener('click',()=>{
-    srcState={step:1,type:'PDF document',file:null};
-    renderSrcModal();
-    $('#src-modal').hidden=false;
-  });
-}
 
 $('#src-modal').addEventListener('change',e=>{
   if(e.target.id==='src-how'){
@@ -4557,13 +4558,32 @@ $('#upload-pol-file').addEventListener('change',e=>{
 });
 
 /* ===================== views & global keys ===================== */
+let currentGovTab = 'policies';
+function switchGovTab(tab){
+  currentGovTab = tab || 'policies';
+  const polPane = $('#gov-pane-policies');
+  const srcPane = $('#gov-pane-sources');
+  const btns = $$('#gov-tab-seg button');
+  if(btns.length){
+    btns.forEach(b => b.classList.toggle('on', b.dataset.govTab === currentGovTab));
+  }
+  if(polPane) polPane.style.display = (currentGovTab === 'policies') ? '' : 'none';
+  if(srcPane) srcPane.style.display = (currentGovTab === 'sources') ? '' : 'none';
+  if(currentGovTab === 'policies') renderPolicies();
+  if(currentGovTab === 'sources') renderSources();
+}
+
 function showView(v, updateUrl = true){
   if(v==='compliance'&&!isCompliance())v='employee';
   else if(v==='employee'&&isCompliance())v='compliance';
   if(v==='settings'&&!isCompliance())v='globe';
+  if(v==='policies'||v==='sources'){
+    currentGovTab = v;
+    v = 'governance';
+  }
   S.view=v;$$('.rail button[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   // The Sources tab loads its records and crawler status when it is opened (at page start nobody is signed in yet)
-  if(v==='sources'){fetchKbRecords();loadCrawler();}
+  if(v==='sources'||v==='governance'){fetchKbRecords();loadCrawler();}
   $$('.view').forEach(s=>s.classList.toggle('on',s.id==='view-'+v));
   if(v==='globe'){requestAnimationFrame(()=>{relayout(false);dirty=true;});}
   if(v==='reviews')renderReviews();
@@ -4571,15 +4591,36 @@ function showView(v, updateUrl = true){
   if(v==='compliance')renderComplianceWorkspace();
   if(v==='ddq')renderDdqGuestView();
   if(v==='settings')renderSettings();
+  if(v==='governance')switchGovTab(currentGovTab);
+  if(v==='ddq-manager')syncDdqManagerFrame();
   $('#alerts-pop').hidden=true;hideTip();
 
   if(updateUrl && window.history && window.history.pushState){
     if(v==='employee') history.pushState({}, '', '/portal/employee');
     else if(v==='compliance') history.pushState({}, '', '/portal/compliance');
+    else if(v==='ddq-manager') history.pushState({}, '', '#ddq-manager');
+    else if(v==='governance') history.pushState({}, '', '#governance');
+    else if(v==='reviews') history.pushState({}, '', '#reviews');
     else if(v==='globe') history.pushState({}, '', '/');
   }
 }
+function syncDdqManagerFrame() {
+  const f = $('#ddq-manager-frame');
+  if (!f) return;
+  try {
+    if (f.contentDocument && f.contentDocument.documentElement) {
+      f.contentDocument.documentElement.setAttribute('data-theme', isDark() ? 'dark' : 'light');
+    }
+    if (f.contentWindow && typeof f.contentWindow.loadList === 'function') {
+      f.contentWindow.loadList();
+    }
+  } catch (e) {}
+}
 $$('.rail button[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+document.addEventListener('click', e => {
+  const btn = e.target.closest('#gov-tab-seg button');
+  if(btn && btn.dataset.govTab) switchGovTab(btn.dataset.govTab);
+});
 document.addEventListener('keydown',e=>{
   const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openAsk();return;}
@@ -4595,7 +4636,7 @@ document.addEventListener('mousedown',e=>{const p=$('#alerts-pop');if(!p.hidden&
 
 /* theme */
 function isDark(){const a=document.documentElement.getAttribute('data-theme');return a==='dark';}
-function syncTheme(){$('#theme-btn use').setAttribute('href',isDark()?'#i-sun':'#i-moon');$('#theme-btn').setAttribute('aria-label',isDark()?'Switch to light theme':'Switch to dark theme');readColors();recolor();}
+function syncTheme(){$('#theme-btn use').setAttribute('href',isDark()?'#i-sun':'#i-moon');$('#theme-btn').setAttribute('aria-label',isDark()?'Switch to light theme':'Switch to dark theme');readColors();recolor();syncDdqManagerFrame();}
 $('#theme-btn').addEventListener('click',()=>{document.documentElement.setAttribute('data-theme',isDark()?'light':'dark');});
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncTheme);
 new MutationObserver(syncTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
@@ -6963,11 +7004,11 @@ function initSessionControls() {
   $('#signup-cancel').addEventListener('click', hideSignupForm);
   $('#top-persona-btn').addEventListener('click', () => { $('#persona-modal').hidden = false; });
   $('#persona-logout-btn').addEventListener('click', signOut);
-  $('#rail-ddq-manager').addEventListener('click', () => { location.href = '/portal/ddq-manager'; });
   // Shown only until Google's own buttons have loaded
   $('#login-google-btn').addEventListener('click', () => { googleIntent = 'signin'; if (googleReady) google.accounts.id.prompt(); });
   $('#login-signup-btn').addEventListener('click', () => { googleIntent = 'signup'; if (googleReady) google.accounts.id.prompt(); });
   window.addEventListener('popstate', routeFromLocation);
+  window.addEventListener('hashchange', routeFromLocation);
 }
 
 function routeFromLocation() {
@@ -6976,8 +7017,25 @@ function routeFromLocation() {
   // Employees never load this app shell: their portal is a separate, table-only page
   if (!isCompliance()) { location.replace('/portal/employee'); return; }
   hideLogin();
+  const hash = (location.hash || '').replace(/^#/, '');
+  if (hash === 'ddq-manager' || hash === 'ddq') {
+    showView('ddq-manager', false);
+    return;
+  }
+  if (hash === 'governance' || hash === 'policies' || hash === 'sources') {
+    showView('governance', false);
+    return;
+  }
+  if (hash === 'reviews') {
+    showView('reviews', false);
+    return;
+  }
   const p = location.pathname;
-  if (p === '/portal/compliance' || p === '/portal/employee' || p === '/login') {
+  if (p === '/portal/compliance' || p === '/portal/employee' || p === '/login' || p === '/portal/ddq-manager') {
+    if (p === '/portal/ddq-manager') {
+      showView('ddq-manager', false);
+      return;
+    }
     // Rewrite the URL whenever the role is not allowed on the requested portal
     const home = isCompliance() ? 'compliance' : 'employee';
     showView(home, p !== `/portal/${home}`);

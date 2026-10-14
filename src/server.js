@@ -66,10 +66,8 @@ app.use('/api/statements', officerOnly, statementsRouter);
 app.use('/api/ddq', ddqRouter);
 app.use('/api/ddq-templates', require('./routes/ddqTemplates'));
 
-// Compliance Agent: what it is, which mode it is in, and the tools it can call
-app.get('/api/agent/compliance', (req, res) => {
-  res.json(require('./agents/complianceAgent').describe());
-});
+// Multi-Agent & Orchestrator API
+app.use('/api/agent', require('./routes/agents'));
 app.use('/api/alerts', officerOnly, alertsRouter);
 app.use('/api/sources', officerOnly, sourcesRouter);
 app.use('/api/policies', officerOnly, policiesRouter);
@@ -77,7 +75,6 @@ app.use('/api/cases', officerOnly, casesRouter);
 app.use('/api/ask', authenticate, askRouter);
 app.use('/api/stats', officerOnly, statsRouter);
 app.use('/api/uploads', officerOnly, uploadsRouter);
-// Address lookup holds no workspace data and is also used by the counterparty DDQ page
 app.use('/api/places', placesRouter);
 app.use('/api/ai', officerOnly, aiRouter);
 app.use('/api/kyc', kycRouter);

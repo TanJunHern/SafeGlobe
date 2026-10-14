@@ -984,6 +984,10 @@ class SqliteDatabase {
     });
   }
 
+  getSourceById(id) {
+    return this.getSources().find(s => s.id === id) || null;
+  }
+
   setSourceCost(id, cost) {
     return this.db.prepare('UPDATE sources SET cost_per_screen = ? WHERE id = ?').run(cost, id).changes > 0;
   }
@@ -1203,6 +1207,10 @@ class SqliteDatabase {
         met: Boolean(r.is_met)
       };
     });
+  }
+
+  getPolicyById(id) {
+    return this.getPolicies().find(p => p.id === id) || null;
   }
 
   addPolicy(policy) {

@@ -405,8 +405,8 @@ test('policy search: the built-in text answers offline, and Agent Search answers
   };
   const fakeAuth = { getClient: async () => ({ getAccessToken: async () => ({ token: 't' }) }) };
   const gal = require('google-auth-library');
-  const RealAuth = gal.GoogleAuth;
-  gal.GoogleAuth = function () { return fakeAuth; };
+  const realDescriptor = Object.getOwnPropertyDescriptor(gal, 'GoogleAuth');
+  Object.defineProperty(gal, 'GoogleAuth', { value: function () { return fakeAuth; }, configurable: true, writable: true });
   try {
     await withConfig({ agentSearch: { dataStore: 'duedilly-policies', location: 'global', dailyCap: 2 }, googleCloudProject: 'test-project' }, async () => {
       db.setSetting('daily_budget_agent_search', null);
@@ -434,7 +434,12 @@ test('policy search: the built-in text answers offline, and Agent Search answers
       assert.match(down.reason, /could not be reached/);
       assert.equal(down.results[0].clauseId, '§5.2');
     });
-  } finally { globalThis.fetch = realFetch; gal.GoogleAuth = RealAuth; policySearch._clearCache(); db.setSetting('daily_budget_agent_search', null); }
+  } finally {
+    globalThis.fetch = realFetch;
+    if (realDescriptor) Object.defineProperty(gal, 'GoogleAuth', realDescriptor);
+    policySearch._clearCache();
+    db.setSetting('daily_budget_agent_search', null);
+  }
 });
 
 test('Phase 3 over HTTP: push endpoint, crawler routes, policy routes, and the gate', async t => {

@@ -182,8 +182,8 @@ test('Duck-Scanner: Document AI then Gemini; without Document AI Gemini reads th
   // Document AI connected: its text and fields go to Gemini, not the file
   const realFetch = globalThis.fetch;
   const gal = require('google-auth-library');
-  const RealAuth = gal.GoogleAuth;
-  gal.GoogleAuth = function () { return { getClient: async () => ({ getAccessToken: async () => ({ token: 't' }) }) }; };
+  const realDescriptor = Object.getOwnPropertyDescriptor(gal, 'GoogleAuth');
+  Object.defineProperty(gal, 'GoogleAuth', { value: function () { return { getClient: async () => ({ getAccessToken: async () => ({ token: 't' }) }) }; }, configurable: true, writable: true });
   const calls = [];
   globalThis.fetch = async (url, opts) => { calls.push({ url: String(url), body: JSON.parse(opts.body) }); return new Response(JSON.stringify(DOC_AI), { status: 200, headers: { 'content-type': 'application/json' } }); };
   try {
@@ -202,7 +202,11 @@ test('Duck-Scanner: Document AI then Gemini; without Document AI Gemini reads th
         assert.ok(capped instanceof Error || /limit of 1 documents/.test(capped.note));
       });
     });
-  } finally { globalThis.fetch = realFetch; gal.GoogleAuth = RealAuth; db.setSetting('daily_budget_document_ai', null); }
+  } finally {
+    globalThis.fetch = realFetch;
+    if (realDescriptor) Object.defineProperty(gal, 'GoogleAuth', realDescriptor);
+    db.setSetting('daily_budget_document_ai', null);
+  }
 });
 
 // ---------------------------------------------------------------------------------------------
