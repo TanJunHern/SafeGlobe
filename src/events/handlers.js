@@ -3,7 +3,8 @@
  *
  *   alert-raised         Ripples triage rates the alert; a High one asks for a re-screen
  *   source-changed       each counterparty a changed page newly names gets a ripple
- *   screening-requested  Pond-Guard screens the counterparty again (inside the daily cap), else its score is re-computed
+ *   screening-requested  Pond-Guard screens the counterparty again (inside the daily cap), else its score is re-computed;
+ *                        with a kycId, it screens that new KYC request and writes the result back to it
  *   rescreen-due         the monitored requests that are due are re-screened
  *   ddq-submitted        the returned answers are compared with the findings (answer verification)
  *   screening-completed  published; nothing listens yet
@@ -40,6 +41,11 @@ async function onSourceChanged(payload) {
 
 async function onScreeningRequested(payload) {
   const db = getDb();
+  // A new KYC request: Pond-Guard at the first instance. The result is written back to the request.
+  if (payload.kycId) {
+    try { await require('../services/kycService').screenRequest(db, payload.kycId); } catch (err) { if (err.status !== 404) throw err; }
+    return;
+  }
   const pondGuard = require('../services/pondGuardService');
   const riskService = require('../risk/riskService');
   if (!db.getEntityById(payload.entityId)) return;

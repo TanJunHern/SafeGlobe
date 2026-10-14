@@ -91,7 +91,9 @@ function scoreFindings(findings, rules, now = Date.now()) {
       subject: f.subject, summary: f.summary, quote: f.evidence_quote, sourceName: f.source_name, sourceUrl: f.source_url || '',
       ddqAnswerId: f.ddq_answer_id || '', readAt: f.read_at, agent: f.agent, demo: Boolean(f.demo),
       corroboratingSources: f.corroborating_sources || [], confidence: entry.conf.value, confidenceParts: entry.conf.parts,
-      setsTotal: Boolean(row.setsTotal), sendsDdq: Boolean(row.sendsDdq)
+      setsTotal: Boolean(row.setsTotal), sendsDdq: Boolean(row.sendsDdq),
+      // What the screening agent cited from the policy and suggested (display only: neither changes the points)
+      policyClause: f.policy_clause || '', policyQuote: f.policy_quote || '', policyNote: f.policy_note || '', suggestedAction: f.suggested_action || ''
     });
   }
 

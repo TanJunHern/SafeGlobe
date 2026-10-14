@@ -57,7 +57,7 @@ CCK|CC|Cocos (Keeling) Islands
 COL|CO|Colombia
 COM|KM|Comoros
 COG|CG|Congo|Republic of the Congo|Congo (Brazzaville)|Congo-Brazzaville
-COD|CD|Democratic Republic of the Congo|Congo, Democratic Republic of the|Congo (Kinshasa)|DR Congo|DRC|Congo-Kinshasa
+COD|CD|Democratic Republic of the Congo|Congo, Democratic Republic of the|Congo (Kinshasa)|DR Congo|DRC|Congo-Kinshasa|Democratic Republic of Congo
 COK|CK|Cook Islands
 CRI|CR|Costa Rica
 CIV|CI|Côte d'Ivoire|Ivory Coast
@@ -248,7 +248,7 @@ UZB|UZ|Uzbekistan
 VUT|VU|Vanuatu
 VEN|VE|Venezuela|Venezuela (Bolivarian Republic of)|Bolivarian Republic of Venezuela
 VNM|VN|Viet Nam|Vietnam
-VGB|VG|Virgin Islands (British)|British Virgin Islands
+VGB|VG|Virgin Islands (British)|British Virgin Islands|Virgin Islands (UK)|Virgin Islands, British
 VIR|VI|Virgin Islands (U.S.)|United States Virgin Islands|US Virgin Islands
 WLF|WF|Wallis and Futuna
 ESH|EH|Western Sahara

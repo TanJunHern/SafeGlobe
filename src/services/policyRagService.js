@@ -16,6 +16,9 @@ DUEDILLY ENTERPRISE COMPLIANCE & COUNTERPARTY RISK POLICY (v2026.1)
 
 Section 1: General Principles
 All counterparties onboarded by DueDilly employees must undergo automated screening against sanctions, watchlists, adverse media, and jurisdictional risk before contract execution.
+Clause 1.1 (Sanctions screening, demo clause): Every counterparty, its directors, shareholders and beneficial owners, and every vessel by IMO number, must be screened against the sanctions lists before onboarding and at each re-screen. A name-only match with strong similarity is a possible match and must be investigated. A match confirmed by a second identifier (date of birth, registration number or IMO number) must be escalated, and the relationship must not proceed.
+Clause 1.2 (Adverse media, demo clause): Adverse media from the last 24 months must be reviewed. Media alleging fraud, bribery or sanctions evasion is severe and must be investigated before approval. Other negative media must be recorded and considered.
+Clause 1.3 (Beneficial ownership, demo clause): The counterparty must disclose its ownership up to its ultimate beneficial owners. Nominee shareholders, bearer shares, an offshore holding company, or an unknown beneficial owner make ownership unclear and require enhanced due diligence.
 
 Section 2: Contract Value & Financial Exposure Thresholds
 Clause 2.1: Any proposed engagement with anticipated contract value exceeding SGD 100,000 (one hundred thousand Singapore Dollars) mandates comprehensive vendor due diligence questionnaire (DDQ) verification and beneficial ownership audit.

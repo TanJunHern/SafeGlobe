@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from google.adk import __version__ as ADK_VERSION
 
 from . import settings
-from .models import AskRequest, AskResponse, CountryRiskRequest, CountryRiskResponse, ExtractRequest, ExtractResponse, Health, ProposeFixRequest, ProposeFixResponse, ScreenRequest
+from .models import AskRequest, AskResponse, CountryRiskRequest, CountryRiskResponse, DillyRequest, DillyResponse, ExtractRequest, ExtractResponse, Health, ProposeFixRequest, ProposeFixResponse, ScreenRequest
 
 app = FastAPI(title="DueDilly agents", version="1.0.0")
 
@@ -81,3 +81,13 @@ async def country_risk_extract(request: CountryRiskRequest) -> CountryRiskRespon
     return await extract(request)
   except Exception as err:  # the app then keeps its last good data
     raise HTTPException(status_code=502, detail=f"The country risk agent could not read the page: {str(err)[:200]}")
+
+
+@app.post("/pond-guard/dilly", response_model=DillyResponse, dependencies=[Depends(caller_is_duedilly), Depends(backend_ready)])
+async def pond_guard_dilly(request: DillyRequest) -> DillyResponse:
+  from .pond_guard import orchestrate
+
+  try:
+    return await orchestrate(request)
+  except Exception as err:  # the findings, the score and the route stand without Dilly's text
+    raise HTTPException(status_code=502, detail=f"Dilly could not sum up the screening: {str(err)[:200]}")

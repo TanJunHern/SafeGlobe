@@ -1,0 +1,190 @@
+{
+  "view_id": "fatf_lists",
+  "source_name": "FATF",
+  "source_url": "https://www.fatf-gafi.org/en/countries/black-and-grey-lists.html",
+  "fetched_at": "2026-10-14T01:37:29.924Z",
+  "content_hash": "81700d3f9bb1e3654dd807b4d831ba48ea1f5b95d58ab35191878ed405418f77",
+  "method": "upload",
+  "licence_note": "Uploaded by a compliance officer, who is responsible for the terms of the source. DueDilly did not read the site.",
+  "countries": [
+    {
+      "iso3": "AGO",
+      "name": "Angola",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Jurisdictions under Increased Monitoring - 19 June 2026 Angola"
+    },
+    {
+      "iso3": "BOL",
+      "name": "Bolivia",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Jurisdictions under Increased Monitoring - 19 June 2026 Angola Bolivia"
+    },
+    {
+      "iso3": "BIH",
+      "name": "Bosnia and Herzegovina",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Jurisdictions under Increased Monitoring - 19 June 2026 Angola Bolivia Bosnia and Herzegovina"
+    },
+    {
+      "iso3": "BGR",
+      "name": "Bulgaria",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Jurisdictions under Increased Monitoring - 19 June 2026 Angola Bolivia Bosnia and Herzegovina Bulgaria"
+    },
+    {
+      "iso3": "CMR",
+      "name": "Cameroon",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Jurisdictions under Increased Monitoring - 19 June 2026 Angola Bolivia Bosnia and Herzegovina Bulgaria Cameroon"
+    },
+    {
+      "iso3": "CIV",
+      "name": "Côte d'Ivoire",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Cameroon Côte d'Ivoire"
+    },
+    {
+      "iso3": "PRK",
+      "name": "Democratic People's Republic of Korea",
+      "category": "call_for_action",
+      "score": null,
+      "evidence_quote": "High-Risk Jurisdictions subject to a Call for Action - 19 June 2026 Democratic People's Republic of Korea"
+    },
+    {
+      "iso3": "COD",
+      "name": "Democratic Republic of the Congo",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Democratic Republic of Congo"
+    },
+    {
+      "iso3": "HTI",
+      "name": "Haiti",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Democratic Republic of Congo Haiti"
+    },
+    {
+      "iso3": "IRN",
+      "name": "Iran",
+      "category": "call_for_action",
+      "score": null,
+      "evidence_quote": "High-Risk Jurisdictions subject to a Call for Action - 19 June 2026 Democratic People's Republic of Korea Iran"
+    },
+    {
+      "iso3": "IRQ",
+      "name": "Iraq",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Haiti Iraq"
+    },
+    {
+      "iso3": "KEN",
+      "name": "Kenya",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Iraq Kenya"
+    },
+    {
+      "iso3": "KWT",
+      "name": "Kuwait",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Kenya Kuwait"
+    },
+    {
+      "iso3": "LAO",
+      "name": "Lao People's Democratic Republic",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Kuwait Lao People's Democratic Republic"
+    },
+    {
+      "iso3": "LBN",
+      "name": "Lebanon",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Lao People's Democratic Republic Lebanon"
+    },
+    {
+      "iso3": "MCO",
+      "name": "Monaco",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Lebanon Monaco"
+    },
+    {
+      "iso3": "MMR",
+      "name": "Myanmar",
+      "category": "call_for_action",
+      "score": null,
+      "evidence_quote": "High-Risk Jurisdictions subject to a Call for Action - 19 June 2026 Democratic People's Republic of Korea Iran Myanmar"
+    },
+    {
+      "iso3": "NPL",
+      "name": "Nepal",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Monaco Nepal"
+    },
+    {
+      "iso3": "PNG",
+      "name": "Papua New Guinea",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Nepal Papua New Guinea"
+    },
+    {
+      "iso3": "SSD",
+      "name": "South Sudan",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Papua New Guinea South Sudan"
+    },
+    {
+      "iso3": "SYR",
+      "name": "Syrian Arab Republic",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "South Sudan Syria"
+    },
+    {
+      "iso3": "VEN",
+      "name": "Venezuela",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Syria Venezuela"
+    },
+    {
+      "iso3": "VNM",
+      "name": "Viet Nam",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Venezuela Vietnam"
+    },
+    {
+      "iso3": "VGB",
+      "name": "Virgin Islands (British)",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Vietnam Virgin Islands (UK)"
+    },
+    {
+      "iso3": "YEM",
+      "name": "Yemen",
+      "category": "increased_monitoring",
+      "score": null,
+      "evidence_quote": "Virgin Islands (UK) Yemen"
+    }
+  ],
+  "read_url": "https://www.fatf-gafi.org/en/countries/black-and-grey-lists.html",
+  "rejected": [],
+  "model_id": "gemini-3.5-flash",
+  "sample": true
+}

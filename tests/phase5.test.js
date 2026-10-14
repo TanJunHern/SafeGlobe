@@ -47,7 +47,7 @@ test('copilot offline: the draft is built from the findings, labelled, and decid
   assert.match(d.draft.note, /Gemini is not connected/);
   assert.match(d.draft.summary, /85 of 100/);
   assert.equal(d.draft.cited_findings.length, 5);
-  assert.deepEqual(d.draft.cited_clauses.sort(), ['§4.1', '§5.4']);
+  assert.deepEqual(d.draft.cited_clauses.sort(), ['§1.3', '§4.1', '§5.4']); // §1.3: the ownership demo clause
   // The suggested route is the computed one, never the model's
   assert.equal(d.draft.suggestedRouteLabel, 'Escalate');
   assert.equal(d.draft.risk, 85);

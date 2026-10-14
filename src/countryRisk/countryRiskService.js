@@ -29,6 +29,8 @@ const { takeDailyBudget } = require('../middleware/rateLimit');
 const SETTING = 'country_risk_refresh';
 const MAX_AGENT_TEXT = 60000;
 const SHARE_MS = 10 * 60 * 1000;
+// These sources are read once a week at most, and some answer slowly: waiting is better than a stale view
+const SLOW_SITE_MS = 45000;
 // The daily scheduled tick is the normal trigger. If it has not come this long after a view fell due, opening the Globe starts the check.
 const FALLBACK_GRACE_MS = 6 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -90,7 +92,7 @@ const agentAnswers = new Map();
 const siteOf = host => host.split('.').slice(-2).join('.');
 
 async function readPage(db, view, deps) {
-  const page = await crawler.fetchPage(db, view.sourceUrl, deps);
+  const page = await crawler.fetchPage(db, view.sourceUrl, Object.assign({ slowSiteMs: SLOW_SITE_MS }, deps));
   if (page.status !== 'read') return page;
   return { status: 'read', body: page.html, text: pageText(page.html), ext: 'html', url: page.finalUrl, contentType: 'text/html; charset=utf-8' };
 }
@@ -98,7 +100,7 @@ async function readPage(db, view, deps) {
 /** A data portal's dataset record names the files. The newest file of the wanted format is read, from the same site only. */
 async function readCatalogueFile(db, view, deps) {
   const f = view.fetch;
-  const record = await crawler.fetchPage(db, f.catalogueUrl, Object.assign({}, deps, { file: { types: /json/, maxBytes: 5 * 1024 * 1024, accept: 'application/json' } }));
+  const record = await crawler.fetchPage(db, f.catalogueUrl, Object.assign({ slowSiteMs: SLOW_SITE_MS }, deps, { file: { types: /json/, maxBytes: 5 * 1024 * 1024, accept: 'application/json' } }));
   if (record.status !== 'read') return record;
   let distributions;
   try { distributions = JSON.parse(record.html).result.distributions; } catch (err) { distributions = null; }
@@ -113,7 +115,7 @@ async function readCatalogueFile(db, view, deps) {
   if (!files.length) return { status: 'failed', reason: `The dataset record names no ${f.format} file.` };
   const chosen = files[0];
   if (siteOf(new URL(chosen.url).hostname) !== siteOf(new URL(f.catalogueUrl).hostname)) return { status: 'failed', reason: 'The data file is on another site than the dataset record, so it was not read.' };
-  const file = await crawler.fetchPage(db, chosen.url, Object.assign({}, deps, { file: { types: /text\/(plain|csv)|application\/(csv|octet-stream)/, maxBytes: f.maxBytes, timeoutMs: f.timeoutMs, accept: 'text/csv,text/plain;q=0.9,*/*;q=0.5' } }));
+  const file = await crawler.fetchPage(db, chosen.url, Object.assign({ slowSiteMs: SLOW_SITE_MS }, deps, { file: { types: /text\/(plain|csv)|application\/(csv|octet-stream)/, maxBytes: f.maxBytes, timeoutMs: f.timeoutMs, accept: 'text/csv,text/plain;q=0.9,*/*;q=0.5' } }));
   if (file.status !== 'read') return file;
   const licence = chosen.licence ? [chosen.licence.label || chosen.licence.description, chosen.licence.resource].filter(Boolean).join(': ') : '';
   return { status: 'read', body: file.html, text: file.html, ext: f.format.toLowerCase(), url: file.finalUrl, contentType: 'text/csv; charset=utf-8', fileTitle: chosen.title, licence: licence ? `${licence} (as stated on the dataset record for "${chosen.title}")` : '' };

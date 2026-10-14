@@ -385,7 +385,7 @@ test('Ripples triage: what Gemini returns is checked before it is stored', async
 test('policy search: the built-in text answers offline, and Agent Search answers when it is connected', async () => {
   const db = getDb();
   policySearch._clearCache();
-  assert.deepEqual(policySearch.localClauses().map(c => c.id), ['§2.1', '§2.2', '§3.6', '§4.1', '§5.2', '§5.4']);
+  assert.deepEqual(policySearch.localClauses().map(c => c.id), ['§1.1', '§1.2', '§1.3', '§2.1', '§2.2', '§3.6', '§4.1', '§5.2', '§5.4']);
   const offline = await policySearch.clauseFor(db, '§5.4');
   assert.equal(offline.via, 'Offline fallback');
   assert.match(offline.text, /AIS telemetry dark periods/);

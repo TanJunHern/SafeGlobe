@@ -256,7 +256,9 @@ class SqliteDatabase {
       'ddq_submitted_at TEXT',
       'agent_json TEXT',
       'ddq_bounce_json TEXT',
-      'monitoring_json TEXT'
+      'monitoring_json TEXT',
+      // Pond-Guard at the first instance: where the screening of this request stands (screening, done, reused, limit, offline)
+      'pond_guard_json TEXT'
     ];
     for (const col of migrationCols) {
       try {
@@ -308,6 +310,42 @@ class SqliteDatabase {
         decided_by TEXT,
         decided_at TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    // Pond-Guard: what Dilly suggested at each run (kept, so it can be compared with the officer's decision later),
+    // and the officer's decision on each request next to the suggestion that was current when it was made
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS pond_guard_suggestions (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT NOT NULL,
+        kyc_id TEXT,
+        entity_key TEXT,
+        at TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        risk INTEGER NOT NULL,
+        confidence INTEGER,
+        route TEXT,
+        level TEXT,
+        risk_line INTEGER,
+        detail_json TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_pg_suggestions_entity ON pond_guard_suggestions(entity_id, at);
+      CREATE INDEX IF NOT EXISTS idx_pg_suggestions_key ON pond_guard_suggestions(entity_key, at);
+      CREATE TABLE IF NOT EXISTS suggestion_outcomes (
+        kyc_id TEXT PRIMARY KEY,
+        entity_id TEXT,
+        counterparty_name TEXT,
+        suggestion_id TEXT,
+        suggestion_mode TEXT,
+        suggested_risk INTEGER,
+        suggested_route TEXT,
+        suggested_at TEXT,
+        risk_line INTEGER NOT NULL,
+        decision TEXT NOT NULL,
+        is_final INTEGER NOT NULL DEFAULT 0,
+        decided_by TEXT,
+        decided_at TEXT NOT NULL,
+        is_demo INTEGER NOT NULL DEFAULT 0
       );
     `);
     // Country risk views on the Globe (src/countryRisk): the last validated data per view, and every check made
@@ -1010,6 +1048,65 @@ class SqliteDatabase {
   setKycAttributes(id, attributes) {
     this.db.prepare('UPDATE kyc_requests SET attributes_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(JSON.stringify(attributes || {}), id);
     return this.getKycRequestById(id);
+  }
+
+  // Pond-Guard at the first instance: the state of the screening, and its result written over the first, rule-based one
+  setKycPondGuard(id, state) {
+    this.db.prepare('UPDATE kyc_requests SET pond_guard_json = ? WHERE id = ?').run(state ? JSON.stringify(state) : null, id);
+  }
+
+  setKycAiResult(id, { ai_result, ai_score, ai_confidence, ai_rationale, screening_result }) {
+    this.db.prepare('UPDATE kyc_requests SET ai_result = ?, ai_score = ?, ai_confidence = ?, ai_rationale = ?, screening_result = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(ai_result, ai_score, ai_confidence, ai_rationale, screening_result, id);
+    return this.getKycRequestById(id);
+  }
+
+  _hydrateSuggestion(r) {
+    if (!r) return null;
+    let detail = {};
+    try { detail = r.detail_json ? JSON.parse(r.detail_json) : {}; } catch (e) {}
+    return { id: r.id, entityId: r.entity_id, kycId: r.kyc_id || null, entityKey: r.entity_key || '', at: r.at, mode: r.mode, risk: r.risk, confidence: r.confidence, route: r.route, level: r.level, riskLine: r.risk_line, detail };
+  }
+
+  addSuggestion(s) {
+    this.db.prepare(`INSERT INTO pond_guard_suggestions (id, entity_id, kyc_id, entity_key, at, mode, risk, confidence, route, level, risk_line, detail_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(s.id, s.entityId, s.kycId || null, s.entityKey || null, s.at, s.mode, s.risk, s.confidence, s.route, s.level, s.riskLine, JSON.stringify(s.detail || {}));
+    return this.getSuggestion(s.id);
+  }
+
+  getSuggestion(id) {
+    return this._hydrateSuggestion(this.db.prepare('SELECT * FROM pond_guard_suggestions WHERE id = ?').get(id));
+  }
+
+  /** The latest suggestion for a case. before: only those made up to that time (the one an officer had on screen). */
+  getLatestSuggestion(entityId, { before = null } = {}) {
+    const row = before
+      ? this.db.prepare('SELECT * FROM pond_guard_suggestions WHERE entity_id = ? AND at <= ? ORDER BY at DESC, rowid DESC LIMIT 1').get(entityId, before)
+      : this.db.prepare('SELECT * FROM pond_guard_suggestions WHERE entity_id = ? ORDER BY at DESC, rowid DESC LIMIT 1').get(entityId);
+    return this._hydrateSuggestion(row);
+  }
+
+  /** The latest live screening of the same counterparty (by its key) since a time, for reuse within 24 hours. */
+  findLiveSuggestionByKey(entityKey, sinceIso) {
+    return this._hydrateSuggestion(this.db.prepare("SELECT * FROM pond_guard_suggestions WHERE entity_key = ? AND mode = 'live' AND at >= ? ORDER BY at DESC, rowid DESC LIMIT 1").get(entityKey, sinceIso));
+  }
+
+  saveOutcome(o) {
+    this.db.prepare(`INSERT INTO suggestion_outcomes (kyc_id, entity_id, counterparty_name, suggestion_id, suggestion_mode, suggested_risk, suggested_route, suggested_at, risk_line, decision, is_final, decided_by, decided_at, is_demo)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(kyc_id) DO UPDATE SET entity_id = excluded.entity_id, counterparty_name = excluded.counterparty_name, suggestion_id = excluded.suggestion_id,
+        suggestion_mode = excluded.suggestion_mode, suggested_risk = excluded.suggested_risk, suggested_route = excluded.suggested_route, suggested_at = excluded.suggested_at,
+        risk_line = excluded.risk_line, decision = excluded.decision, is_final = excluded.is_final, decided_by = excluded.decided_by, decided_at = excluded.decided_at, is_demo = excluded.is_demo`)
+      .run(o.kycId, o.entityId || null, o.counterpartyName || '', o.suggestionId || null, o.suggestionMode || null, o.suggestedRisk, o.suggestedRoute || null, o.suggestedAt || null, o.riskLine, o.decision, o.isFinal ? 1 : 0, o.decidedBy || '', o.decidedAt, o.isDemo ? 1 : 0);
+  }
+
+  /** Runs the agreement query (src/learning/agreement.js) on this database: the offline twin of the BigQuery view. */
+  queryOutcomes(sql) {
+    return this.db.prepare(sql).all();
+  }
+
+  getOutcomeRows() {
+    return this.db.prepare('SELECT * FROM suggestion_outcomes ORDER BY decided_at DESC').all();
   }
 
   setKycRescreenResult(id, text) {
@@ -2048,7 +2145,7 @@ class SqliteDatabase {
     try { ddq_responses = JSON.parse(r.ddq_responses_json || '{}'); } catch(e){}
 
     // Template snapshot and draft are large; they are served by getKycDdqBundle() instead
-    const { ddq_template_json, ddq_draft_json, agent_json, ddq_bounce_json, monitoring_json, ...rest } = r;
+    const { ddq_template_json, ddq_draft_json, agent_json, ddq_bounce_json, monitoring_json, pond_guard_json, ...rest } = r;
     r = rest;
     let agent = null;
     let ddq_bounce = null;
@@ -2056,6 +2153,8 @@ class SqliteDatabase {
     try { ddq_bounce = ddq_bounce_json ? JSON.parse(ddq_bounce_json) : null; } catch(e){}
     let monitoring = null;
     try { monitoring = monitoring_json ? JSON.parse(monitoring_json) : null; } catch(e){}
+    let pond_guard = null;
+    try { pond_guard = pond_guard_json ? JSON.parse(pond_guard_json) : null; } catch(e){}
 
     return {
       ...r,
@@ -2068,6 +2167,7 @@ class SqliteDatabase {
       agent,
       ddq_bounce,
       monitoring,
+      pond_guard,
       ddq_link: r.ddq_token ? `/ddq/portal?token=${r.ddq_token}` : null
     };
   }

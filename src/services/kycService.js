@@ -105,6 +105,32 @@ function evaluatePolicyRules(data) {
 }
 
 /**
+ * The request's result fields, worded from a score breakdown. Used for the first, rule-based result and again
+ * when Pond-Guard has screened the request, so both read the same way. Nothing here sets a number.
+ */
+function resultFromBreakdown(breakdown, rules, { screeningResult = 'Clear', cpiRow = null } = {}) {
+  const score = breakdown.risk;
+  const confidence = breakdown.confidence;
+  const counted = new Set(breakdown.lines.map(l => l.category));
+
+  // The screening result label names the most serious kind of finding (existing values, unchanged)
+  let result = screeningResult || 'Clear';
+  if (counted.has('sanctions_confirmed') || counted.has('sanctions_possible')) result = 'Sanctions Alert';
+  else if (counted.has('pep_owner') || counted.has('pep_associate')) result = 'PEP Alert';
+  else if (counted.has('vessel_ais_dark') || counted.has('vessel_sts_transfer')) result = 'High Risk';
+  else if (counted.has('country_cpi_low')) result = 'Watchlist Match';
+
+  const rationale = breakdown.lines.length
+    ? `${breakdown.lines.map(l => `${l.short} (+${l.points}${l.policy ? `, ${l.policy}` : ''})`).join('; ')}. Total ${score} of ${breakdown.cap}: ${breakdown.level.label} risk. ${breakdown.routeReason}`
+    : `No finding added risk points${cpiRow ? ` (${cpiRow.name}: CPI ${cpiRow.score}/100)` : ''}. ${breakdown.confidenceExplanation}`;
+
+  const hasAnomaly = counted.has('vessel_ais_dark') || counted.has('vessel_sts_transfer');
+  const resultLabel = score < rules.routes.riskLine && hasAnomaly ? 'Anomalies Flagged' : `${breakdown.level.label} Risk`;
+
+  return { ai_result: `${resultLabel} (Confidence ${confidence}%)`, ai_score: score, ai_confidence: confidence, ai_rationale: rationale, screening_result: result };
+}
+
+/**
  * Point B: AI Risk Scoring & Anomaly Detection
  * Combines screening signals, country CPI, relationship type, and contract value.
  * 
@@ -175,30 +201,8 @@ function calculateAiRisk(data, screeningHit = null) {
   const checks = Object.assign({ sanctions: listCheck, pep: listCheck }, (screeningHit && screeningHit.checks) || {}, { _kind: kind, country: countryCheck });
   const valid = scored.map(f => validateFinding(f, rules));
   const breakdown = assess({ findings: valid.filter(v => v.ok).map(v => v.finding), rejected: valid.filter(v => !v.ok), checks, kind }, rules);
-  const score = breakdown.risk;
-  const confidence = breakdown.confidence;
-  const counted = new Set(breakdown.lines.map(l => l.category));
-
-  // The screening result label names the most serious kind of finding (existing values, unchanged)
-  let screeningResult = data.screening_result || 'Clear';
-  if (counted.has('sanctions_confirmed') || counted.has('sanctions_possible')) screeningResult = 'Sanctions Alert';
-  else if (counted.has('pep_owner') || counted.has('pep_associate')) screeningResult = 'PEP Alert';
-  else if (counted.has('vessel_ais_dark') || counted.has('vessel_sts_transfer')) screeningResult = 'High Risk';
-  else if (counted.has('country_cpi_low')) screeningResult = 'Watchlist Match';
-
-  const rationale = breakdown.lines.length
-    ? `${breakdown.lines.map(l => `${l.short} (+${l.points}${l.policy ? `, ${l.policy}` : ''})`).join('; ')}. Total ${score} of ${breakdown.cap}: ${breakdown.level.label} risk. ${breakdown.routeReason}`
-    : `No finding added risk points${cpiRow ? ` (${cpiRow.name}: CPI ${cpiRow.score}/100)` : ''}. ${breakdown.confidenceExplanation}`;
-
-  const hasAnomaly = counted.has('vessel_ais_dark') || counted.has('vessel_sts_transfer');
-  const resultLabel = score < rules.routes.riskLine && hasAnomaly ? 'Anomalies Flagged' : `${breakdown.level.label} Risk`;
-
   return {
-    ai_result: `${resultLabel} (Confidence ${confidence}%)`,
-    ai_score: score,
-    ai_confidence: confidence,
-    ai_rationale: rationale,
-    screening_result: screeningResult,
+    ...resultFromBreakdown(breakdown, rules, { screeningResult: data.screening_result, cpiRow }),
     // The scoring trail, saved with the request so the "Why <score>?" panel can show it
     scored_findings: scored,
     checks,
@@ -713,6 +717,157 @@ function syncMonitoredEntity(request) {
   return db.getEntityById(entityId);
 }
 
+// ---------------------------------------------------------------------------------------------
+// Pond-Guard at the first instance: every new request is screened by the agents, in the background.
+// The first, rule-based result stays on the request until the agents answer, and for good when they cannot.
+// ---------------------------------------------------------------------------------------------
+const REUSE_MS = 24 * 60 * 60 * 1000;
+const pgNorm = v => String(v || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+const pgDigits = v => String(v || '').replace(/[^0-9a-z]/gi, '').toLowerCase();
+const PG_MESSAGES = {
+  screening: 'Pond-Guard is screening this request.',
+  done: 'Screened by Pond-Guard.',
+  limit: 'Pond-Guard daily limit reached, press Screen tomorrow',
+  offline: 'Offline'
+};
+
+/**
+ * What makes two requests "the same counterparty": the same registration, IMO or identity document number,
+ * or, when the request gives none, the same name and country.
+ */
+function entityKeyFor(request) {
+  const a = request.attributes || {};
+  const id = pgDigits(a.imo || a.reg_no || a.passport || '');
+  return id.length >= 5 ? `id:${id}` : `name:${pgNorm(request.counterparty_name)}|${String(request.country || '').toUpperCase()}`;
+}
+
+/**
+ * The request as a counterparty for the screening agents. A request has no counterparty record of its own unless
+ * it is monitored; when it names one that is already on the watchlist, that record's evidence is read as well.
+ */
+function subjectForRequest(db, request) {
+  const a = request.attributes || {};
+  const kind = request.entity_type === 'Vessel' ? 'vessel' : request.entity_type === 'Person' ? 'person' : 'org';
+  const id = monitoredEntityId(request.id);
+  const own = db.getEntityById(id) || {};
+  const ids = [a.imo, a.reg_no, a.passport].map(pgDigits).filter(v => v.length >= 5);
+  const name = pgNorm(request.counterparty_name);
+  const known = db.getAllEntities().find(e => !String(e.id).startsWith('kyc-') && (
+    [e.reg, e.imo, e.idDoc].map(pgDigits).some(v => v.length >= 5 && ids.some(x => v === x || v.endsWith(x) || x.endsWith(v))) || pgNorm(e.name) === name)) || null;
+  const pick = key => (own[key] !== undefined && own[key] !== null && !(Array.isArray(own[key]) && !own[key].length) ? own[key] : known ? known[key] : undefined);
+  return {
+    id, kind, name: request.counterparty_name,
+    a3: request.country, reg: a.reg_no || a.imo || a.passport || '', imo: a.imo || pick('imo') || '', idDoc: a.passport || pick('idDoc') || '', dob: a.dob || pick('dob') || '',
+    flag: (a.ais && a.ais.flag) || pick('flag'), nationality: pick('nationality'), role: request.relationship_type,
+    pep: Boolean(a.pep_declared || pick('pep')),
+    lists: pick('lists') || [], findings: pick('findings') || [], factors: pick('factors') || [], signals: pick('signals') || [], flags: pick('flags') || [],
+    evidenceIds: known ? [known.id] : [],
+    knownAs: known ? { id: known.id, name: known.name } : null,
+    request: { id: request.id, contract_value: request.contract_value, relationship_type: request.relationship_type, country: request.country }
+  };
+}
+
+const pgState = (db, kycId, state) => { db.setKycPondGuard(kycId, Object.assign({ at: new Date().toISOString() }, state)); return state; };
+
+/** Writes a Pond-Guard result over the request's first result. The score and the route come from the breakdown. */
+function writeBackScreening(db, request, breakdown) {
+  const rules = getRules(db);
+  const fields = resultFromBreakdown(breakdown, rules, { screeningResult: 'Clear', cpiRow: db.getCpiByCode(String(request.country || '').toUpperCase()) });
+  let updated = db.setKycAiResult(request.id, fields);
+  // Pond-Guard never approves and never rejects. A request the first rules had cleared goes to a person
+  // when the agents' findings put it on or over the line.
+  if (updated.request_status === 'Approved' && breakdown.risk >= rules.routes.riskLine) {
+    updated = db.updateKycRequestStatus(request.id, 'Under Review', 'Pond-Guard');
+  }
+  syncMonitoredEntity(updated);
+  return updated;
+}
+
+/** The first, rule-based result is the suggestion on record until the agents answer. */
+function recordRuleSuggestion(db, request) {
+  const pondGuard = require('./pondGuardService');
+  const entityId = monitoredEntityId(request.id);
+  const breakdown = require('../risk/riskService').assessEntity(db, entityId);
+  if (!breakdown) return null;
+  return db.addSuggestion(pondGuard.suggestionOf(`RS-${entityId}-${Date.now().toString(36)}`, entityId, breakdown, getRules(db), { kycId: request.id, entityKey: entityKeyFor(request), mode: 'rules', detail: {} }));
+}
+
+/**
+ * Called when a request has just been saved. Decides what happens next and says so on the request:
+ * screening (the event is published, or the page asks for it), limit, or offline. Never waits for the agents.
+ */
+function requestScreening(db, request) {
+  const pondGuard = require('./pondGuardService');
+  recordRuleSuggestion(db, request);
+  const m = pondGuard.mode(db);
+  if (!m.live) return pgState(db, request.id, { status: m.kind === 'limit' ? 'limit' : 'offline', message: PG_MESSAGES[m.kind === 'limit' ? 'limit' : 'offline'], reason: m.reason });
+  const bus = require('../events/bus');
+  // On Cloud Run the CPU is only there while a request is being handled. With events handled inside the app
+  // nothing may be started after the answer: the page that shows the request asks for the run instead.
+  const inRequest = config.isCloudRun && bus.status().mode === 'inline';
+  const state = pgState(db, request.id, { status: 'screening', message: PG_MESSAGES.screening, via: inRequest ? 'page' : bus.status().mode });
+  if (!inRequest) bus.publish('screening-requested', { kycId: request.id, reason: 'New KYC request' });
+  return state;
+}
+
+const screeningNow = new Map();
+/**
+ * Screens one request with Pond-Guard and writes the result back. One run per request at a time: a second
+ * caller gets the first run's result. force: an officer asked for a fresh run (no reuse).
+ */
+function screenRequest(db, kycId, opts = {}) {
+  const key = `${require('../db').currentWorkspaceId() || 'demo'}:${kycId}`;
+  if (screeningNow.has(key)) return screeningNow.get(key);
+  const run = runRequestScreening(db, kycId, opts).finally(() => screeningNow.delete(key));
+  screeningNow.set(key, run);
+  return run;
+}
+
+async function runRequestScreening(db, kycId, { force = false } = {}) {
+  const pondGuard = require('./pondGuardService');
+  const riskService = require('../risk/riskService');
+  const request = db.getKycRequestById(kycId);
+  if (!request) throw Object.assign(new Error('KYC request not found'), { status: 404 });
+  const entityId = monitoredEntityId(request.id);
+  const entityKey = entityKeyFor(request);
+  const subject = subjectForRequest(db, request);
+  const rules = getRules(db);
+
+  // The same counterparty screened in the last 24 hours: that result is reused, and no run is made
+  const recent = force ? null : db.findLiveSuggestionByKey(entityKey, new Date(Date.now() - REUSE_MS).toISOString());
+  if (recent && recent.entityId !== entityId) {
+    const prefix = `PG-${entityId}-${Date.now().toString(36)}`;
+    const own = new Set(['contract_value_high', 'broker_intermediary']);
+    const copied = db.getFindingRecords(recent.entityId)
+      .filter(r => !own.has(r.finding.category))
+      .map((r, i) => Object.assign({}, r.finding, { id: `${prefix}-r${i + 1}` }, r.status === 'accepted' ? {} : { _reason: r.reason || 'Not counted in the screening this was reused from.' }));
+    // The contract value and the relationship are this request's own
+    const mine = pondGuard.ruleFindings(db, rules, subject, new Set(copied.filter(f => !f._reason).map(f => f.category)), { idPrefix: prefix, readAt: new Date().toISOString() });
+    riskService.recordFindings(db, entityId, [...copied, ...mine.findings], { replace: true });
+    db.setRiskChecks(entityId, Object.assign({}, db.getRiskChecks(recent.entityId) || {}, { _kind: subject.kind }));
+    riskService.rescoreEntity(db, entityId);
+    const breakdown = riskService.assessEntity(db, entityId);
+    db.addSuggestion(pondGuard.suggestionOf(prefix, entityId, breakdown, rules, { kycId: request.id, entityKey, mode: 'reused', detail: { reusedFrom: { suggestionId: recent.id, at: recent.at, kycId: recent.kycId }, dilly: recent.detail.dilly || null } }));
+    const updated = writeBackScreening(db, request, breakdown);
+    const when = new Date(recent.at).toISOString().slice(0, 16).replace('T', ' ');
+    return { request: updated, state: pgState(db, request.id, { status: 'reused', message: `Reused from the screening at ${when} UTC`, reusedAt: recent.at, reusedFromKycId: recent.kycId || null }) };
+  }
+
+  let result;
+  try {
+    result = await pondGuard.screenEntity(db, entityId, () => {}, { subject, kycId: request.id, entityKey });
+  } catch (err) {
+    console.error('[Pond-Guard] request screening failed:', err.message);
+    result = { live: false, kind: 'offline', reason: 'The screening could not finish.' };
+  }
+  if (!result.live) {
+    const limit = result.kind === 'limit';
+    return { request: db.getKycRequestById(kycId), state: pgState(db, request.id, { status: limit ? 'limit' : 'offline', message: PG_MESSAGES[limit ? 'limit' : 'offline'], reason: result.reason }) };
+  }
+  const updated = writeBackScreening(db, request, result.breakdown);
+  return { request: updated, state: pgState(db, request.id, { status: 'done', message: PG_MESSAGES.done, suggestionId: result.suggestion.id, knownAs: subject.knownAs }) };
+}
+
 /** What is kept on the request from a VesselFinder lookup, plus how it differs from the form. */
 function vesselRecord(vessel, declared) {
   const db = getDb();
@@ -938,6 +1093,12 @@ function ensurePersonaSeed() {
 }
 
 module.exports = {
+  requestScreening,
+  screenRequest,
+  subjectForRequest,
+  entityKeyFor,
+  resultFromBreakdown,
+  PG_MESSAGES,
   ensurePersonaSeed,
   syncMonitoredEntity,
   syncAllMonitoredEntities,
