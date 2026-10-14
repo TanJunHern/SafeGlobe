@@ -1,0 +1,172 @@
+{
+  "view_id": "ofac_programmes",
+  "source_name": "OFAC (US Treasury)",
+  "source_url": "https://ofac.treasury.gov/sanctions-programs-and-country-information",
+  "fetched_at": "2026-10-13T16:10:54.202Z",
+  "content_hash": "de37bc0fab50fd76c1d5c071d0e90f15aeca86c62d29b677a77e239121005366",
+  "method": "llm",
+  "licence_note": "No terms of use were read for this source by DueDilly. robots.txt allowed the page.",
+  "countries": [
+    {
+      "iso3": "AFG",
+      "name": "Afghanistan",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Afghanistan-Related Sanctions"
+    },
+    {
+      "iso3": "BLR",
+      "name": "Belarus",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Belarus Sanctions"
+    },
+    {
+      "iso3": "CAF",
+      "name": "Central African Republic",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Central African Republic Sanctions"
+    },
+    {
+      "iso3": "CHN",
+      "name": "China",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Chinese Military Companies Sanctions"
+    },
+    {
+      "iso3": "CUB",
+      "name": "Cuba",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Cuba Sanctions"
+    },
+    {
+      "iso3": "PRK",
+      "name": "Democratic People's Republic of Korea",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "North Korea Sanctions"
+    },
+    {
+      "iso3": "COD",
+      "name": "Democratic Republic of the Congo",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Democratic Republic of the Congo-Related Sanctions"
+    },
+    {
+      "iso3": "HKG",
+      "name": "Hong Kong",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Hong Kong-Related Sanctions"
+    },
+    {
+      "iso3": "IRN",
+      "name": "Iran",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Iran Sanctions"
+    },
+    {
+      "iso3": "IRQ",
+      "name": "Iraq",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Iraq-Related Sanctions"
+    },
+    {
+      "iso3": "LBN",
+      "name": "Lebanon",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Lebanon-Related Sanctions"
+    },
+    {
+      "iso3": "LBY",
+      "name": "Libya",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Libya Sanctions"
+    },
+    {
+      "iso3": "MLI",
+      "name": "Mali",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Mali-Related Sanctions"
+    },
+    {
+      "iso3": "MMR",
+      "name": "Myanmar",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Burma-Related Sanctions"
+    },
+    {
+      "iso3": "NIC",
+      "name": "Nicaragua",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Nicaragua-related Sanctions"
+    },
+    {
+      "iso3": "RUS",
+      "name": "Russian Federation",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Russian Harmful Foreign Activities Sanctions",
+      "other_evidence": [
+        "Ukraine-/Russia-related Sanctions"
+      ]
+    },
+    {
+      "iso3": "SOM",
+      "name": "Somalia",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Somalia Sanctions"
+    },
+    {
+      "iso3": "SSD",
+      "name": "South Sudan",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "South Sudan-Related Sanctions"
+    },
+    {
+      "iso3": "SDN",
+      "name": "Sudan",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Sudan and Darfur Sanctions"
+    },
+    {
+      "iso3": "UKR",
+      "name": "Ukraine",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Ukraine-/Russia-related Sanctions"
+    },
+    {
+      "iso3": "VEN",
+      "name": "Venezuela",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Venezuela-Related Sanctions"
+    },
+    {
+      "iso3": "YEM",
+      "name": "Yemen",
+      "category": "sanctions_programme",
+      "score": null,
+      "evidence_quote": "Yemen-related Sanctions"
+    }
+  ],
+  "read_url": "https://ofac.treasury.gov/sanctions-programs-and-country-information",
+  "rejected": [],
+  "model_id": "gemini-3.5-flash",
+  "sample": true
+}

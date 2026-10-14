@@ -37,10 +37,17 @@ router.post('/apply-all', requireRole('compliance_officer'), (req, res) => {
 });
 
 // POST /api/monitoring/run: re-screen what is due. Body: { force, ids }
-router.post('/run', requireRole('compliance_officer'), (req, res) => {
+router.post('/run', requireRole('compliance_officer'), async (req, res) => {
   try {
     const { force = false, ids = null } = req.body || {};
-    res.json(Object.assign({ success: true }, monitoring.runDue({ force: Boolean(force), ids: Array.isArray(ids) ? ids : null })));
+    const out = monitoring.runDue({ force: Boolean(force), ids: Array.isArray(ids) ? ids : null });
+    // Vessels: every re-screen also re-reads position and destination from VesselFinder
+    const kycService = require('../services/kycService');
+    for (const r of out.results) {
+      const ais = await kycService.refreshVessel(r.id).catch(() => null);
+      if (ais) r.vessel = { status: ais.status, destination: ais.destination || '', eta: ais.eta || '', reported: ais.reported || '' };
+    }
+    res.json(Object.assign({ success: true }, out));
   } catch (err) { fail(res, err); }
 });
 

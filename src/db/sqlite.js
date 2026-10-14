@@ -5,8 +5,10 @@ const config = require('../config');
 const seed = require('./seed-data');
 
 class SqliteDatabase {
-  constructor(dbPath = config.dbPath) {
+  constructor(dbPath = config.dbPath, { empty = false } = {}) {
     this.dbPath = dbPath;
+    // A workspace someone created (not the Demo workspace): reference data only, never the demo story
+    this.emptyWorkspace = Boolean(empty);
     const dir = path.dirname(this.dbPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -17,6 +19,18 @@ class SqliteDatabase {
     } catch (e) {}
     this.initSchema();
     this.seedIfEmpty();
+    this.ensureReferenceData();
+    // Demo counterparties are scored from findings like any other case (src/risk/riskService.js)
+    try { require('../risk/riskService').ensureDemoFindings(this); } catch (e) { console.error('[DueDilly] Demo findings skipped:', e.message); }
+  }
+
+  /** Reference rows added after a database was first created: new CPI countries, corrected demo records. */
+  ensureReferenceData() {
+    const insertCpi = this.db.prepare('INSERT OR IGNORE INTO cpi (a3, name, score, rank) VALUES (?, ?, ?, ?)');
+    for (const c of seed.CPI_2025) insertCpi.run(c.a3, c.name, c.score, c.rank);
+    // The Vendor X record for Aurora Venture carried a different IMO and flag from the vessel record
+    this.db.prepare(`UPDATE source_records SET jurisdiction = 'CMR', reg_no = 'IMO 9304124', details_json = ?, raw_content = ? WHERE id = 'sr_s2_2' AND reg_no = 'IMO 9412345'`)
+      .run(JSON.stringify({ imo: '9304124', flag: 'CMR', ais_gap_hours: 31, sts_transfer: true }), '{"vessel":"Aurora Venture","imo":"9304124","flag":"CMR","dark_gap_h":31}');
   }
 
   initSchema() {
@@ -242,7 +256,9 @@ class SqliteDatabase {
       'ddq_submitted_at TEXT',
       'agent_json TEXT',
       'ddq_bounce_json TEXT',
-      'monitoring_json TEXT'
+      'monitoring_json TEXT',
+      // Pond-Guard at the first instance: where the screening of this request stands (screening, done, reused, limit, offline)
+      'pond_guard_json TEXT'
     ];
     for (const col of migrationCols) {
       try {
@@ -252,6 +268,161 @@ class SqliteDatabase {
     // Ongoing monitoring: what a re-screen against each source costs, and app-wide settings
     try { this.db.exec('ALTER TABLE sources ADD COLUMN cost_per_screen REAL DEFAULT 0'); } catch (e) {}
     this.db.exec('CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)');
+    // Risk scoring (src/risk): every finding that was read, accepted or rejected, and which checks ran per case
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS findings (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT NOT NULL,
+        category TEXT,
+        status TEXT NOT NULL DEFAULT 'accepted',
+        reject_reason TEXT,
+        finding_json TEXT NOT NULL,
+        is_demo INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_findings_entity ON findings(entity_id);
+      CREATE TABLE IF NOT EXISTS risk_checks (
+        entity_id TEXT PRIMARY KEY,
+        checks_json TEXT NOT NULL,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    // Phase 3. Ripples triage: a severity for sorting (not a risk score), one line on what changed, and duplicates merged
+    for (const col of ['severity TEXT', 'what_changed TEXT', 'merged_into INTEGER', 'triaged_by TEXT', 'rescreen TEXT']) {
+      try { this.db.exec(`ALTER TABLE alerts ADD COLUMN ${col}`); } catch (e) {}
+    }
+    // Events already handled (a redelivered event does nothing) and the extraction fixes Dilly has suggested
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS events_seen (
+        id TEXT PRIMARY KEY,
+        event TEXT NOT NULL,
+        handled_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS source_proposals (
+        id TEXT PRIMARY KEY,
+        source_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        problem TEXT,
+        old_instructions TEXT,
+        new_instructions TEXT,
+        test_json TEXT,
+        proposed_by TEXT,
+        decided_by TEXT,
+        decided_at TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    // Pond-Guard: what Dilly suggested at each run (kept, so it can be compared with the officer's decision later),
+    // and the officer's decision on each request next to the suggestion that was current when it was made
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS pond_guard_suggestions (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT NOT NULL,
+        kyc_id TEXT,
+        entity_key TEXT,
+        at TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        risk INTEGER NOT NULL,
+        confidence INTEGER,
+        route TEXT,
+        level TEXT,
+        risk_line INTEGER,
+        detail_json TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_pg_suggestions_entity ON pond_guard_suggestions(entity_id, at);
+      CREATE INDEX IF NOT EXISTS idx_pg_suggestions_key ON pond_guard_suggestions(entity_key, at);
+      CREATE TABLE IF NOT EXISTS suggestion_outcomes (
+        kyc_id TEXT PRIMARY KEY,
+        entity_id TEXT,
+        counterparty_name TEXT,
+        suggestion_id TEXT,
+        suggestion_mode TEXT,
+        suggested_risk INTEGER,
+        suggested_route TEXT,
+        suggested_at TEXT,
+        risk_line INTEGER NOT NULL,
+        decision TEXT NOT NULL,
+        is_final INTEGER NOT NULL DEFAULT 0,
+        decided_by TEXT,
+        decided_at TEXT NOT NULL,
+        is_demo INTEGER NOT NULL DEFAULT 0
+      );
+    `);
+    // Country risk views on the Globe (src/countryRisk): the last validated data per view, and every check made
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS country_risk_views (
+        view_id TEXT PRIMARY KEY,
+        data_json TEXT,
+        content_hash TEXT,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        last_checked_at TEXT,
+        last_ok_at TEXT,
+        last_changed_at TEXT,
+        problem TEXT,
+        problem_kind TEXT
+      );
+      CREATE TABLE IF NOT EXISTS country_risk_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        view_id TEXT NOT NULL,
+        at TEXT NOT NULL,
+        result TEXT NOT NULL,
+        reason TEXT,
+        llm_calls INTEGER NOT NULL DEFAULT 0,
+        trigger TEXT
+      );
+    `);
+    // The review model (src/learning): what officers labelled, the models trained on it, and what the model predicts
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS review_labels (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT NOT NULL,
+        label TEXT NOT NULL,
+        features_json TEXT NOT NULL,
+        rule_risk INTEGER,
+        rule_confidence INTEGER,
+        rule_route TEXT,
+        reviewer TEXT,
+        note TEXT,
+        is_synthetic INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_review_labels_entity ON review_labels(entity_id);
+      CREATE TABLE IF NOT EXISTS ml_models (
+        id TEXT PRIMARY KEY,
+        backend TEXT NOT NULL,
+        status TEXT NOT NULL,
+        info_json TEXT NOT NULL,
+        model_json TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS ml_predictions (
+        entity_id TEXT PRIMARY KEY,
+        model_id TEXT NOT NULL,
+        prediction_json TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    // Reviewer copilot: the AI draft and what the reviewer finally confirmed are both kept
+    // DDQ answer verification: the result of comparing a returned questionnaire with the findings
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS copilot_drafts (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
+        draft_json TEXT NOT NULL,
+        final_json TEXT,
+        created_by TEXT,
+        confirmed_by TEXT,
+        confirmed_at TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_copilot_entity ON copilot_drafts(entity_id);
+      CREATE TABLE IF NOT EXISTS ddq_verifications (
+        kyc_id TEXT PRIMARY KEY,
+        result_json TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     // Must run after the migration: older tables lack ddq_token until the ALTER above
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_kyc_token ON kyc_requests(ddq_token)');
 
@@ -260,7 +431,28 @@ class SqliteDatabase {
   }
 
 
+  /** False for a workspace created by `npm run demo:clean`: no built-in demo counterparties, alerts, sources or rules. */
+  hasPlaceholderData() {
+    if (this.emptyWorkspace) return false;
+    return this.getSetting('placeholder_data', true) !== false;
+  }
+
   seedIfEmpty() {
+    // Clean workspace: only the reference data the rules need (country risk scores) is loaded
+    if (process.env.SAFEGLOBE_NO_PLACEHOLDER_DATA === '1' || !this.hasPlaceholderData()) {
+      this.setSetting('placeholder_data', false);
+      if (!this.db.prepare('SELECT COUNT(*) as count FROM cpi').get().count) {
+        const insertCpi = this.db.prepare('INSERT OR REPLACE INTO cpi (a3, name, score, rank) VALUES (?, ?, ?, ?)');
+        for (const c of seed.CPI_2025) insertCpi.run(c.a3, c.name, c.score, c.rank);
+      }
+      // The policy rules are part of the app. A created workspace gets them without the demo counterparties they hit.
+      if (this.emptyWorkspace && !this.db.prepare('SELECT COUNT(*) as count FROM policies').get().count) {
+        const insertPolicy = this.db.prepare('INSERT OR REPLACE INTO policies (id, section, text, note, hits_json, is_met) VALUES (?, ?, ?, ?, ?, ?)');
+        for (const pol of seed.POLICIES) insertPolicy.run(pol.id, pol.sec, pol.t, '', '[]', 0);
+      }
+      return;
+    }
+
     const row = this.db.prepare('SELECT COUNT(*) as count FROM entities').get();
     if (row && row.count > 0) return; // already seeded
 
@@ -471,6 +663,9 @@ class SqliteDatabase {
       linked: !!entity.linked,
       stateOwned: !!entity.stateOwned,
       ddqPending: !!entity.ddqPending,
+      pending: entity.pending ? true : undefined,
+      route: entity.route,
+      ais: entity.ais,
       mmsi: entity.mmsi,
       built: entity.built,
       dwt: entity.dwt,
@@ -612,7 +807,14 @@ class SqliteDatabase {
       agent: r.agent,
       x: r.text,
       q: r.quadrant,
-      country: Boolean(r.is_country)
+      country: Boolean(r.is_country),
+      // Ripples triage (Phase 3). severity is a sorting aid, never a risk score.
+      alertId: r.id,
+      severity: r.severity || null,
+      whatChanged: r.what_changed || null,
+      mergedInto: r.merged_into || null,
+      triagedBy: r.triaged_by || null,
+      rescreen: r.rescreen || null
     }));
   }
 
@@ -620,8 +822,136 @@ class SqliteDatabase {
     const now = new Date();
     const t = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ', ' +
               now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    this.db.prepare('INSERT INTO alerts (timestamp, agent, entity_id, text, quadrant, is_country) VALUES (?, ?, ?, ?, ?, ?)')
+    const info = this.db.prepare('INSERT INTO alerts (timestamp, agent, entity_id, text, quadrant, is_country) VALUES (?, ?, ?, ?, ?, ?)')
       .run(t, agent, entityId, text, quadrant, isCountry ? 1 : 0);
+    const alertId = Number(info.lastInsertRowid);
+    // The event bus listens here, so every alert raises "alert-raised" wherever it was added (src/events)
+    if (typeof SqliteDatabase.onAlertAdded === 'function') {
+      try { SqliteDatabase.onAlertAdded({ alertId, agent, entityId, text, quadrant, isCountry: Boolean(isCountry) }); } catch (e) { console.error('[Events] alert-raised not published:', e.message); }
+    }
+    return alertId;
+  }
+
+  getAlertRow(alertId) {
+    return this.db.prepare('SELECT * FROM alerts WHERE id = ?').get(alertId) || null;
+  }
+
+  /** Other alerts for the same counterparty, newest first, that have not been merged into another one. */
+  getRecentAlertRows(entityId, { excludeId = 0, limit = 8 } = {}) {
+    return this.db.prepare('SELECT * FROM alerts WHERE entity_id = ? AND id != ? AND merged_into IS NULL ORDER BY id DESC LIMIT ?').all(entityId, excludeId, limit);
+  }
+
+  setAlertTriage(alertId, { severity = null, whatChanged = null, mergedInto = null, triagedBy = null }) {
+    this.db.prepare('UPDATE alerts SET severity = ?, what_changed = ?, merged_into = ?, triaged_by = ? WHERE id = ?').run(severity, whatChanged, mergedInto, triagedBy, alertId);
+    return this.getAlertRow(alertId);
+  }
+
+  setAlertRescreen(alertId, state) {
+    this.db.prepare('UPDATE alerts SET rescreen = ? WHERE id = ?').run(state, alertId);
+  }
+
+  countMergedAlerts(alertId) {
+    return this.db.prepare('SELECT COUNT(*) AS n FROM alerts WHERE merged_into = ?').get(alertId).n;
+  }
+
+  // --- Reviewer copilot drafts ---
+  saveCopilotDraft({ id, entityId, draft, createdBy }) {
+    this.db.prepare('INSERT INTO copilot_drafts (id, entity_id, status, draft_json, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, entityId, 'draft', JSON.stringify(draft), createdBy || '', new Date().toISOString());
+    return this.getCopilotDraft(id);
+  }
+
+  getCopilotDraft(id) {
+    const r = this.db.prepare('SELECT * FROM copilot_drafts WHERE id = ?').get(id);
+    if (!r) return null;
+    return { id: r.id, entityId: r.entity_id, status: r.status, draft: JSON.parse(r.draft_json), final: r.final_json ? JSON.parse(r.final_json) : null, createdBy: r.created_by, confirmedBy: r.confirmed_by, confirmedAt: r.confirmed_at, createdAt: r.created_at };
+  }
+
+  getLatestCopilotDraft(entityId) {
+    const r = this.db.prepare('SELECT id FROM copilot_drafts WHERE entity_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1').get(entityId);
+    return r ? this.getCopilotDraft(r.id) : null;
+  }
+
+  confirmCopilotDraft(id, final, confirmedBy) {
+    this.db.prepare("UPDATE copilot_drafts SET status = 'confirmed', final_json = ?, confirmed_by = ?, confirmed_at = ? WHERE id = ?").run(JSON.stringify(final), confirmedBy || '', new Date().toISOString(), id);
+    return this.getCopilotDraft(id);
+  }
+
+  // --- DDQ answer verification ---
+  saveDdqVerification(kycId, result) {
+    this.db.prepare('INSERT INTO ddq_verifications (kyc_id, result_json, created_at) VALUES (?, ?, ?) ON CONFLICT(kyc_id) DO UPDATE SET result_json = excluded.result_json, created_at = excluded.created_at').run(kycId, JSON.stringify(result), new Date().toISOString());
+    return result;
+  }
+
+  getDdqVerification(kycId) {
+    const r = this.db.prepare('SELECT * FROM ddq_verifications WHERE kyc_id = ?').get(kycId);
+    return r ? Object.assign(JSON.parse(r.result_json), { savedAt: r.created_at }) : null;
+  }
+
+  deleteFindingRecord(id) {
+    return this.db.prepare('DELETE FROM findings WHERE id = ?').run(id).changes;
+  }
+
+  // --- Review labels and the review model (src/learning) ---
+  saveReviewLabel(l) {
+    this.db.prepare('INSERT OR REPLACE INTO review_labels (id, entity_id, label, features_json, rule_risk, rule_confidence, rule_route, reviewer, note, is_synthetic, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(l.id, l.entityId, l.label, JSON.stringify(l.features), l.features.rule_risk, l.features.rule_confidence, l.route || '', l.reviewer || '', l.note || '', l.isSynthetic ? 1 : 0, l.createdAt || new Date().toISOString());
+  }
+
+  getReviewLabels({ entityId = null, synthetic = null, limit = 5000 } = {}) {
+    const rows = this.db.prepare('SELECT * FROM review_labels WHERE (? IS NULL OR entity_id = ?) AND (? IS NULL OR is_synthetic = ?) ORDER BY created_at DESC, rowid DESC LIMIT ?')
+      .all(entityId, entityId, synthetic === null ? null : (synthetic ? 1 : 0), synthetic === null ? null : (synthetic ? 1 : 0), limit);
+    return rows.map(r => ({ id: r.id, entityId: r.entity_id, label: r.label, features: JSON.parse(r.features_json), route: r.rule_route, reviewer: r.reviewer, note: r.note, isSynthetic: Boolean(r.is_synthetic), createdAt: r.created_at }));
+  }
+
+  countReviewLabels() {
+    const rows = this.db.prepare('SELECT is_synthetic AS s, label, COUNT(*) AS n FROM review_labels GROUP BY is_synthetic, label').all();
+    const out = { real: { risk: 0, no_risk: 0 }, synthetic: { risk: 0, no_risk: 0 } };
+    for (const r of rows) if (out[r.s ? 'synthetic' : 'real'][r.label] !== undefined) out[r.s ? 'synthetic' : 'real'][r.label] = r.n;
+    return out;
+  }
+
+  deleteSyntheticReviewLabels() {
+    return this.db.prepare('DELETE FROM review_labels WHERE is_synthetic = 1').run().changes;
+  }
+
+  saveMlModel({ id, backend, status, info, model = null }) {
+    this.db.prepare('INSERT INTO ml_models (id, backend, status, info_json, model_json, created_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET status = excluded.status, info_json = excluded.info_json, model_json = COALESCE(excluded.model_json, ml_models.model_json)')
+      .run(id, backend, status, JSON.stringify(info), model ? JSON.stringify(model) : null, new Date().toISOString());
+  }
+
+  getMlModel(id = null, { withModel = false } = {}) {
+    const r = id ? this.db.prepare('SELECT * FROM ml_models WHERE id = ?').get(id) : this.db.prepare("SELECT * FROM ml_models WHERE status = 'ready' ORDER BY created_at DESC, rowid DESC LIMIT 1").get();
+    if (!r) return null;
+    return { id: r.id, backend: r.backend, status: r.status, info: JSON.parse(r.info_json), model: withModel && r.model_json ? JSON.parse(r.model_json) : undefined, createdAt: r.created_at };
+  }
+
+  getLatestMlModel() {
+    const r = this.db.prepare('SELECT id FROM ml_models ORDER BY created_at DESC, rowid DESC LIMIT 1').get();
+    return r ? this.getMlModel(r.id) : null;
+  }
+
+  listMlModels(limit = 12) {
+    return this.db.prepare('SELECT id FROM ml_models ORDER BY created_at DESC, rowid DESC LIMIT ?').all(limit).map(r => this.getMlModel(r.id));
+  }
+
+  savePredictions(modelId, predictions) {
+    this.db.prepare('DELETE FROM ml_predictions').run();
+    const stmt = this.db.prepare('INSERT OR REPLACE INTO ml_predictions (entity_id, model_id, prediction_json, created_at) VALUES (?, ?, ?, ?)');
+    for (const p of predictions) stmt.run(p.entityId, modelId, JSON.stringify(p), new Date().toISOString());
+  }
+
+  getPredictions() {
+    return this.db.prepare('SELECT * FROM ml_predictions').all().map(r => Object.assign(JSON.parse(r.prediction_json), { modelId: r.model_id, at: r.created_at }));
+  }
+
+  // --- Events (src/events): an event is handled once, however often it is delivered ---
+  hasSeenEvent(id) {
+    return Boolean(this.db.prepare('SELECT 1 FROM events_seen WHERE id = ?').get(id));
+  }
+
+  markEventSeen(id, event) {
+    this.db.prepare('INSERT OR IGNORE INTO events_seen (id, event) VALUES (?, ?)').run(id, event);
+    this.db.prepare("DELETE FROM events_seen WHERE handled_at < datetime('now', '-14 days')").run();
   }
 
   // --- Sources ---
@@ -658,6 +988,45 @@ class SqliteDatabase {
     return this.db.prepare('UPDATE sources SET cost_per_screen = ? WHERE id = ?').run(cost, id).changes > 0;
   }
 
+  // Country risk views: one row per view. data is the last validated JSON; a failed check never replaces it.
+  getCountryRiskView(viewId) {
+    const row = this.db.prepare('SELECT * FROM country_risk_views WHERE view_id = ?').get(viewId);
+    if (!row) return null;
+    let data = null;
+    try { data = row.data_json ? JSON.parse(row.data_json) : null; } catch (e) { data = null; }
+    return {
+      viewId: row.view_id, data, contentHash: row.content_hash || '', enabled: row.enabled !== 0,
+      lastCheckedAt: row.last_checked_at || null, lastOkAt: row.last_ok_at || null, lastChangedAt: row.last_changed_at || null,
+      problem: row.problem || '', problemKind: row.problem_kind || ''
+    };
+  }
+
+  saveCountryRiskView(viewId, patch) {
+    const columns = { data: 'data_json', contentHash: 'content_hash', enabled: 'enabled', lastCheckedAt: 'last_checked_at', lastOkAt: 'last_ok_at', lastChangedAt: 'last_changed_at', problem: 'problem', problemKind: 'problem_kind' };
+    this.db.prepare('INSERT OR IGNORE INTO country_risk_views (view_id) VALUES (?)').run(viewId);
+    for (const [key, value] of Object.entries(patch)) {
+      if (!columns[key]) continue;
+      const stored = key === 'data' ? (value ? JSON.stringify(value) : null) : key === 'enabled' ? (value ? 1 : 0) : value;
+      this.db.prepare(`UPDATE country_risk_views SET ${columns[key]} = ? WHERE view_id = ?`).run(stored, viewId);
+    }
+    return this.getCountryRiskView(viewId);
+  }
+
+  addCountryRiskLog({ viewId, at, result, reason = '', llmCalls = 0, trigger = '' }) {
+    this.db.prepare('INSERT INTO country_risk_log (view_id, at, result, reason, llm_calls, trigger) VALUES (?, ?, ?, ?, ?, ?)').run(viewId, at, result, reason, llmCalls, trigger);
+  }
+
+  getCountryRiskLog({ viewId = null, limit = 20 } = {}) {
+    const rows = viewId
+      ? this.db.prepare('SELECT * FROM country_risk_log WHERE view_id = ? ORDER BY id DESC LIMIT ?').all(viewId, limit)
+      : this.db.prepare('SELECT * FROM country_risk_log ORDER BY id DESC LIMIT ?').all(limit);
+    return rows.map(r => ({ viewId: r.view_id, at: r.at, result: r.result, reason: r.reason || '', llmCalls: r.llm_calls, trigger: r.trigger || '' }));
+  }
+
+  countCountryRiskLlmCalls(sinceIso) {
+    return this.db.prepare('SELECT COALESCE(SUM(llm_calls), 0) AS n FROM country_risk_log WHERE at >= ?').get(sinceIso).n;
+  }
+
   getSetting(key, fallback = null) {
     const row = this.db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key);
     if (!row) return fallback;
@@ -674,6 +1043,70 @@ class SqliteDatabase {
     this.db.prepare('UPDATE kyc_requests SET monitoring_json = ?, ongoing_monitoring = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
       .run(monitoring ? JSON.stringify(monitoring) : null, enabled ? 1 : 0, id);
     return this.getKycRequestById(id);
+  }
+
+  setKycAttributes(id, attributes) {
+    this.db.prepare('UPDATE kyc_requests SET attributes_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(JSON.stringify(attributes || {}), id);
+    return this.getKycRequestById(id);
+  }
+
+  // Pond-Guard at the first instance: the state of the screening, and its result written over the first, rule-based one
+  setKycPondGuard(id, state) {
+    this.db.prepare('UPDATE kyc_requests SET pond_guard_json = ? WHERE id = ?').run(state ? JSON.stringify(state) : null, id);
+  }
+
+  setKycAiResult(id, { ai_result, ai_score, ai_confidence, ai_rationale, screening_result }) {
+    this.db.prepare('UPDATE kyc_requests SET ai_result = ?, ai_score = ?, ai_confidence = ?, ai_rationale = ?, screening_result = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(ai_result, ai_score, ai_confidence, ai_rationale, screening_result, id);
+    return this.getKycRequestById(id);
+  }
+
+  _hydrateSuggestion(r) {
+    if (!r) return null;
+    let detail = {};
+    try { detail = r.detail_json ? JSON.parse(r.detail_json) : {}; } catch (e) {}
+    return { id: r.id, entityId: r.entity_id, kycId: r.kyc_id || null, entityKey: r.entity_key || '', at: r.at, mode: r.mode, risk: r.risk, confidence: r.confidence, route: r.route, level: r.level, riskLine: r.risk_line, detail };
+  }
+
+  addSuggestion(s) {
+    this.db.prepare(`INSERT INTO pond_guard_suggestions (id, entity_id, kyc_id, entity_key, at, mode, risk, confidence, route, level, risk_line, detail_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(s.id, s.entityId, s.kycId || null, s.entityKey || null, s.at, s.mode, s.risk, s.confidence, s.route, s.level, s.riskLine, JSON.stringify(s.detail || {}));
+    return this.getSuggestion(s.id);
+  }
+
+  getSuggestion(id) {
+    return this._hydrateSuggestion(this.db.prepare('SELECT * FROM pond_guard_suggestions WHERE id = ?').get(id));
+  }
+
+  /** The latest suggestion for a case. before: only those made up to that time (the one an officer had on screen). */
+  getLatestSuggestion(entityId, { before = null } = {}) {
+    const row = before
+      ? this.db.prepare('SELECT * FROM pond_guard_suggestions WHERE entity_id = ? AND at <= ? ORDER BY at DESC, rowid DESC LIMIT 1').get(entityId, before)
+      : this.db.prepare('SELECT * FROM pond_guard_suggestions WHERE entity_id = ? ORDER BY at DESC, rowid DESC LIMIT 1').get(entityId);
+    return this._hydrateSuggestion(row);
+  }
+
+  /** The latest live screening of the same counterparty (by its key) since a time, for reuse within 24 hours. */
+  findLiveSuggestionByKey(entityKey, sinceIso) {
+    return this._hydrateSuggestion(this.db.prepare("SELECT * FROM pond_guard_suggestions WHERE entity_key = ? AND mode = 'live' AND at >= ? ORDER BY at DESC, rowid DESC LIMIT 1").get(entityKey, sinceIso));
+  }
+
+  saveOutcome(o) {
+    this.db.prepare(`INSERT INTO suggestion_outcomes (kyc_id, entity_id, counterparty_name, suggestion_id, suggestion_mode, suggested_risk, suggested_route, suggested_at, risk_line, decision, is_final, decided_by, decided_at, is_demo)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(kyc_id) DO UPDATE SET entity_id = excluded.entity_id, counterparty_name = excluded.counterparty_name, suggestion_id = excluded.suggestion_id,
+        suggestion_mode = excluded.suggestion_mode, suggested_risk = excluded.suggested_risk, suggested_route = excluded.suggested_route, suggested_at = excluded.suggested_at,
+        risk_line = excluded.risk_line, decision = excluded.decision, is_final = excluded.is_final, decided_by = excluded.decided_by, decided_at = excluded.decided_at, is_demo = excluded.is_demo`)
+      .run(o.kycId, o.entityId || null, o.counterpartyName || '', o.suggestionId || null, o.suggestionMode || null, o.suggestedRisk, o.suggestedRoute || null, o.suggestedAt || null, o.riskLine, o.decision, o.isFinal ? 1 : 0, o.decidedBy || '', o.decidedAt, o.isDemo ? 1 : 0);
+  }
+
+  /** Runs the agreement query (src/learning/agreement.js) on this database: the offline twin of the BigQuery view. */
+  queryOutcomes(sql) {
+    return this.db.prepare(sql).all();
+  }
+
+  getOutcomeRows() {
+    return this.db.prepare('SELECT * FROM suggestion_outcomes ORDER BY decided_at DESC').all();
   }
 
   setKycRescreenResult(id, text) {
@@ -702,6 +1135,49 @@ class SqliteDatabase {
     );
     if (previous && previous.cost_per_screen) this.setSourceCost(source.id, previous.cost_per_screen);
     return source;
+  }
+
+  /** Merges patch into a source's stored settings (its crawl state, extraction instructions, ticks). */
+  updateSourceConfig(id, patch) {
+    const row = this.db.prepare('SELECT config_json FROM sources WHERE id = ?').get(id);
+    if (!row) return null;
+    let current = {};
+    try {
+      const parsed = JSON.parse(row.config_json || '{}');
+      current = Array.isArray(parsed) ? { kv: parsed } : (parsed || {});
+    } catch (e) {}
+    const next = Object.assign({}, current, patch);
+    this.db.prepare('UPDATE sources SET config_json = ? WHERE id = ?').run(JSON.stringify(next), id);
+    return next;
+  }
+
+  getSourceById(id) {
+    return this.getSources().find(s => s.id === id) || null;
+  }
+
+  // --- Suggested extraction fixes (self-healing): proposed by the crawler agent, applied only by a person ---
+  addSourceProposal(p) {
+    this.db.prepare('INSERT INTO source_proposals (id, source_id, status, problem, old_instructions, new_instructions, test_json, proposed_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(p.id, p.source_id, 'pending', p.problem || '', p.old_instructions || '', p.new_instructions || '', JSON.stringify(p.test || {}), p.proposed_by || '');
+    return this.getSourceProposal(p.id);
+  }
+
+  getSourceProposal(id) {
+    const r = this.db.prepare('SELECT * FROM source_proposals WHERE id = ?').get(id);
+    if (!r) return null;
+    let test = {};
+    try { test = JSON.parse(r.test_json || '{}'); } catch (e) {}
+    return { id: r.id, sourceId: r.source_id, status: r.status, problem: r.problem, oldInstructions: r.old_instructions, newInstructions: r.new_instructions, test, proposedBy: r.proposed_by, decidedBy: r.decided_by, decidedAt: r.decided_at, createdAt: r.created_at };
+  }
+
+  getSourceProposals({ sourceId = null, status = null } = {}) {
+    const rows = this.db.prepare('SELECT id FROM source_proposals WHERE (? IS NULL OR source_id = ?) AND (? IS NULL OR status = ?) ORDER BY created_at DESC, rowid DESC').all(sourceId, sourceId, status, status);
+    return rows.map(r => this.getSourceProposal(r.id));
+  }
+
+  decideSourceProposal(id, status, decidedBy) {
+    this.db.prepare('UPDATE source_proposals SET status = ?, decided_by = ?, decided_at = ? WHERE id = ? AND status = ?').run(status, decidedBy || '', new Date().toISOString(), id, 'pending');
+    return this.getSourceProposal(id);
   }
 
   deleteSource(id) {
@@ -809,7 +1285,73 @@ class SqliteDatabase {
     `).run(reviewer, decision, reasons, evidence, dateStr, caseId, caseId);
   }
 
+  // --- Risk findings and checks (src/risk) ---
+  saveFindingRecord(entityId, { finding, status = 'accepted', reason = '' }) {
+    this.db.prepare(`
+      INSERT INTO findings (id, entity_id, category, status, reject_reason, finding_json, is_demo)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET entity_id = excluded.entity_id, category = excluded.category, status = excluded.status,
+        reject_reason = excluded.reject_reason, finding_json = excluded.finding_json, is_demo = excluded.is_demo
+    `).run(finding.id, entityId, finding.category || '', status, reason || null, JSON.stringify(finding), finding.demo ? 1 : 0);
+  }
+
+  _hydrateFindingRecord(r) {
+    let finding = {};
+    try { finding = JSON.parse(r.finding_json); } catch (e) {}
+    return { entityId: r.entity_id, status: r.status, reason: r.reject_reason || '', finding, createdAt: r.created_at };
+  }
+
+  getFindingRecords(entityId) {
+    return this.db.prepare('SELECT * FROM findings WHERE entity_id = ? ORDER BY created_at ASC, id ASC').all(entityId).map(r => this._hydrateFindingRecord(r));
+  }
+
+  getFindingRecordById(id) {
+    const row = this.db.prepare('SELECT * FROM findings WHERE id = ?').get(id);
+    return row ? this._hydrateFindingRecord(row) : null;
+  }
+
+  deleteFindingRecords(entityId) {
+    this.db.prepare('DELETE FROM findings WHERE entity_id = ?').run(entityId);
+  }
+
+  setRiskChecks(entityId, checks) {
+    this.db.prepare(`INSERT INTO risk_checks (entity_id, checks_json, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(entity_id) DO UPDATE SET checks_json = excluded.checks_json, updated_at = CURRENT_TIMESTAMP`).run(entityId, JSON.stringify(checks || {}));
+  }
+
+  getRiskChecks(entityId) {
+    const row = this.db.prepare('SELECT checks_json FROM risk_checks WHERE entity_id = ?').get(entityId);
+    if (!row) return null;
+    try { return JSON.parse(row.checks_json); } catch (e) { return {}; }
+  }
+
+  /** Ids of every case that has been through the scorer */
+  getScoredEntityIds() {
+    return this.db.prepare('SELECT entity_id FROM risk_checks UNION SELECT entity_id FROM findings').all().map(r => r.entity_id);
+  }
+
+  /** Writes a computed score back to the counterparty and to its open case. Decided cases keep the score they were decided on. */
+  setEntityScore(entityId, risk, confidence, quadrant) {
+    this.db.prepare('UPDATE entities SET risk = ?, confidence = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(risk, confidence, entityId);
+    this.db.prepare(`UPDATE cases SET risk = ?, confidence = ?, quadrant = ? WHERE entity_id = ? AND status != 'closed'`).run(risk, confidence, quadrant, entityId);
+  }
+
+  setEntityMetadata(entityId, patch) {
+    const row = this.db.prepare('SELECT metadata_json FROM entities WHERE id = ?').get(entityId);
+    if (!row) return;
+    let meta = {};
+    try { meta = JSON.parse(row.metadata_json || '{}'); } catch (e) {}
+    this.db.prepare('UPDATE entities SET metadata_json = ? WHERE id = ?').run(JSON.stringify(Object.assign(meta, patch)), entityId);
+  }
+
   // --- CPI ---
+  /** Country risk by ISO code or by country name (vessel flags are stored by name) */
+  getCpiByCodeOrName(value) {
+    const v = String(value || '').trim();
+    if (!v) return undefined;
+    return this.db.prepare('SELECT a3, name, score, rank FROM cpi WHERE a3 = ? OR lower(name) = lower(?)').get(v.toUpperCase(), v);
+  }
+
   getCpiScores() {
     return this.db.prepare('SELECT a3, name, score, rank FROM cpi').all();
   }
@@ -876,6 +1418,7 @@ class SqliteDatabase {
 
   // --- Source Records / Knowledge Base ---
   seedSourceRecordsIfEmpty() {
+    if (this.emptyWorkspace) return;
     try {
       const row = this.db.prepare('SELECT COUNT(*) as count FROM source_records').get();
       if (row && row.count > 0) return;
@@ -950,13 +1493,13 @@ class SqliteDatabase {
           source_type: 'api',
           entity_name: 'Aurora Venture',
           entity_kind: 'vessel',
-          jurisdiction: 'LBR',
-          reg_no: 'IMO 9412345',
+          jurisdiction: 'CMR',
+          reg_no: 'IMO 9304124',
           risk_level: 'High',
           risk_score: 85,
           summary: 'Maritime intelligence feed: 31 hr AIS dark period in Arabian Sea followed by STS transfer east of Johor.',
-          details_json: JSON.stringify({ imo: '9412345', flag: 'LBR', ais_gap_hours: 31, sts_transfer: true }),
-          raw_content: '{"vessel":"Aurora Venture","imo":"9412345","flag":"LBR","dark_gap_h":31}'
+          details_json: JSON.stringify({ imo: '9304124', flag: 'CMR', ais_gap_hours: 31, sts_transfer: true }),
+          raw_content: '{"vessel":"Aurora Venture","imo":"9304124","flag":"CMR","dark_gap_h":31}'
         },
         {
           id: 'sr_s2_3',
@@ -1044,7 +1587,7 @@ class SqliteDatabase {
       r.jurisdiction || 'GLB',
       r.reg_no || '',
       r.risk_level || 'Medium',
-      r.risk_score || 50,
+      r.risk_score == null ? 50 : r.risk_score,
       r.summary || '',
       typeof r.details_json === 'string' ? r.details_json : JSON.stringify(r.details_json || {}),
       r.raw_content || ''
@@ -1070,7 +1613,7 @@ class SqliteDatabase {
         r.jurisdiction || 'GLB',
         r.reg_no || '',
         r.risk_level || 'Medium',
-        r.risk_score || 50,
+        r.risk_score == null ? 50 : r.risk_score,
         r.summary || '',
         typeof r.details_json === 'string' ? r.details_json : JSON.stringify(r.details_json || {}),
         r.raw_content || ''
@@ -1135,6 +1678,8 @@ class SqliteDatabase {
 
   // --- KYC Requests (Employee Portal Module) ---
   seedKycRequestsIfEmpty() {
+    // Clean workspace (npm run demo:clean): no historical sample requests
+    if (process.env.SAFEGLOBE_NO_PLACEHOLDER_DATA === '1' || !this.hasPlaceholderData()) return;
     try {
       const row = this.db.prepare('SELECT COUNT(*) as count FROM kyc_requests').get();
       if (row && row.count > 0) return;
@@ -1600,7 +2145,7 @@ class SqliteDatabase {
     try { ddq_responses = JSON.parse(r.ddq_responses_json || '{}'); } catch(e){}
 
     // Template snapshot and draft are large; they are served by getKycDdqBundle() instead
-    const { ddq_template_json, ddq_draft_json, agent_json, ddq_bounce_json, monitoring_json, ...rest } = r;
+    const { ddq_template_json, ddq_draft_json, agent_json, ddq_bounce_json, monitoring_json, pond_guard_json, ...rest } = r;
     r = rest;
     let agent = null;
     let ddq_bounce = null;
@@ -1608,6 +2153,8 @@ class SqliteDatabase {
     try { ddq_bounce = ddq_bounce_json ? JSON.parse(ddq_bounce_json) : null; } catch(e){}
     let monitoring = null;
     try { monitoring = monitoring_json ? JSON.parse(monitoring_json) : null; } catch(e){}
+    let pond_guard = null;
+    try { pond_guard = pond_guard_json ? JSON.parse(pond_guard_json) : null; } catch(e){}
 
     return {
       ...r,
@@ -1620,6 +2167,7 @@ class SqliteDatabase {
       agent,
       ddq_bounce,
       monitoring,
+      pond_guard,
       ddq_link: r.ddq_token ? `/ddq/portal?token=${r.ddq_token}` : null
     };
   }

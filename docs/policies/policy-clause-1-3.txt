@@ -1,0 +1,7 @@
+DueDilly Enterprise Compliance & Counterparty Risk Policy (v2026.1)
+Demo policy: written for the DueDilly demo. The company and its policy are fictional.
+
+Section: General Principles
+Clause 1.3 (Beneficial ownership, demo clause)
+
+The counterparty must disclose its ownership up to its ultimate beneficial owners. Nominee shareholders, bearer shares, an offshore holding company, or an unknown beneficial owner make ownership unclear and require enhanced due diligence.

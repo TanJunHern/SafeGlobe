@@ -19,7 +19,7 @@ REGION="${REGION:-asia-southeast1}"
 SA_NAME="duedilly-run"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 ENVS=(dev uat)
-EVENTS=(screening-requested screening-completed ddq-submitted alert-raised rescreen-due)
+EVENTS=(screening-requested screening-completed ddq-submitted alert-raised rescreen-due source-changed)
 BUDGET_USD=50
 
 step() { printf '\n== %s\n' "$*"; }
@@ -47,7 +47,7 @@ cat <<EOF
 
 This will create, if they do not exist yet:
   - service account ${SA_NAME} with its roles
-  - secrets gemini-api-key and jwt-secret
+  - secrets gemini-api-key, jwt-secret and agents-internal-token
   - buckets duedilly-dev-${PROJECT_ID} and duedilly-uat-${PROJECT_ID} (${REGION})
   - BigQuery datasets duedilly_dev and duedilly_uat (${REGION})
   - ${#EVENTS[@]} Pub/Sub topics per environment (dev-*, uat-*)
@@ -82,6 +82,9 @@ gcloud services enable \
   documentai.googleapis.com \
   discoveryengine.googleapis.com \
   cloudscheduler.googleapis.com \
+  bigqueryconnection.googleapis.com \
+  gmail.googleapis.com \
+  iamcredentials.googleapis.com \
   --project "$PROJECT_ID"
 info "sqladmin is enabled for later (plan step 3b). No Cloud SQL instance is created here."
 
@@ -139,7 +142,16 @@ else
   openssl rand -base64 48 | tr -d '\n' | gcloud secrets versions add jwt-secret --project "$PROJECT_ID" --data-file=- >/dev/null
   info "jwt-secret generated and saved"
 fi
-info "Secret Manager free tier: 6 active secret versions. This script uses 2."
+
+# Shared by the app and the agents service, so each can tell the other's calls from anyone else's
+ensure_secret agents-internal-token
+if has_version agents-internal-token; then
+  info "agents-internal-token already has a value (left as it is)"
+else
+  openssl rand -hex 32 | tr -d '\n' | gcloud secrets versions add agents-internal-token --project "$PROJECT_ID" --data-file=- >/dev/null
+  info "agents-internal-token generated and saved"
+fi
+info "Secret Manager free tier: 6 active secret versions. This script uses 3."
 
 # ---------------------------------------------------------------------------------------------
 step "5. Buckets, BigQuery datasets and Pub/Sub topics for dev and uat"
@@ -172,14 +184,14 @@ for env in "${ENVS[@]}"; do
 done
 
 # ---------------------------------------------------------------------------------------------
-step "6. Cloud Scheduler: publish uat-rescreen-due once a day (02:00 Singapore time)"
+step "6. Cloud Scheduler: publish uat-rescreen-due once a day (06:00 Singapore time)"
 JOB="duedilly-uat-rescreen-due"
 if gcloud scheduler jobs describe "$JOB" --location "$REGION" --project "$PROJECT_ID" >/dev/null 2>&1; then
   info "job exists: ${JOB}"
 else
   gcloud scheduler jobs create pubsub "$JOB" \
     --project "$PROJECT_ID" --location "$REGION" \
-    --schedule "0 2 * * *" --time-zone "Asia/Singapore" \
+    --schedule "0 6 * * *" --time-zone "Asia/Singapore" \
     --topic "uat-rescreen-due" \
     --message-body '{"event":"rescreen-due","source":"cloud-scheduler"}' \
     --description "DueDilly: re-screen monitored counterparties that are due"
@@ -211,7 +223,7 @@ cat <<EOF
 
 Values for .env.uat:
    GOOGLE_CLOUD_PROJECT=${PROJECT_ID}
-   GOOGLE_CLOUD_LOCATION=${REGION}
+   GOOGLE_CLOUD_LOCATION=<the Vertex AI location your chosen model is served in, DEPLOY_GUIDE.md step 4>
    (bucket for uploads, used from plan step 3a: duedilly-uat-${PROJECT_ID})
 
 To check what exists at any time (read-only):

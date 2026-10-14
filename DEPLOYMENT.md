@@ -1,3 +1,13 @@
+# DueDilly deployment: see DEPLOY_GUIDE.md
+
+This guide is retired. It deployed a service called `safe-globe-app` with up to 10 instances and no environment
+settings, which does not suit the app as it is now (one instance, SQLite, secrets in Secret Manager).
+
+Use **[DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)** and `bash scripts/deploy.sh uat`.
+
+The old text is kept below, commented out, for reference only.
+
+<!--
 # DueDilly — Google Cloud & Firebase Deployment Guide
 
 This guide details how to run DueDilly locally and deploy it to **Google Cloud (Cloud Run)** or **Firebase Hosting**.
@@ -134,3 +144,5 @@ For initial deployment and testing, the application uses local SQLite (`data/saf
 ### Option B: Google Cloud Firestore / Firebase Database
 1. Enable Cloud Firestore in Native mode in the GCP Console.
 2. In Cloud Run, set `DATABASE_TYPE=firestore` and grant the Cloud Run service account the `roles/datastore.user` IAM role. The database abstraction layer in `src/db/index.js` automatically routes database calls to Firestore.
+
+-->

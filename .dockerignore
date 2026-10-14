@@ -21,3 +21,7 @@ design
 docs
 python
 .scratch
+data/*.workspaces
+data/*.objects
+
+demovideo
