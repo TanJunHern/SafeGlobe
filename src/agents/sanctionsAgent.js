@@ -138,7 +138,7 @@ function resolvePdfText(input) {
   }
 
   // 2. Base64 data string
-  const rawBase64 = input.content || input.base64 || input.file_data;
+  const rawBase64 = input.content || input.base64 || input.file_data || input.document || input.data || input.file;
   if (typeof rawBase64 === 'string') {
     const cleanB64 = rawBase64.includes(',') ? rawBase64.split(',')[1] : rawBase64;
     try {
