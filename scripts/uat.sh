@@ -3,6 +3,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+export PATH="$HOME/.docker/bin:/usr/local/bin:${PATH:-}"
+
 IMAGE="duedilly:uat"
 ADC="${GOOGLE_APPLICATION_CREDENTIALS:-$HOME/.config/gcloud/application_default_credentials.json}"
 

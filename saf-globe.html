@@ -1304,6 +1304,14 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           <button class="btn" id="upload-pol" type="button"><svg class="ic sm"><use href="#i-upload"/></svg>Upload policy</button>
           <input type="file" id="upload-pol-file" accept=".pdf, .docx, .doc, .txt, application/pdf, text/plain" style="display:none">
         </div>
+        <div class="card" id="pol-search-card" style="margin-bottom:20px">
+          <div class="card-h"><h2>Policy search</h2><span class="pill plain" id="pol-search-via">Checking…</span></div>
+          <div class="card-b">
+            <form id="pol-search-form" style="display:flex;gap:10px;flex-wrap:wrap"><input id="pol-search-q" type="search" placeholder="Ask about the policies, for example: when is a vessel questionnaire required?" style="flex:1;min-width:240px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:8px 12px;font-size:13px;color:inherit" autocomplete="off"><button class="btn primary" type="submit"><svg class="ic sm"><use href="#i-search"/></svg>Search</button></form>
+            <div id="pol-search-results" style="margin-top:10px"></div>
+            <details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px">Policy clauses the scoring rules rely on</summary><div id="pol-clauses"></div></details>
+          </div>
+        </div>
         <div class="pol-grid">
           <div class="card doc-card">
             <div class="doc-thumb" aria-hidden="true"><b>Third-Party Risk Policy</b><span class="faint" style="font-size:11px"><span data-ws-name>Meridian Commodities</span> · v4.2</span><i style="width:90%"></i><i style="width:76%"></i><i class="hl" style="width:84%"></i><i style="width:60%"></i><i style="width:88%"></i><i class="hl" style="width:70%"></i><i style="width:80%"></i><i style="width:52%"></i><i style="width:86%"></i><i class="hl" style="width:64%"></i><i style="width:74%"></i></div>
@@ -1418,10 +1426,6 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           <div class="card-h"><h2>Account changes</h2><span class="faint" style="font-size:12px">Who, what, when</span></div>
           <div class="card-b"><div class="table-wrap"><table class="rules-table set-table" id="set-log"></table></div></div>
         </div>
-      </div></div>
-    </section>
-        </div>
-
       </div></div>
     </section>
 
@@ -8174,17 +8178,20 @@ async function loadClauses(){
     if(S.sel)redraw();
   }catch(err){}
 }
-$('#pol-search-form').addEventListener('submit',async e=>{
-  e.preventDefault();
-  const q=$('#pol-search-q').value.trim(),out=$('#pol-search-results');if(!q)return;
-  out.innerHTML='<p class="faint" style="margin:0;font-size:12.5px">Searching the policies…</p>';
-  try{
-    const res=await apiFetch('/api/policies/search?q='+encodeURIComponent(q));const d=await res.json();
-    if(!res.ok)throw new Error(d.message||d.error||'The search could not run');
-    const head=`<p class="faint" style="margin:0 0 4px;font-size:11.5px">${esc(d.via)}${d.reason?' · '+esc(d.reason):''}</p>`;
-    out.innerHTML=head+(d.results.length?d.results.map(r=>`<div class="pol-hit"><b>${esc(r.title)}</b>${esc(r.snippet||'')}${r.clauseId&&POLICY.clauses.has(r.clauseId)&&!String(r.snippet||'').includes(POLICY.clauses.get(r.clauseId).text)?`<span class="clause">${esc(POLICY.clauses.get(r.clauseId).text)}</span>`:''}<br><span class="faint">${esc(r.file||'')}${r.link?' · '+esc(r.link):''}</span></div>`).join(''):'<p class="muted" style="margin:0;font-size:12.5px">No policy clause matches that.</p>');
-  }catch(err){out.innerHTML=`<p class="muted" style="margin:0;font-size:12.5px">${esc(err.message)}</p>`;}
-});
+const polSearchForm = $('#pol-search-form');
+if (polSearchForm) {
+  polSearchForm.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const q=$('#pol-search-q').value.trim(),out=$('#pol-search-results');if(!q)return;
+    out.innerHTML='<p class="faint" style="margin:0;font-size:12.5px">Searching the policies…</p>';
+    try{
+      const res=await apiFetch('/api/policies/search?q='+encodeURIComponent(q));const d=await res.json();
+      if(!res.ok)throw new Error(d.message||d.error||'The search could not run');
+      const head=`<p class="faint" style="margin:0 0 4px;font-size:11.5px">${esc(d.via)}${d.reason?' · '+esc(d.reason):''}</p>`;
+      out.innerHTML=head+(d.results.length?d.results.map(r=>`<div class="pol-hit"><b>${esc(r.title)}</b>${esc(r.snippet||'')}${r.clauseId&&POLICY.clauses.has(r.clauseId)&&!String(r.snippet||'').includes(POLICY.clauses.get(r.clauseId).text)?`<span class="clause">${esc(POLICY.clauses.get(r.clauseId).text)}</span>`:''}<br><span class="faint">${esc(r.file||'')}${r.link?' · '+esc(r.link):''}</span></div>`).join(''):'<p class="muted" style="margin:0;font-size:12.5px">No policy clause matches that.</p>');
+    }catch(err){out.innerHTML=`<p class="muted" style="margin:0;font-size:12.5px">${esc(err.message)}</p>`;}
+  });
+}
 
 async function loadCrawler(){
   const card=$('#crawler-card');if(!card)return;
@@ -8195,11 +8202,13 @@ async function loadCrawler(){
 function crawlWhen(iso){if(!iso)return 'never';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+', '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
 function renderCrawler(){
   if(!CRAWL)return;
-  const pill=$('#crawl-mode');pill.textContent=CRAWL.mode==='live'?'Live agents':'Offline sample';pill.className='pill plain '+(CRAWL.mode==='live'?'q-monitor':'q-gaps');pill.title=CRAWL.reason||'The ADK crawler agents are connected';
+  const pill=$('#crawl-mode');if(pill){pill.textContent=CRAWL.mode==='live'?'Live agents':'Offline sample';pill.className='pill plain '+(CRAWL.mode==='live'?'q-monitor':'q-gaps');pill.title=CRAWL.reason||'The ADK crawler agents are connected';}
   const dp=CRAWL.demoPage;
-  $('#crawl-demo').innerHTML=dp?`<div class="hint" style="margin-bottom:12px">${ic('alert','sm')}<p style="margin:0"><b>Demo page (fictional).</b> A made-up port authority notice board served by DueDilly at <a href="${esc(dp.url)}" target="_blank" rel="noopener">${esc(dp.url)}</a>. ${!dp.added?'Add it as a source, then publish a change to see a ripple and a re-screen.':dp.version===2?'The changed version is published.':'Publish a change: a new notice that names Aurora Venture.'}</p><span style="display:flex;gap:6px;flex-wrap:wrap">${!dp.added?'<button class="btn sm" data-demo-page="1" type="button">Add the demo page</button>':dp.version===2?'<button class="btn sm" data-demo-page="1" type="button">Reset the demo page</button>':'<button class="btn sm primary" data-demo-page="2" type="button">Publish a change</button>'}</span></div>`:'';
+  const crawlDemo=$('#crawl-demo');
+  if(crawlDemo)crawlDemo.innerHTML=dp?`<div class="hint" style="margin-bottom:12px">${ic('alert','sm')}<p style="margin:0"><b>Demo page (fictional).</b> A made-up port authority notice board served by DueDilly at <a href="${esc(dp.url)}" target="_blank" rel="noopener">${esc(dp.url)}</a>. ${!dp.added?'Add it as a source, then publish a change to see a ripple and a re-screen.':dp.version===2?'The changed version is published.':'Publish a change: a new notice that names Aurora Venture.'}</p><span style="display:flex;gap:6px;flex-wrap:wrap">${!dp.added?'<button class="btn sm" data-demo-page="1" type="button">Add the demo page</button>':dp.version===2?'<button class="btn sm" data-demo-page="1" type="button">Reset the demo page</button>':'<button class="btn sm primary" data-demo-page="2" type="button">Publish a change</button>'}</span></div>`:'';
   const fixes=new Map();(CRAWL.proposals||[]).forEach(p=>fixes.set(p.sourceId,p));
-  $('#crawl-list').innerHTML=CRAWL.sources.length?CRAWL.sources.map(s=>{
+  const crawlList=$('#crawl-list');
+  if(crawlList)crawlList.innerHTML=CRAWL.sources.length?CRAWL.sources.map(s=>{
     const ok=['read','unchanged','changed'].includes(s.result);
     const fix=fixes.get(s.sourceId);
     const how=s.extractor==='agent'?`Crawler agent${s.modelId?' ('+esc(s.modelId)+')':''}`:s.extractor==='offline'?`Offline sample${s.offlineReason?': '+esc(s.offlineReason):''}`:'';
@@ -8214,7 +8223,8 @@ function renderCrawler(){
         <p style="margin:0 0 8px">Tested on the stored snapshot: ${fix.test.recordsBefore} record${fix.test.recordsBefore===1?'':'s'} now, <b>${fix.test.recordsAfter}</b> with the suggestion${(fix.test.examples||[]).length?': '+fix.test.examples.map(x=>esc(x.name)).join(', '):''}. Suggested by ${esc(fix.proposedBy||'the crawler agent')}. Nothing changes until you approve.</p>
         <button class="btn sm primary" data-fix="approve" data-fix-id="${esc(fix.id)}" type="button">Approve</button> <button class="btn sm ghost" data-fix="dismiss" data-fix-id="${esc(fix.id)}" type="button">Dismiss</button></div>`:''}
     </div>`;}).join(''):`<p class="muted" style="margin:0;font-size:12.5px">No website sources yet. Press <b>Add source</b> and choose a website${dp?', or add the demo page above':''}.</p>`;
-  $('#crawl-foot').textContent=`Reads as ${CRAWL.userAgent}. Schedule: ${CRAWL.schedule}. Snapshots: ${CRAWL.storage.mode==='gcs'?'Cloud Storage':'local folder (offline fallback)'}. Events: ${CRAWL.events.mode==='pubsub'?'Pub/Sub':'handled inside the app (offline fallback)'}.`;
+  const crawlFoot=$('#crawl-foot');
+  if(crawlFoot)crawlFoot.textContent=`Reads as ${CRAWL.userAgent}. Schedule: ${CRAWL.schedule}. Snapshots: ${CRAWL.storage.mode==='gcs'?'Cloud Storage':'local folder (offline fallback)'}. Events: ${CRAWL.events.mode==='pubsub'?'Pub/Sub':'handled inside the app (offline fallback)'}.`;
 }
 async function crawlCall(path,opts,busyMsg){
   if(busyMsg)toast(busyMsg);
@@ -8224,27 +8234,33 @@ async function crawlCall(path,opts,busyMsg){
   return d;
 }
 async function afterCrawl(msg){toast(msg);await loadCrawler();fetchKbRecords();setTimeout(()=>{loadAlerts();loadRisk();},1500);setTimeout(loadAlerts,6000);}
-$('#crawl-run-all').addEventListener('click',async()=>{
-  try{const d=await crawlCall('/api/sources/crawl/run-all',null,'Crawler agents are reading the websites…');const changed=d.results.filter(r=>r.result==='changed').length;await afterCrawl(`${d.results.length} website${d.results.length===1?'':'s'} read, ${changed} changed`);}catch(err){toast(err.message);}
-});
-$('#crawler-card').addEventListener('click',async e=>{
-  const row=e.target.closest('[data-crawl]'),id=row&&row.dataset.crawl;
-  try{
-    const demo=e.target.closest('[data-demo-page]');
-    if(demo){const d=await crawlCall('/api/sources/demo-page',{body:JSON.stringify({version:+demo.dataset.demoPage})},'Reading the demo page…');await afterCrawl(d.result&&d.result.result==='changed'?'The demo page changed: new records, and a ripple is on its way':'Demo page read');return;}
-    const fix=e.target.closest('[data-fix]');
-    if(fix){const d=await crawlCall(`/api/sources/proposals/${encodeURIComponent(fix.dataset.fixId)}/${fix.dataset.fix}`);await afterCrawl(d.status==='approved'?`Fix approved${d.recordsCount!=null?': '+d.recordsCount+' records read':''}`:'Suggestion dismissed');return;}
-    if(e.target.closest('[data-crawl-run]')&&id){const d=await crawlCall(`/api/sources/${encodeURIComponent(id)}/crawl`,null,'The crawler agent is reading the page…');await afterCrawl(d.result.resultLabel+(d.result.reason?'. '+d.result.reason:''));return;}
-    if(e.target.closest('[data-crawl-snap]')&&id){
-      const res=await apiFetch(`/api/sources/${encodeURIComponent(id)}/snapshot`);const d=await res.json();if(!res.ok)throw new Error(d.error||'No snapshot');
-      $('#json-modal-tag').textContent='Page snapshot';$('#json-modal-title').textContent=d.label;$('#json-modal-sub').textContent=`${d.url} · read ${crawlWhen(d.readAt)} · stored in: ${d.storedIn}`;$('#json-modal-meta').textContent='Text of the page as the crawler agent read it';$('#json-modal-code').textContent=d.text;$('#json-modal').hidden=false;
-    }
-  }catch(err){toast(err.message);}
-});
-$('#crawler-card').addEventListener('change',async e=>{
-  const box=e.target.closest('[data-crawl-set]'),row=e.target.closest('[data-crawl]');if(!box||!row)return;
-  try{await crawlCall(`/api/sources/${encodeURIComponent(row.dataset.crawl)}/crawl-settings`,{method:'PUT',body:JSON.stringify({[box.dataset.crawlSet]:box.checked})});toast('Saved');loadCrawler();}catch(err){toast(err.message);box.checked=!box.checked;}
-});
+const crawlRunAllBtn = $('#crawl-run-all');
+if (crawlRunAllBtn) {
+  crawlRunAllBtn.addEventListener('click',async()=>{
+    try{const d=await crawlCall('/api/sources/crawl/run-all',null,'Crawler agents are reading the websites…');const changed=d.results.filter(r=>r.result==='changed').length;await afterCrawl(`${d.results.length} website${d.results.length===1?'':'s'} read, ${changed} changed`);}catch(err){toast(err.message);}
+  });
+}
+const crawlerCardEl = $('#crawler-card');
+if (crawlerCardEl) {
+  crawlerCardEl.addEventListener('click',async e=>{
+    const row=e.target.closest('[data-crawl]'),id=row&&row.dataset.crawl;
+    try{
+      const demo=e.target.closest('[data-demo-page]');
+      if(demo){const d=await crawlCall('/api/sources/demo-page',{body:JSON.stringify({version:+demo.dataset.demoPage})},'Reading the demo page…');await afterCrawl(d.result&&d.result.result==='changed'?'The demo page changed: new records, and a ripple is on its way':'Demo page read');return;}
+      const fix=e.target.closest('[data-fix]');
+      if(fix){const d=await crawlCall(`/api/sources/proposals/${encodeURIComponent(fix.dataset.fixId)}/${fix.dataset.fix}`);await afterCrawl(d.status==='approved'?`Fix approved${d.recordsCount!=null?': '+d.recordsCount+' records read':''}`:'Suggestion dismissed');return;}
+      if(e.target.closest('[data-crawl-run]')&&id){const d=await crawlCall(`/api/sources/${encodeURIComponent(id)}/crawl`,null,'The crawler agent is reading the page…');await afterCrawl(d.result.resultLabel+(d.result.reason?'. '+d.result.reason:''));return;}
+      if(e.target.closest('[data-crawl-snap]')&&id){
+        const res=await apiFetch(`/api/sources/${encodeURIComponent(id)}/snapshot`);const d=await res.json();if(!res.ok)throw new Error(d.error||'No snapshot');
+        $('#json-modal-tag').textContent='Page snapshot';$('#json-modal-title').textContent=d.label;$('#json-modal-sub').textContent=`${d.url} · read ${crawlWhen(d.readAt)} · stored in: ${d.storedIn}`;$('#json-modal-meta').textContent='Text of the page as the crawler agent read it';$('#json-modal-code').textContent=d.text;$('#json-modal').hidden=false;
+      }
+    }catch(err){toast(err.message);}
+  });
+  crawlerCardEl.addEventListener('change',async e=>{
+    const box=e.target.closest('[data-crawl-set]'),row=e.target.closest('[data-crawl]');if(!box||!row)return;
+    try{await crawlCall(`/api/sources/${encodeURIComponent(row.dataset.crawl)}/crawl-settings`,{method:'PUT',body:JSON.stringify({[box.dataset.crawlSet]:box.checked})});toast('Saved');loadCrawler();}catch(err){toast(err.message);box.checked=!box.checked;}
+  });
+}
 
 
 /* ===================== The review model: red / green labels, predictions, "Dilly learns" ===================== */
@@ -8324,18 +8340,21 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-learn]');i
 /* ===================== Reviewer copilot (AI draft) and DDQ answer verification, in the review dialog ===================== */
 const COPILOT={draft:null};
 const kycEntityId=id=>'kyc-'+String(id).toLowerCase();
-$('#triage-copilot-btn').addEventListener('click',async()=>{
-  if(!triageTargetId)return;
-  const note=$('#triage-copilot-note'),box=$('#triage-officer-notes');
-  note.textContent='Dilly is drafting from the findings…';
-  try{
-    const res=await apiFetch('/api/copilot/'+encodeURIComponent(kycEntityId(triageTargetId))+'/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
-    const d=await res.json();if(!res.ok)throw new Error(d.message||d.error||'The draft could not be written');
-    COPILOT.draft=d;
-    box.value=d.draft.summary+'\n\n'+d.draft.decision_reason;
-    note.innerHTML=`<b>AI draft</b> · ${esc(d.draft.sourceLabel)} · computed route: ${esc(d.draft.suggestedRouteLabel)} (${d.draft.risk} of 100). Edit it or confirm it; your final text is what is saved.${d.draft.note?' '+esc(d.draft.note):''}`;
-  }catch(err){note.textContent=err.message;}
-});
+const triageCopilotBtn = $('#triage-copilot-btn');
+if (triageCopilotBtn) {
+  triageCopilotBtn.addEventListener('click',async()=>{
+    if(!triageTargetId)return;
+    const note=$('#triage-copilot-note'),box=$('#triage-officer-notes');
+    note.textContent='Dilly is drafting from the findings…';
+    try{
+      const res=await apiFetch('/api/copilot/'+encodeURIComponent(kycEntityId(triageTargetId))+'/draft',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+      const d=await res.json();if(!res.ok)throw new Error(d.message||d.error||'The draft could not be written');
+      COPILOT.draft=d;
+      box.value=d.draft.summary+'\n\n'+d.draft.decision_reason;
+      note.innerHTML=`<b>AI draft</b> · ${esc(d.draft.sourceLabel)} · computed route: ${esc(d.draft.suggestedRouteLabel)} (${d.draft.risk} of 100). Edit it or confirm it; your final text is what is saved.${d.draft.note?' '+esc(d.draft.note):''}`;
+    }catch(err){note.textContent=err.message;}
+  });
+}
 function confirmCopilotDraft(){
   const d=COPILOT.draft,text=$('#triage-officer-notes').value.trim();if(!d||!text)return;
   COPILOT.draft=null;
@@ -8446,7 +8465,8 @@ async function rulesCall(url,method,body){
 }
 function initRulesCard(){
   const host=$('#rules-body');if(!host)return;
-  $('#rev-tabs').addEventListener('click',ev=>{const b=ev.target.closest('button[data-pane]');if(b)showRevPane(b.dataset.pane);});
+  const revTabs=$('#rev-tabs');
+  if(revTabs) revTabs.addEventListener('click',ev=>{const b=ev.target.closest('button[data-pane]');if(b)showRevPane(b.dataset.pane);});
   showRevPane(S.revPane||'queue');
   host.addEventListener('input',ev=>{
     const el=ev.target.closest('[data-rk]');if(!el)return;
@@ -8487,13 +8507,15 @@ function initRulesCard(){
     }catch(err){toast(err.message);}
   });
   // The threshold slider previews live; letting go saves it as a rule
-  $('#thr').addEventListener('change',async e=>{
+  const thr=$('#thr');
+  if(thr) thr.addEventListener('change',async e=>{
     if(!RISK.rules||+e.target.value===RISK.rules.confidence.threshold)return;
     if(!isCompliance()){toast('Only a compliance officer can change the confidence threshold');loadRisk();return;}
     try{await rulesCall('/api/risk/rules','PUT',{patch:{confidence:{threshold:+e.target.value}},reason:'Threshold slider'});toast(`Confidence threshold saved at ${e.target.value}%`);}
     catch(err){toast(err.message);loadRisk();}
   });
-  $('#rules-alert').addEventListener('click',ev=>{
+  const rulesAlert=$('#rules-alert');
+  if(rulesAlert) rulesAlert.addEventListener('click',ev=>{
     const b=ev.target.closest('[data-ra]');if(!b)return;
     RISK.alertSeen=RISK.sugg.length;renderRulesAlert();
     if(b.dataset.ra==='open'){showView('reviews');showRevPane('rules');requestAnimationFrame(()=>{const c=$('#rules-card');c.scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'start'});c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),1600);});}
