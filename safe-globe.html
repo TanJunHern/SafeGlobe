@@ -8082,20 +8082,80 @@ function getBreakdown(id){
 const readWhen=t=>{const d=new Date(t);return isNaN(d)?'':d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});};
 const levelCls=id=>({high:'b-high',medium:'b-mid',low:'b-low'})[id]||'b-low';
 /* The 6-step strip and the "Why <score>?" panel, shown under the risk card */
+function orchestratorCardHTML(orch){
+  if(!orch) return '';
+  const isSafe = orch.is_safe;
+  const badgeClass = isSafe ? 'q-monitor' : 'b-high';
+  const badgeIcon = isSafe ? ic('check', 'sm') : ic('alert', 'sm');
+  const badgeText = isSafe ? 'SAFE · Low Risk' : 'NOT SAFE · Sanctions Alert';
+  const headerBg = isSafe ? 'color-mix(in srgb, var(--low) 10%, var(--surface))' : 'color-mix(in srgb, var(--high) 12%, var(--surface))';
+  const borderCol = isSafe ? 'color-mix(in srgb, var(--low) 32%, transparent)' : 'color-mix(in srgb, var(--high) 45%, transparent)';
+
+  const exposures = (orch.sanctions_exposures || []).map(exp => `
+    <li style="margin-bottom:4px;color:var(--high-ink)">
+      <b>${esc(exp.type)}:</b> ${esc(exp.field)} refers to <b>${esc(exp.country)} (${esc(exp.iso3)})</b> under <b>${esc((exp.regimes||[]).join('/'))}</b> sanctions.
+    </li>
+  `).join('');
+
+  return `<div class="sec orch-card" style="background:${headerBg};border:1.5px solid ${borderCol};border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="agent" style="font-size:11px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:4px">Orchestrator · Sanctions Agent</span>
+        <span class="faint mono" style="font-size:11px">PDF Ingestion</span>
+      </div>
+      <span class="pill plain ${badgeClass}" style="font-weight:700;font-size:11.5px;letter-spacing:0.3px">${badgeIcon} ${badgeText}</span>
+    </div>
+
+    <div style="margin:6px 0 10px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--fg-2);margin-bottom:4px;display:flex;align-items:center;gap:4px">
+        ${ic('spark','sm')} What the LLM thinks:
+      </div>
+      <p style="margin:0;font-size:12.5px;line-height:1.5;color:var(--fg);background:var(--surface);padding:10px 12px;border-radius:6px;border:1px solid var(--border)">
+        ${esc(orch.why || orch.summary)}
+      </p>
+    </div>
+
+    ${exposures ? `<div style="margin:8px 0 4px"><small class="faint" style="font-size:11px;font-weight:600;text-transform:uppercase">Triggered Violations:</small><ul style="margin:4px 0 0;padding-left:18px;font-size:11.5px">${exposures}</ul></div>` : ''}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;background:var(--surface-2);padding:8px 10px;border-radius:6px;margin-top:8px;border:1px solid var(--border)">
+      <div>
+        <span class="faint" style="display:block">KYC Form Checked:</span>
+        <b>${esc(orch.kyc_evaluated ? `${orch.kyc_evaluated.counterparty_name} (${orch.kyc_evaluated.country})` : 'KYC Form')}</b>
+      </div>
+      <div>
+        <span class="faint" style="display:block">PDF Directives Ingested:</span>
+        <b>${esc(orch.document_name || 'international_sanctions_directive.pdf')}</b>
+      </div>
+      <div>
+        <span class="faint" style="display:block">Policy Floor:</span>
+        <span>${esc(orch.policy_clause || 'Policy §4.1')}</span>
+      </div>
+      <div>
+        <span class="faint" style="display:block">Action:</span>
+        <b style="color:${isSafe ? 'var(--low-ink)' : 'var(--high-ink)'}">${esc(orch.recommended_action || (isSafe ? 'Auto-Clear' : 'Mandatory Block'))}</b>
+      </div>
+    </div>
+  </div>`;
+}
+
 /* Pond-Guard: one row per agent, live while they run, then what each found */
 function pondGuardHTML(e){
   const run=RISK.pg.get(e.id);
+  const prevSugg = (RISK.sugg || []).find(s => s.entityId === e.id);
+  const orch = (run && run.orchestrator) || (prevSugg && prevSugg.detail && prevSugg.detail.orchestrator) || null;
+  const orchHTML = orchestratorCardHTML(orch);
+
   const btn=`<button class="btn sm ${run&&run.done?'':'primary'}" data-pg="screen" type="button"${run&&!run.done?' disabled':''}>${ic('spark','sm')}${run?(run.done?'Screen again':'Screening…'):'Screen with Pond-Guard'}</button>`;
-  if(!run)return `<div class="sec pg"><div class="sec-h"><h3>Pond-Guard agents</h3>${btn}</div><p class="faint" style="margin:0;font-size:12px">Sanctions, PEP, adverse media, ownership${e.kind==='vessel'?' and vessel behaviour':''} agents read the sources and return findings. The points table gives the score.</p></div>`;
+  if(!run)return `<div class="sec pg"><div class="sec-h"><h3>Pond-Guard agents</h3>${btn}</div>${orchHTML}<p class="faint" style="margin:0;font-size:12px">Sanctions, PEP, adverse media, ownership${e.kind==='vessel'?' and vessel behaviour':''} agents read the sources and return findings. The points table gives the score.</p></div>`;
   const state=a=>a.state==='running'?'<span class="pg-st run">Reading…</span>':a.ok===false?'<span class="pg-st bad">No answer</span>':`<span class="pg-st ok">${a.findings.filter(f=>f.accepted).length} finding${a.findings.filter(f=>f.accepted).length===1?'':'s'}</span>`;
   const rows=run.agents.map(a=>`<div class="pg-agent ${a.state}"><div class="pg-top"><b>${esc(a.label)}</b>${state(a)}</div>
     ${a.state==='done'&&a.error?`<small class="faint">${esc(a.error)}</small>`:''}${a.note?`<small class="faint">${esc(a.note)}</small>`:''}
     ${(a.findings||[]).map(f=>`<div class="pg-f${f.accepted?'':' no'}"><span>${esc(f.accepted?f.short||'Finding':'Not counted')}</span><p>${esc(f.summary||'')}</p>${f.quote?`<blockquote>“${esc(f.quote)}”</blockquote>`:''}<small>${f.accepted?(f.sourceUrl?`<a href="${esc(f.sourceUrl)}" target="_blank" rel="noopener">${esc(f.sourceName)}</a>`:esc(f.sourceName||'')):esc(f.reason||'')}</small></div>`).join('')}</div>`).join('');
   const note=run.mode==='offline'?`<div class="hint">${ic('alert')}<p style="margin:0"><b>Offline sample.</b> ${esc(run.reason||'The live agents are not connected.')} These are the stored findings; nothing was changed.</p></div>`:run.done?`<p class="faint" style="margin:0;font-size:11.5px">Live run by the Google ADK agents on Gemini${run.modelId?` (${esc(run.modelId)})`:''}. Every finding was checked against its source before it counted.</p>`:'';
-  return `<div class="sec pg"><div class="sec-h"><h3>Pond-Guard agents</h3>${btn}</div>${run.message?`<p class="faint" style="margin:0;font-size:12px">${esc(run.message)}</p>`:''}${rows}${note}</div>`;
+  return `<div class="sec pg"><div class="sec-h"><h3>Pond-Guard agents</h3>${btn}</div>${orchHTML}${run.message?`<p class="faint" style="margin:0;font-size:12px">${esc(run.message)}</p>`:''}${rows}${note}</div>`;
 }
 async function runPondGuard(id){
-  const run={done:false,mode:'',reason:'',agents:[],message:''};
+  const run={done:false,mode:'',reason:'',agents:[],message:'',orchestrator:null};
   RISK.pg.set(id,run);
   const redraw=()=>{if(drawerOpen()&&D.id===id)renderDrawer();};
   redraw();
@@ -8103,7 +8163,9 @@ async function runPondGuard(id){
     if(ev.type==='started'){run.mode=ev.mode;run.reason=ev.reason;run.agents=ev.agents.map(a=>({id:a.id,label:a.label,state:'waiting',findings:[]}));}
     else if(ev.type==='agent_started'){const a=run.agents.find(x=>x.id===ev.agent);if(a)a.state='running';}
     else if(ev.type==='agent_done'){const a=run.agents.find(x=>x.id===ev.agent);if(a)Object.assign(a,{state:'done',ok:ev.ok,error:ev.error||'',note:ev.note||'',findings:ev.findings||[]});}
-    else if(ev.type==='scored'){if(ev.offline){run.mode='offline';run.reason=ev.reason||run.reason;}run.modelId=ev.modelId||'';}
+    else if(ev.type==='orchestrator_assessment'){run.orchestrator=ev.assessment;}
+    else if(ev.type==='dilly'){run.dilly=ev.dilly;}
+    else if(ev.type==='scored'){if(ev.offline){run.mode='offline';run.reason=ev.reason||run.reason;}run.modelId=ev.modelId||'';if(ev.suggestion&&ev.suggestion.orchestrator)run.orchestrator=ev.suggestion.orchestrator;}
     else if(ev.type==='error'){run.message=ev.message;}
     redraw();
   };

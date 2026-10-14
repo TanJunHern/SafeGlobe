@@ -174,6 +174,66 @@ test('Sanctions Agent & Multi-Agent Orchestrator', async (t) => {
       assert.ok(res.body.error.includes('PDF documents only'));
     });
 
+    await t.test('Orchestrator screens KYC form against PDF sanctions list and explains why not safe', async () => {
+      const badKyc = {
+        counterparty_name: 'Severny Agro Export LLC',
+        entity_type: 'Organisation',
+        country: 'RUS',
+        relationship_type: 'Customer/Trading Partner',
+        contract_value: 1450000,
+        attributes: {
+          reg_no: 'RU-104779601',
+          directors_ubo: 'Russian State Agricultural Holding (51%)'
+        }
+      };
+
+      const result = await orchestrator.screenKycAgainstSanctions(badKyc, { useModel: false });
+      assert.equal(result.is_safe, false);
+      assert.equal(result.verdict, 'NOT SAFE');
+      assert.equal(result.status_label, 'Sanctions Alert / High Risk');
+      assert.ok(result.why.toLowerCase().includes('not safe'));
+      assert.ok(result.why.includes('Russia (RUS)'));
+      assert.ok(result.sanctions_exposures.length >= 1);
+      assert.ok(result.policy_clause.includes('Policy §4.1'));
+      assert.ok(result.recommended_action.includes('Mandatory Block'));
+    });
+
+    await t.test('Orchestrator screens KYC form against PDF sanctions list and explains why safe', async () => {
+      const safeKyc = {
+        counterparty_name: 'Apex Global Trading Pte Ltd',
+        entity_type: 'Organisation',
+        country: 'SGP',
+        relationship_type: 'Vendor/Supplier',
+        contract_value: 250000,
+        attributes: {
+          reg_no: 'UEN 20210012A',
+          directors_ubo: 'Tan Wei Liang (60%), Chua Mei Ling (40%)'
+        }
+      };
+
+      const result = await orchestrator.screenKycAgainstSanctions(safeKyc, { useModel: false });
+      assert.equal(result.is_safe, true);
+      assert.equal(result.verdict, 'SAFE');
+      assert.equal(result.status_label, 'Clear / Low Risk');
+      assert.ok(result.why.toLowerCase().includes('safe'));
+      assert.ok(result.why.includes('Singapore'));
+      assert.equal(result.sanctions_exposures.length, 0);
+      assert.ok(result.recommended_action.includes('Auto-Clear'));
+    });
+
+    await t.test('POST /api/agent/orchestrator/screen-kyc evaluates entity by entityId', async () => {
+      const res = await call('POST', '/api/agent/orchestrator/screen-kyc', {
+        entityId: 'severny',
+        useModel: false
+      });
+
+      assert.equal(res.status, 200);
+      assert.equal(res.body.task, 'kyc_sanctions_screen');
+      assert.equal(res.body.is_safe, false);
+      assert.equal(res.body.verdict, 'NOT SAFE');
+      assert.ok(res.body.why);
+    });
+
   } finally {
     await stopServer();
   }

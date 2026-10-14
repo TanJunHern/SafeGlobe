@@ -348,27 +348,58 @@ const suggestionOf = (id, entityId, breakdown, rules, extra = {}) => Object.assi
 }, extra);
 
 /** Shows the stored findings again, grouped by agent, as an offline sample. Changes nothing. */
-function offlineRun(db, entity, kinds, emit, reason, kind = 'offline') {
+function offlineRun(db, entity, kinds, emit, reason, kind = 'offline', orchAssessment = null) {
   const breakdown = riskService.assessEntity(db, entity.id);
   for (const agent of kinds) emit({ type: 'agent_started', agent, label: AGENTS[agent].label });
   for (const agent of kinds) {
-    const lines = breakdown ? breakdown.lines.filter(l => AGENTS[agent].categories.includes(l.category)) : [];
+    let lines = breakdown ? breakdown.lines.filter(l => AGENTS[agent].categories.includes(l.category)) : [];
     const check = breakdown ? breakdown.coverage.list.find(c => c.id === AGENTS[agent].check) : null;
+    let agentFindings = lines.map(l => ({ id: l.findingId, category: l.category, short: l.short, summary: l.summary, quote: l.quote, sourceName: l.sourceName, sourceUrl: l.sourceUrl, accepted: true, policyClause: l.policyClause || '', policyQuote: l.policyQuote || '', suggestedAction: l.suggestedAction || '' }));
+
+    // Inject Orchestrator PDF Sanctions findings for Sanctions agent
+    if (agent === 'sanctions' && orchAssessment) {
+      if (!orchAssessment.is_safe && orchAssessment.sanctions_exposures && orchAssessment.sanctions_exposures.length > 0) {
+        agentFindings = [
+          {
+            id: `PG-${entity.id}-sanctions-orch`,
+            category: 'sanctions_confirmed',
+            short: 'Sanctions Violation',
+            summary: orchAssessment.summary,
+            quote: orchAssessment.sanctions_exposures[0]?.evidence_excerpt || orchAssessment.why.slice(0, 220),
+            sourceName: `Orchestrator PDF (${orchAssessment.document_name})`,
+            sourceUrl: '',
+            accepted: true,
+            policyClause: '§4.1',
+            policyQuote: 'Counterparties incorporated in, operating from, or flagged under jurisdictions listed on sanctions or increased monitoring trigger mandatory action.',
+            suggestedAction: orchAssessment.recommended_action
+          },
+          ...agentFindings.filter(f => f.category !== 'sanctions_confirmed')
+        ];
+      }
+    }
+
     emit({
       type: 'agent_done', agent, label: AGENTS[agent].label, ok: true, offline: true,
       note: check && !check.ran ? 'Not run in the offline sample.' : '',
-      findings: lines.map(l => ({ id: l.findingId, category: l.category, short: l.short, summary: l.summary, quote: l.quote, sourceName: l.sourceName, sourceUrl: l.sourceUrl, accepted: true, policyClause: l.policyClause || '', policyQuote: l.policyQuote || '', suggestedAction: l.suggestedAction || '' }))
+      findings: agentFindings
     });
   }
+
+  // Record suggestion with orchestrator assessment
+  db.addSuggestion(suggestionOf(`PG-${entity.id}-offline-${Date.now()}`, entity.id, breakdown, getRules(db), {
+    mode: 'offline',
+    detail: { orchestrator: orchAssessment, dilly: { ok: true, verdict: orchAssessment ? orchAssessment.verdict : 'Review' } }
+  }));
+
   emit({ type: 'scored', offline: true, reason, breakdown, suggestion: latestSuggestion(db, entity.id) });
-  return { live: false, kind, reason, breakdown };
+  return { live: false, kind, reason, breakdown, orchestrator: orchAssessment };
 }
 
 /** The suggestion last stored for a case, in the shape the pages show. */
 function latestSuggestion(db, entityId) {
   const s = db.getLatestSuggestion(entityId);
   if (!s) return null;
-  return { id: s.id, at: s.at, mode: s.mode, risk: s.risk, confidence: s.confidence, route: s.route, level: s.level, dilly: s.detail.dilly || null, reusedFrom: s.detail.reusedFrom || null };
+  return { id: s.id, at: s.at, mode: s.mode, risk: s.risk, confidence: s.confidence, route: s.route, level: s.level, dilly: s.detail.dilly || null, orchestrator: s.detail.orchestrator || null, reusedFrom: s.detail.reusedFrom || null };
 }
 
 /**
@@ -382,14 +413,55 @@ async function screenEntity(db, entityId, emit, { subject = null, kycId = null, 
   if (!entity) throw Object.assign(new Error('Counterparty not found'), { status: 404 });
   const rules = getRules(db);
   const m = mode(db);
+
   // Website sources ticked "Run on every screening" are read first, so the agents see today's page (live runs only)
   if (m.live) {
     try { await require('./crawlerService').crawlAll(db, { onlyRunOnScreening: true, olderThanMs: 10 * 60 * 1000 }); } catch (err) { console.error('[Pond-Guard] sources not refreshed:', err.message); }
   }
   const evidence = gatherEvidence(db, entity, rules);
   emit({ type: 'started', entityId, name: entity.name, mode: m.live ? 'live' : 'offline', reason: m.reason, agents: evidence.kinds.map(k => ({ id: k, label: AGENTS[k].label })) });
-  if (!m.live) return offlineRun(db, entity, evidence.kinds, emit, m.reason, m.kind);
-  if (!takeDailyBudget(db, 'pond_guard', config.pondGuardDailyCap)) return offlineRun(db, entity, evidence.kinds, emit, 'Daily limit reached.', 'limit');
+
+  // 1. Resolve KYC Form for this counterparty
+  const allKyc = db.getAllKycRequests ? db.getAllKycRequests() : [];
+  let kycRequest = allKyc.find(k => k.id.toLowerCase() === entityId.toLowerCase() || (entityId.startsWith('kyc-') && k.id.toLowerCase() === entityId.replace('kyc-', '').toLowerCase()));
+  if (!kycRequest) {
+    kycRequest = allKyc.find(k => k.counterparty_name && entity.name && k.counterparty_name.toLowerCase().trim() === entity.name.toLowerCase().trim());
+  }
+  if (!kycRequest && entity.reg) {
+    kycRequest = allKyc.find(k => k.attributes && (k.attributes.reg_no === entity.reg || k.attributes.imo === entity.reg));
+  }
+  const kycForm = kycRequest || {
+    id: `KYC-${entity.id.toUpperCase()}`,
+    counterparty_name: entity.name,
+    entity_type: entity.kind === 'vessel' ? 'Vessel' : entity.kind === 'person' ? 'Person' : 'Organisation',
+    country: entity.a3 || entity.flag || 'SGP',
+    relationship_type: entity.role || 'Vendor/Supplier',
+    contract_value: (entity.request && entity.request.contract_value) || 250000,
+    attributes: {
+      reg_no: entity.reg || '',
+      imo: entity.imo || '',
+      directors_ubo: (entity.factors && entity.factors.map(f => f[1]).join('; ')) || entity.controllers || '',
+      vessel_flag: entity.flag || '',
+      vessel_type: entity.type || ''
+    },
+    location: { address: `${entity.city || ''}, ${entity.a3 || ''}` },
+    remarks: entity.summary || ''
+  };
+
+  // 2. Run Orchestrator Sanctions screening of KYC form against regulatory PDF document
+  const orchestrator = require('../agents/orchestrator');
+  let orchAssessment = null;
+  try {
+    orchAssessment = await orchestrator.screenKycAgainstSanctions(kycForm);
+    emit({
+      type: 'orchestrator_assessment',
+      assessment: orchAssessment
+    });
+  } catch (orchErr) {
+    console.error('[Pond-Guard] Orchestrator screening failed:', orchErr.message);
+  }
+  if (!m.live) return offlineRun(db, entity, evidence.kinds, emit, m.reason, m.kind, orchAssessment);
+  if (!takeDailyBudget(db, 'pond_guard', config.pondGuardDailyCap)) return offlineRun(db, entity, evidence.kinds, emit, 'Daily limit reached.', 'limit', orchAssessment);
 
   const policy = await policyFor(db, rules, evidence.kinds);
   for (const agent of evidence.kinds) evidence.briefs[agent].policy = policy[agent];
@@ -467,10 +539,10 @@ async function screenEntity(db, entityId, emit, { subject = null, kycId = null, 
   const dilly = await askDilly(db, entity, breakdown, accepted, policy, rules);
   const suggestion = db.addSuggestion(suggestionOf(idPrefix, entityId, breakdown, rules, {
     kycId, entityKey, mode: 'live',
-    detail: { findingIds: accepted.map(f => f.id), dilly, modelId: meta.model_id || '', promptVersion: meta.prompt_version || '' }
+    detail: { findingIds: accepted.map(f => f.id), dilly, orchestrator: orchAssessment, modelId: meta.model_id || '', promptVersion: meta.prompt_version || '' }
   }));
   emit({ type: 'dilly', dilly, suggestion: latestSuggestion(db, entityId) });
-  return { live: true, kind: 'live', reason: '', breakdown, suggestion };
+  return { live: true, kind: 'live', reason: '', breakdown, suggestion, orchestrator: orchAssessment };
 }
 
 function status(db) {
