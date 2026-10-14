@@ -1,0 +1,7 @@
+DueDilly Enterprise Compliance & Counterparty Risk Policy (v2026.1)
+Demo policy: written for the DueDilly demo. The company and its policy are fictional.
+
+Section: Country & Jurisdictional Risk
+Clause 4.1
+
+Counterparties incorporated in, operating from, or flagged under jurisdictions with a Transparency International Corruption Perceptions Index (CPI) score below 40, or listed on FATF Call for Action / Increased Monitoring, trigger mandatory DDQ disclosures.

@@ -5,9 +5,10 @@
 const express = require('express');
 const router = express.Router();
 const { runKycpCheck, KYCP_INSTRUCTIONS, tools } = require('../services/aiKycpService');
+const { aiRateLimit } = require('../middleware/rateLimit');
 
 // POST /api/ai/kycp
-router.post('/kycp', async (req, res) => {
+router.post('/kycp', aiRateLimit, async (req, res) => {
   const { query, name, target, type = 'organisation', entity, jurisdiction } = req.body;
   const searchTerm = query || name || target;
 
@@ -34,7 +35,7 @@ router.post('/kycp', async (req, res) => {
 });
 
 // POST /api/ai/screen (Alias for seamless screening integration)
-router.post('/screen', async (req, res) => {
+router.post('/screen', aiRateLimit, async (req, res) => {
   const { name, entity = 'organisation', jurisdiction } = req.body;
   if (!name) {
     return res.status(400).json({ error: 'Field "name" is required' });

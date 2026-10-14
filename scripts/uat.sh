@@ -27,6 +27,16 @@ else
   echo "[uat] Run:  gcloud auth application-default login   (needed for Vertex AI, Cloud Storage and other Google Cloud services)"
 fi
 
+# Inside the container "localhost" is the container itself. An agents service running on this computer
+# (APP_ENV=uat npm run agents) is reached as host.docker.internal instead.
+AGENTS=()
+AGENTS_URL="$(grep -E '^AGENTS_SERVICE_URL=' .env.uat | tail -1 | cut -d= -f2- || true)"
+case "$AGENTS_URL" in
+  http://localhost:*|http://127.0.0.1:*)
+    AGENTS=(--add-host host.docker.internal:host-gateway -e "AGENTS_SERVICE_URL=http://host.docker.internal:${AGENTS_URL##*:}")
+    echo "[uat] Agents service: this computer, port ${AGENTS_URL##*:} (start it with: APP_ENV=uat npm run agents)" ;;
+esac
+
 echo "[uat] Starting on http://localhost:8081"
 # .env.uat is mounted, not baked in: the app reads it itself, exactly as it reads .env.dev on the dev port
 exec docker run --rm --name duedilly-uat \
@@ -34,4 +44,5 @@ exec docker run --rm --name duedilly-uat \
   -v "$PWD/.env.uat:/app/.env.uat:ro" \
   -e APP_ENV=uat -e PORT=8080 \
   ${CREDS[@]+"${CREDS[@]}"} \
+  ${AGENTS[@]+"${AGENTS[@]}"} \
   "$IMAGE"

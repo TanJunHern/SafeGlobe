@@ -1,0 +1,248 @@
+{
+  "view_id": "eu_regimes",
+  "source_name": "European Commission (consolidated financial sanctions list)",
+  "source_url": "https://data.europa.eu/data/datasets/consolidated-list-of-persons-groups-and-entities-subject-to-eu-financial-sanctions",
+  "fetched_at": "2026-10-13T16:10:11.468Z",
+  "content_hash": "90b0565c0cc4fda5dd5c28c57ec77ca7760976ce86a728b1214893367bed7822",
+  "method": "structured",
+  "licence_note": "European Commission reuse notice: http://data.europa.eu/eli/dec/2011/833/oj (as stated on the dataset record for \"Consolidated Financial Sanctions File 1.1\")",
+  "countries": [
+    {
+      "iso3": "AFG",
+      "name": "Afghanistan",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2017/404 (OJ L63);AFG",
+      "programme": "AFG"
+    },
+    {
+      "iso3": "BLR",
+      "name": "Belarus",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2022/300 (OJ L46);BLR",
+      "programme": "BLR"
+    },
+    {
+      "iso3": "CAF",
+      "name": "Central African Republic",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2020/1171 (OJ L260);CAF",
+      "programme": "CAF"
+    },
+    {
+      "iso3": "PRK",
+      "name": "Democratic People's Republic of Korea",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2017/1509 (OJ L224);PRK",
+      "programme": "PRK"
+    },
+    {
+      "iso3": "COD",
+      "name": "Democratic Republic of the Congo",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2017/396 (OJ L60);COD",
+      "programme": "COD"
+    },
+    {
+      "iso3": "GTM",
+      "name": "Guatemala",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2026/87 (OJ L202600087);GTM",
+      "programme": "GTM"
+    },
+    {
+      "iso3": "GIN",
+      "name": "Guinea",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2021/1301 (OJ L283);GIN",
+      "programme": "GIN"
+    },
+    {
+      "iso3": "HTI",
+      "name": "Haiti",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2023/2573 (OJ L14112023);HTI",
+      "programme": "HTI"
+    },
+    {
+      "iso3": "IRN",
+      "name": "Iran",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2025/1982 (OJ L202501982);IRN",
+      "programme": "IRN"
+    },
+    {
+      "iso3": "IRQ",
+      "name": "Iraq",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "1210/2003 (OJ L169);IRQ",
+      "programme": "IRQ"
+    },
+    {
+      "iso3": "LBY",
+      "name": "Libya",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2017/489 (OJ L76);LBY",
+      "programme": "LBY"
+    },
+    {
+      "iso3": "MLI",
+      "name": "Mali",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2022/2436 (OJ L319);MLI",
+      "programme": "MLI"
+    },
+    {
+      "iso3": "MDA",
+      "name": "Moldova",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2025/817 (OJ L202500817);MDA",
+      "programme": "MDA"
+    },
+    {
+      "iso3": "MMR",
+      "name": "Myanmar",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2019/672 (OJ L114);MMR",
+      "programme": "MMR"
+    },
+    {
+      "iso3": "NIC",
+      "name": "Nicaragua",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2020/606 (OJ L139I);NIC",
+      "programme": "NIC"
+    },
+    {
+      "iso3": "RUS",
+      "name": "Russian Federation",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2024/1488 (OJ L27052024);RUS",
+      "programme": "RUS"
+    },
+    {
+      "iso3": "SOM",
+      "name": "Somalia",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2017/395 (OJ L60);SOM",
+      "programme": "SOM"
+    },
+    {
+      "iso3": "SSD",
+      "name": "South Sudan",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2018/1934 (OJ L314);SSD",
+      "programme": "SSD"
+    },
+    {
+      "iso3": "SDN",
+      "name": "Sudan",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2017/401 (OJ L63);SDN",
+      "programme": "SDN"
+    },
+    {
+      "iso3": "SYR",
+      "name": "Syrian Arab Republic",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2020/716 (OJ L168);SYR",
+      "programme": "SYR"
+    },
+    {
+      "iso3": "TUN",
+      "name": "Tunisia",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2026/238 (OJ L202600238);TUN",
+      "programme": "TUN"
+    },
+    {
+      "iso3": "UKR",
+      "name": "Ukraine",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2019/352 (OJ L64);UKR",
+      "programme": "UKR"
+    },
+    {
+      "iso3": "VEN",
+      "name": "Venezuela",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2025/42 (OJ L10012025);VEN",
+      "programme": "VEN"
+    },
+    {
+      "iso3": "YEM",
+      "name": "Yemen",
+      "category": "sanctions_regime",
+      "score": null,
+      "evidence_quote": "2017/628 (OJ L90);YEM",
+      "programme": "YEM"
+    }
+  ],
+  "read_url": "https://webgate.ec.europa.eu/fsd/fsf/public/files/csvFullSanctionsList_1_1/content?token=dG9rZW4tMjAxNw",
+  "rejected": [
+    {
+      "name": "TERR",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    },
+    {
+      "name": "TAQA",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    },
+    {
+      "name": "EUAQ",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    },
+    {
+      "name": "CHEM",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    },
+    {
+      "name": "CYB",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    },
+    {
+      "name": "HR",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    },
+    {
+      "name": "HAM",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    },
+    {
+      "name": "SDNZ",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    },
+    {
+      "name": "RUSDA",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    },
+    {
+      "name": "UNLI",
+      "reason": "The regime code is not a country code (a thematic regime)."
+    }
+  ],
+  "file_title": "Consolidated Financial Sanctions File 1.1",
+  "sample": true
+}

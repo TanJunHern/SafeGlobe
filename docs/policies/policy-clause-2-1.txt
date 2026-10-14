@@ -1,0 +1,7 @@
+DueDilly Enterprise Compliance & Counterparty Risk Policy (v2026.1)
+Demo policy: written for the DueDilly demo. The company and its policy are fictional.
+
+Section: Contract Value & Financial Exposure Thresholds
+Clause 2.1
+
+Any proposed engagement with anticipated contract value exceeding SGD 100,000 (one hundred thousand Singapore Dollars) mandates comprehensive vendor due diligence questionnaire (DDQ) verification and beneficial ownership audit.

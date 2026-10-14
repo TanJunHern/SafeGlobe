@@ -1,0 +1,7 @@
+DueDilly Enterprise Compliance & Counterparty Risk Policy (v2026.1)
+Demo policy: written for the DueDilly demo. The company and its policy are fictional.
+
+Section: Entity-Specific Risk Controls
+Clause 5.4 (Maritime & Vessels)
+
+Maritime vessels flying flags of convenience (e.g., Panama, Liberia, Marshall Islands) or exhibiting recorded AIS telemetry dark periods exceeding 12 hours require mandatory vessel questionnaire submission, charterer verification, and IMO registry audit.

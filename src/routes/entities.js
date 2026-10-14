@@ -166,7 +166,7 @@ router.post('/intake', (req, res) => {
       src: 'Uploaded data feed'
     });
     screenResult.factors.unshift(['+', 'Verified against data feed: ' + (attachedFeed.filename || 'feed.csv')]);
-    screenResult.confidence = Math.max(screenResult.confidence, 90);
+    // Confidence is calculated from the evidence (src/risk/scorer.js); an attached feed no longer sets it to a fixed number
   }
 
   // If Custom Policy attached, store file, record compiled policy and add finding
@@ -264,6 +264,15 @@ router.post('/intake', (req, res) => {
     confidence: screenResult.confidence,
     quadrant: screenResult.quadrant
   });
+
+  // Keep the scoring trail, so the drawer can show "Why <score>?" for this counterparty
+  try {
+    const riskService = require('../risk/riskService');
+    riskService.recordFindings(db, id, screenResult.scoredFindings || [], { replace: true });
+    db.setRiskChecks(id, screenResult.checks || {});
+  } catch (err) {
+    console.error('[DueDilly] Scoring trail not saved:', err.message);
+  }
 
   db.addAlert(
     'Sentry',

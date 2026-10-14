@@ -1,0 +1,7 @@
+DueDilly Enterprise Compliance & Counterparty Risk Policy (v2026.1)
+Demo policy: written for the DueDilly demo. The company and its policy are fictional.
+
+Section: General Principles
+Clause 1.2 (Adverse media, demo clause)
+
+Adverse media from the last 24 months must be reviewed. Media alleging fraud, bribery or sanctions evasion is severe and must be investigated before approval. Other negative media must be recorded and considered.

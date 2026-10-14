@@ -20,19 +20,22 @@ test('Environment validation', () => {
   assert.match(v({ GEMINI_BACKEND: 'openai' })[0], /GEMINI_BACKEND must be "aistudio" or "vertex"/);
 
   // uat: own JWT secret, an explicit backend, and what that backend needs
-  const bare = v({ APP_ENV: 'uat' });
+  const bare = v({ APP_ENV: 'uat', DEMO_MODE: 'true' });
   assert.equal(bare.length, 2);
   assert.match(bare[0], /JWT_SECRET/);
   assert.match(bare[1], /GEMINI_BACKEND must be set in uat/);
-  assert.match(v({ APP_ENV: 'uat', JWT_SECRET: 'safeglobe-ddq-secure-hmac-key-2026', GEMINI_BACKEND: 'aistudio', GEMINI_API_KEY: KEY })[0], /JWT_SECRET/);
+  assert.match(v({ APP_ENV: 'uat', DEMO_MODE: 'true', JWT_SECRET: 'safeglobe-ddq-secure-hmac-key-2026', GEMINI_BACKEND: 'aistudio', GEMINI_API_KEY: KEY })[0], /JWT_SECRET/);
 
-  const vertex = v({ APP_ENV: 'uat', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'vertex' });
-  assert.deepEqual(vertex.map(p => p.split(' ')[0]), ['GOOGLE_CLOUD_PROJECT', 'GOOGLE_CLOUD_LOCATION']);
-  assert.deepEqual(v({ APP_ENV: 'uat', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'vertex', GOOGLE_CLOUD_PROJECT: 'p', GOOGLE_CLOUD_LOCATION: 'asia-southeast1' }), []);
+  const vertex = v({ APP_ENV: 'uat', DEMO_MODE: 'true', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'vertex' });
+  assert.deepEqual(vertex.map(p => p.split(' ')[0]), ['GOOGLE_CLOUD_PROJECT', 'GOOGLE_CLOUD_LOCATION', 'VERTEX_GEMINI_MODEL']);
+  assert.deepEqual(v({ APP_ENV: 'uat', DEMO_MODE: 'true', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'vertex', GOOGLE_CLOUD_PROJECT: 'p', GOOGLE_CLOUD_LOCATION: 'asia-southeast1', VERTEX_GEMINI_MODEL: 'a-model-the-project-has' }), []);
+  // Without demo mode the only way in is Google sign-in
+  assert.match(v({ APP_ENV: 'uat', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'aistudio', GEMINI_API_KEY: KEY })[0], /GOOGLE_CLIENT_ID is required in uat unless DEMO_MODE=true/);
+  assert.deepEqual(v({ APP_ENV: 'uat', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'aistudio', GEMINI_API_KEY: KEY, GOOGLE_CLIENT_ID: 'x.apps.googleusercontent.com' }), []);
 
-  assert.match(v({ APP_ENV: 'uat', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'aistudio' })[0], /GEMINI_API_KEY is required/);
-  assert.match(v({ APP_ENV: 'uat', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'aistudio', GEMINI_API_KEY: 'YOUR_GOOGLE_AI_STUDIO_API_KEY' })[0], /GEMINI_API_KEY is required/);
-  assert.deepEqual(v({ APP_ENV: 'uat', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'aistudio', GEMINI_API_KEY: KEY }), []);
+  assert.match(v({ APP_ENV: 'uat', DEMO_MODE: 'true', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'aistudio' })[0], /GEMINI_API_KEY is required/);
+  assert.match(v({ APP_ENV: 'uat', DEMO_MODE: 'true', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'aistudio', GEMINI_API_KEY: 'YOUR_GOOGLE_AI_STUDIO_API_KEY' })[0], /GEMINI_API_KEY is required/);
+  assert.deepEqual(v({ APP_ENV: 'uat', DEMO_MODE: 'true', JWT_SECRET: 'my-own-secret', GEMINI_BACKEND: 'aistudio', GEMINI_API_KEY: KEY }), []);
 });
 
 test('Health endpoints report the environment without secrets', async () => {

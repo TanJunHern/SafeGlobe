@@ -12,7 +12,12 @@ const config = require('../config');
 const MAX_BYTES = 7 * 1024 * 1024; // JSON body limit is 10 MB and base64 adds ~33%
 const ALLOWED_EXTENSIONS = ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.txt'];
 
-const localRoot = () => path.join(path.dirname(config.dbPath), 'uploads');
+// A created workspace keeps its documents in its own folder; the Demo workspace keeps the original one
+const localRoot = () => {
+  const { currentWorkspaceId, workspaceFolder } = require('../db');
+  const workspaceId = currentWorkspaceId();
+  return workspaceId ? path.join(workspaceFolder(workspaceId), 'uploads') : path.join(path.dirname(config.dbPath), 'uploads');
+};
 
 const localDriver = {
   name: 'local',

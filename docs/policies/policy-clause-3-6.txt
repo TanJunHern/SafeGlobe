@@ -1,0 +1,7 @@
+DueDilly Enterprise Compliance & Counterparty Risk Policy (v2026.1)
+Demo policy: written for the DueDilly demo. The company and its policy are fictional.
+
+Section: Politically Exposed Persons (PEP) & State Connections
+Clause 3.6
+
+Any counterparty where a director, senior executive, beneficial owner (>10%), or individual subject is declared as or matched to a Politically Exposed Person (PEP) requires immediate triggering of Enhanced Due Diligence (EDD) Questionnaire and source of funds declaration.

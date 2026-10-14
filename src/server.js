@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const config = require('./config');
 const { getDb } = require('./db');
 
@@ -22,9 +23,13 @@ const aiRouter = require('./routes/ai');
 const kycRouter = require('./routes/kyc');
 
 const app = express();
+// Cloud Run puts one proxy in front of the app; trusting it gives the rate limit the visitor's real address
+app.set('trust proxy', 1);
 
 // Initialize DB early
 getDb();
+// Events: every alert raises "alert-raised"; handlers for triage, changed sources and re-screens (src/events)
+require('./events/handlers').register();
 
 // Middlewares
 app.use(cors({ origin: config.corsOrigin }));
@@ -47,11 +52,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Who may call what (docs/agent/implementation_plan.md, Accounts phase). Every role is checked here on the server.
+// officerOnly: signed in and a compliance officer. authenticate: any signed-in account of the workspace.
+const { authenticate, officerOnly, optionalAuth, googleConfigured } = require('./middleware/auth');
+
 // Mount API routes
-app.use('/v1', v1Router);
-app.use('/api/entities', entitiesRouter);
-app.use('/api/claim', claimsRouter);
-app.use('/api/statements', statementsRouter);
+// /v1/screen stays open for the demo; a signed-in caller screens into their own workspace
+app.use('/v1', optionalAuth, v1Router);
+app.use('/api/entities', officerOnly, entitiesRouter);
+app.use('/api/claim', officerOnly, claimsRouter);
+app.use('/api/statements', officerOnly, statementsRouter);
+// The DDQ router guards itself: counterparty routes by their signed link, staff routes by role
 app.use('/api/ddq', ddqRouter);
 app.use('/api/ddq-templates', require('./routes/ddqTemplates'));
 
@@ -59,29 +70,46 @@ app.use('/api/ddq-templates', require('./routes/ddqTemplates'));
 app.get('/api/agent/compliance', (req, res) => {
   res.json(require('./agents/complianceAgent').describe());
 });
-app.use('/api/alerts', alertsRouter);
-app.use('/api/sources', sourcesRouter);
-app.use('/api/policies', policiesRouter);
-app.use('/api/cases', casesRouter);
-app.use('/api/ask', askRouter);
-app.use('/api/stats', statsRouter);
-app.use('/api/uploads', uploadsRouter);
+app.use('/api/alerts', officerOnly, alertsRouter);
+app.use('/api/sources', officerOnly, sourcesRouter);
+app.use('/api/policies', officerOnly, policiesRouter);
+app.use('/api/cases', officerOnly, casesRouter);
+app.use('/api/ask', authenticate, askRouter);
+app.use('/api/stats', officerOnly, statsRouter);
+app.use('/api/uploads', officerOnly, uploadsRouter);
+// Address lookup holds no workspace data and is also used by the counterparty DDQ page
 app.use('/api/places', placesRouter);
-app.use('/api/ai', aiRouter);
+app.use('/api/ai', officerOnly, aiRouter);
 app.use('/api/kyc', kycRouter);
 app.use('/api/monitoring', require('./routes/monitoring'));
+// Risk scoring: rules, recommended changes and the "Why <score>?" breakdown (src/risk)
+app.use('/api/risk', officerOnly, require('./routes/risk'));
+app.get('/risk/source', require('./routes/auth').pageSession, require('./routes/risk').sourcePage);
+// Pond-Guard screening and Ask Dilly through the ADK agents service, with the read-only tools that agent may call
+// Reviewer copilot: an AI draft of the case summary and decision reason; a person confirms or edits it
+app.use('/api/copilot', officerOnly, require('./routes/copilot'));
+// The review model: officers' red and green labels, training, predictions (src/learning)
+app.use('/api/learning', officerOnly, require('./routes/learning'));
+app.use('/api/pond-guard', require('./routes/pondGuard'));
+// Pub/Sub and Cloud Scheduler deliver events here. The route checks the caller's Google-signed token itself.
+app.use('/events', require('./routes/events'));
+// The fictional demo page a crawler agent reads, and the page the crawler's user agent points to
+app.get(require('./services/demoFixtures').PATH, (req, res) => res.type('html').send(require('./services/demoFixtures').render(getDb(), req.path)));
+app.get('/about-bot', (req, res) => res.type('text/plain').send(`DueDillyBot reads public web pages that a DueDilly user added as a compliance source.
+It obeys robots.txt (user agent token: DueDillyBot), never signs in, sends no cookies, and waits at least 5 seconds between requests to one site.
+To stop it reading your site, add to robots.txt:
 
+User-agent: DueDillyBot
+Disallow: /
+`));
+app.use('/internal/ask-tools', require('./routes/pondGuard').internalTools);
+// Country risk views on the Globe: any signed-in account reads them; the router checks the officer-only routes
+app.use('/api/country-risk', authenticate, require('./routes/countryRisk'));
+// Settings: the accounts of the workspace, the invitations and the account change log
+app.use('/api/settings', officerOnly, require('./routes/settings'));
 
-// Auth routes
-const { authenticate, getRoleForEmail } = require('./middleware/auth');
-
-app.get('/api/auth/session', authenticate, (req, res) => {
-  res.json({
-    authenticated: true,
-    user: req.user,
-    googleClientId: config.googleClientId
-  });
-});
+// Auth routes: demo accounts, Google sign-in, "Create an account", the current session
+app.use('/api/auth', require('./routes/auth'));
 
 // Public, non-secret client configuration (never includes the Gemini key)
 app.get('/api/config/public', (req, res) => {
@@ -91,28 +119,19 @@ app.get('/api/config/public', (req, res) => {
     googleClientId: config.googleClientId,
     googleMapsApiKey: mapsKey,
     mapsEnabled: Boolean(mapsKey),
+    // Demo mode shows the persona picker. dataResets: the database lives on the container's disk and is lost on restart.
+    demoMode: config.demoMode,
+    // The demo accounts a visitor may pick with one click, and whether Google sign-in is set up
+    demoAccounts: config.demoMode ? require('./accounts/accountsStore').DEMO_ACCOUNTS.map(a => ({ key: a.key, name: a.name, email: a.email, role: a.role, department: a.department })) : [],
+    googleSignIn: googleConfigured(),
+    dataResets: config.isCloudRun && config.dbType === 'sqlite',
     // Name of the company using DueDilly, shown in the top bar (WORKSPACE_NAME)
     workspaceName: config.workspaceName
   });
 });
 
-app.post('/api/auth/switch-persona', (req, res) => {
-  const { email, role, name, department } = req.body;
-  const targetEmail = (email || 'john.doe@duedilly.com').toLowerCase().trim();
-  const targetRole = role || getRoleForEmail(targetEmail);
-  res.json({
-    success: true,
-    user: {
-      email: targetEmail,
-      role: targetRole,
-      name: name || (targetRole === 'compliance_officer' ? 'Grace Teo' : 'John Doe'),
-      department: department || (targetRole === 'compliance_officer' ? 'Compliance & Risk Governance' : 'Procurement & Logistics')
-    }
-  });
-});
-
 // Forward /api/intake to entities router
-app.post('/api/intake', (req, res, next) => {
+app.post('/api/intake', officerOnly, (req, res, next) => {
   req.url = '/intake';
   entitiesRouter(req, res, next);
 });
@@ -120,9 +139,14 @@ app.post('/api/intake', (req, res, next) => {
 // Serve frontend: safe-globe.html and portal routes
 const htmlPath = path.join(config.staticDir, 'safe-globe.html');
 
-app.get(['/', '/portal/compliance', '/login'], (req, res) => {
-  res.sendFile(htmlPath);
-});
+// In a clean workspace (npm run demo:clean) the page is told to drop its built-in demo counterparties
+function sendApp(req, res) {
+  if (getDb().hasPlaceholderData()) return res.sendFile(htmlPath);
+  const html = '<script>window.DUEDILLY_NO_PLACEHOLDERS=true</script>\n' + fs.readFileSync(htmlPath, 'utf8');
+  res.type('html').send(html);
+}
+
+app.get(['/', '/portal/compliance', '/login'], sendApp);
 
 // Standalone DDQ pages: counterparty wizard, compliance template manager, printable copy
 const pageRoutes = {
@@ -140,18 +164,14 @@ app.get(['/portal/employee', '/employee-portal.html'], (req, res) => {
   res.sendFile(employeeHtmlPath);
 });
 
-app.get('/safe-globe.html', (req, res) => {
-  res.sendFile(htmlPath);
-});
+app.get('/safe-globe.html', sendApp);
 
-app.get('/saf-globe.html', (req, res) => {
-  res.sendFile(htmlPath);
-});
+app.get('/saf-globe.html', sendApp);
 
 // Serve static directory for any static assets (PDFs, images, etc.)
 // Only these files are public. The repo root is NOT served: it holds the database, uploaded
 // counterparty documents, source code and config, none of which may be downloadable.
-const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js', 'ddq-section-status.js', 'duck-tour.js', 'dilly-loader.js', 'monitoring-ui.js'];
+const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js', 'ddq-section-status.js', 'duck-tour.js', 'dilly-loader.js', 'monitoring-ui.js', 'country-risk-views.js'];
 for (const file of PUBLIC_ASSETS) {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(config.staticDir, file)));
 }
@@ -179,6 +199,8 @@ function startServer(port = config.port) {
   try {
     require('./services/ddqTemplateService').ensureDefaultTemplate();
     require('./services/kycService').ensurePersonaSeed();
+    require('./services/vesselFinderService').ensureSource(getDb());
+    require('./services/kycService').syncAllMonitoredEntities();
   } catch (err) {
     console.error('[DueDilly] Persona seed skipped:', err.message);
   }
@@ -188,6 +210,8 @@ function startServer(port = config.port) {
       console.log(`[DueDilly] Serving UI: http://localhost:${port}/safe-globe.html`);
       console.log(`[DueDilly] Ready for local testing and Google Cloud Run deployment.`);
       resolve(server);
+      // Monitored vessels that were never checked get their position and destination from VesselFinder
+      require('./services/kycService').refreshUncheckedVessels().catch(err => console.error('[DueDilly] Vessel lookup skipped:', err.message));
     });
 
     server.on('error', (err) => {
@@ -204,8 +228,7 @@ function stopServer() {
   return new Promise((resolve) => {
     if (server) {
       server.close(() => {
-        const db = getDb();
-        if (db && typeof db.close === 'function') db.close();
+        require('./db').closeAll();
         resolve();
       });
     } else {

@@ -40,13 +40,36 @@ router.post('/compile', (req, res) => {
 
   db.addPolicy(compiledRule);
 
+  // A new policy may state a threshold or clause the scoring rules do not match: recommend the change, never apply it
+  let recommended = [];
+  try {
+    const ruleText = (Array.isArray(rules) ? rules : []).map(r => (typeof r === 'string' ? r : (r && (r.t || r.text)) || '')).join('. ');
+    recommended = require('../risk/suggestions').raiseFor(db, { type: 'policy', name: filename || title, text: [ruleText, content || req.body.file_data || ''].filter(Boolean).join('\n') });
+  } catch (err) {
+    console.error('[DueDilly] Scoring recommendations skipped:', err.message);
+  }
+
   res.json({
     status: 'compiled',
     rule: compiledRule,
+    scoringSuggestions: recommended.map(s => ({ id: s.id, title: s.title })),
     gap: 'No rule covers minority stakes below 50% held by state-owned companies.',
     conflict: 'CPI high-risk threshold (40) vs Appendix B standard risk classification for Turkey (31).',
     uploadedFile: savedFile ? { id: savedFile.id, filename: savedFile.filename, storage_path: savedFile.storage_path } : null
   });
+});
+
+// GET /api/policies/clauses   every policy clause with its text and where it was found (Agent Search or the offline fallback)
+router.get('/clauses', async (req, res) => {
+  const policySearch = require('../services/policySearch');
+  res.json({ status: policySearch.status(), clauses: await policySearch.allClauses(getDb()) });
+});
+
+// GET /api/policies/search?q=...   policy search (feature 12)
+router.get('/search', require('../middleware/rateLimit').aiRateLimit, async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (!q) return res.status(400).json({ error: 'Type a question or a few words to search the policies' });
+  res.json(Object.assign({ query: q.slice(0, 300) }, await require('../services/policySearch').search(getDb(), q)));
 });
 
 module.exports = router;

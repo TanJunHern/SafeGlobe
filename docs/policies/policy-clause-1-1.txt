@@ -1,0 +1,7 @@
+DueDilly Enterprise Compliance & Counterparty Risk Policy (v2026.1)
+Demo policy: written for the DueDilly demo. The company and its policy are fictional.
+
+Section: General Principles
+Clause 1.1 (Sanctions screening, demo clause)
+
+Every counterparty, its directors, shareholders and beneficial owners, and every vessel by IMO number, must be screened against the sanctions lists before onboarding and at each re-screen. A name-only match with strong similarity is a possible match and must be investigated. A match confirmed by a second identifier (date of birth, registration number or IMO number) must be escalated, and the relationship must not proceed.

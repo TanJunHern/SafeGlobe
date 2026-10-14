@@ -4,6 +4,7 @@ const { getDb } = require('../db');
 const kycService = require('../services/kycService');
 const { authenticate, requireRole } = require('../middleware/auth');
 const complianceAgent = require('../agents/complianceAgent');
+const vesselFinder = require('../services/vesselFinderService');
 
 // Mount auth middleware across KYC routes
 router.use(authenticate);
@@ -144,7 +145,7 @@ router.get('/export', (req, res) => {
  * POST /api/kyc/extract-document
  * Multimodal file extraction via Gemini 2.5 Flash
  */
-router.post('/extract-document', async (req, res) => {
+router.post('/extract-document', require('../middleware/rateLimit').aiRateLimit, async (req, res) => {
   try {
     const { filename, fileContent, mimeType, base64Data } = req.body;
     const result = await kycService.extractDocumentData({
@@ -268,7 +269,22 @@ const submitKycHandler = async (req, res) => {
       clientTimestamp: req.headers['x-client-timestamp'] || new Date().toISOString()
     };
 
-    let created = kycService.createKycRequest(req.body, userContext);
+    // Vessels: the IMO number must exist on VesselFinder before the request is accepted
+    const checks = {};
+    if (req.body.entity_type === 'Vessel') {
+      let attrs = req.body.attributes || {};
+      if (typeof attrs === 'string') { try { attrs = JSON.parse(attrs); } catch (e) { attrs = {}; } }
+      const imo = req.body.imo_number || attrs.imo;
+      if (!String(imo || '').trim()) {
+        return res.status(400).json({ error: 'IMO check failed', message: 'An IMO number is required to screen a vessel' });
+      }
+      checks.vessel = await vesselFinder.lookup(imo);
+      if (checks.vessel.status === 'invalid' || checks.vessel.status === 'not_found') {
+        return res.status(400).json({ error: 'IMO check failed', message: checks.vessel.message, imo_check: checks.vessel.status, source: checks.vessel.source_url });
+      }
+    }
+
+    let created = kycService.createKycRequest(req.body, userContext, checks);
     // Ongoing monitoring: keep the schedule (frequency, dates, sources) chosen on the intake form
     if (created.ongoing_monitoring && req.body.monitoring && typeof req.body.monitoring === 'object') {
       const monitoring = require('../services/monitoringService');
@@ -280,7 +296,10 @@ const submitKycHandler = async (req, res) => {
       console.error('Compliance Agent intake failed:', err.message);
       return null;
     });
-    const newRequest = Object.assign({}, created, { agent });
+    // Pond-Guard at the first instance: the agents screen the request in the background; this never waits for them
+    let pond_guard = null;
+    try { pond_guard = kycService.requestScreening(getDb(), created); } catch (err) { console.error('Pond-Guard not started:', err.message); }
+    const newRequest = Object.assign({}, created, { agent, pond_guard });
     res.status(201).json({
       success: true,
       message: 'KYC Request registered successfully',
@@ -347,6 +366,9 @@ router.post('/:id/triage', requireRole('compliance_officer'), (req, res) => {
       }
     }
 
+    // Kept next to what Dilly had suggested, so the two can be compared (Reviews > Dilly learns)
+    try { require('../learning/agreement').recordDecision(db, existing, status, reviewer); } catch (err) { console.error('Decision not recorded for the agreement measure:', err.message); }
+
     const updated = db.updateKycDecision(req.params.id, {
       status,
       notes,
@@ -364,6 +386,49 @@ router.post('/:id/triage', requireRole('compliance_officer'), (req, res) => {
   } catch (err) {
     console.error('Error triaging KYC request:', err);
     res.status(500).json({ error: 'Failed to triage KYC request', message: err.message });
+  }
+});
+
+/**
+ * GET /api/kyc/:id/pond-guard
+ * Where the Pond-Guard screening of this request stands, and what Dilly suggested. Officers also see the runs left today.
+ */
+function pondGuardView(req, request) {
+  const db = getDb();
+  const pondGuard = require('../services/pondGuardService');
+  const out = { state: request.pond_guard || null, suggestion: pondGuard.latestSuggestion(db, `kyc-${String(request.id).toLowerCase()}`) };
+  if (req.user.role === 'compliance_officer') { const s = pondGuard.status(db); out.runs = { left: s.left, dailyCap: s.dailyCap }; }
+  return out;
+}
+const ownRequest = (req, request) => !(isScopedEmployee(req) && (request.created_by_email || '').toLowerCase() !== req.user.email);
+
+router.get('/:id/pond-guard', (req, res) => {
+  const request = getDb().getKycRequestById(req.params.id);
+  if (!request) return res.status(404).json({ error: 'KYC request not found' });
+  if (!ownRequest(req, request)) return res.status(403).json({ error: 'Access denied', message: 'Employees can only view their own KYC requests' });
+  res.json(Object.assign({ success: true, request: withDucks(request) }, pondGuardView(req, request)));
+});
+
+/**
+ * POST /api/kyc/:id/screen-now   { force?: true }
+ * Runs the Pond-Guard screening of this request inside this call and answers when it is done.
+ * A request still marked "screening" is run here if the background run did not start (on Cloud Run the CPU is
+ * only there during a request). force: a compliance officer asks for a fresh run; nothing is reused.
+ */
+router.post('/:id/screen-now', require('../middleware/rateLimit').aiRateLimit, async (req, res) => {
+  try {
+    const db = getDb();
+    const request = db.getKycRequestById(req.params.id);
+    if (!request) return res.status(404).json({ error: 'KYC request not found' });
+    if (!ownRequest(req, request)) return res.status(403).json({ error: 'Access denied', message: 'Employees can only view their own KYC requests' });
+    const force = Boolean(req.body && req.body.force) && req.user.role === 'compliance_officer';
+    const pending = request.pond_guard && request.pond_guard.status === 'screening';
+    if (force || pending) await kycService.screenRequest(db, request.id, { force });
+    const after = db.getKycRequestById(request.id);
+    res.json(Object.assign({ success: true, ran: Boolean(force || pending), request: withDucks(after) }, pondGuardView(req, after)));
+  } catch (err) {
+    console.error('Pond-Guard screen-now failed:', err);
+    res.status(err.status || 500).json({ error: 'Screening could not finish', message: 'The first result stays. Please try again.' });
   }
 });
 

@@ -7,13 +7,46 @@ const config = require('../config');
 
 /**
  * Which backend answers Gemini calls right now: 'aistudio', 'vertex' or 'disabled'.
- * GEMINI_BACKEND=vertex is accepted but the Vertex client is Phase 4 of docs/CLOUD_PLAN.md, so until
- * then it reports 'disabled' rather than quietly using the AI Studio key in an environment meant for Vertex.
+ * GEMINI_BACKEND=vertex needs a project, a location and a model chosen from the models the project can use
+ * (VERTEX_GEMINI_MODEL). Without them it reports 'disabled' rather than quietly using the AI Studio key in an
+ * environment meant for Vertex AI.
  */
 function backend() {
-  if (config.geminiBackend === 'vertex') return 'disabled';
+  if (config.geminiBackend === 'vertex') {
+    return config.googleCloudProject && config.googleCloudLocation && config.vertexModel ? 'vertex' : 'disabled';
+  }
   const key = config.geminiApiKey || '';
   return key.length > 20 && !/^YOUR_/i.test(key) ? 'aistudio' : 'disabled';
+}
+
+// Vertex AI signs requests with Application Default Credentials: your gcloud sign-in locally, the service account on Cloud Run
+let vertexAuth = null;
+async function vertexHeaders() {
+  if (!vertexAuth) {
+    const { GoogleAuth } = require('google-auth-library');
+    vertexAuth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
+  }
+  const headers = await vertexAuth.getRequestHeaders();
+  const out = { 'Content-Type': 'application/json' };
+  headers.forEach((value, key) => { out[key] = value; });
+  return out;
+}
+
+/** Where a generateContent call goes, for the backend in use. Exported for tests. */
+function endpointFor(model, which = backend()) {
+  if (which === 'vertex') {
+    const loc = config.googleCloudLocation;
+    const host = loc === 'global' ? 'aiplatform.googleapis.com' : `${loc}-aiplatform.googleapis.com`;
+    return `https://${host}/v1/projects/${config.googleCloudProject}/locations/${loc}/publishers/google/models/${model}:generateContent`;
+  }
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.geminiApiKey}`;
+}
+
+/** The request body both backends accept. responseSchema makes the model return JSON in that shape. Exported for tests. */
+function buildBody(parts, { json = false, temperature = 0.2, systemInstruction = '', responseSchema = null } = {}) {
+  const generationConfig = Object.assign({ temperature }, json || responseSchema ? { responseMimeType: 'application/json' } : {}, responseSchema ? { responseSchema } : {});
+  return Object.assign({ contents: [{ role: 'user', parts }], generationConfig },
+    systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {});
 }
 
 function isConfigured() {
@@ -22,7 +55,9 @@ function isConfigured() {
 
 // Model names are retired and quotas differ per model, so a rejected model falls through to the next
 function modelChain() {
-  const chain = [config.geminiModel, ...(config.geminiFallbackModels || [])].filter(Boolean);
+  const chain = backend() === 'vertex'
+    ? [config.vertexModel, ...(config.vertexFallbackModels || [])].filter(Boolean)
+    : [config.geminiModel, ...(config.geminiFallbackModels || [])].filter(Boolean);
   return [...new Set(chain)];
 }
 
@@ -33,8 +68,9 @@ function coolDown(model, reason) {
   cooldownUntil.set(model, Date.now() + (COOLDOWN_MS[reason] || 60 * 1000));
 }
 
-async function generate(parts, { json = false, temperature = 0.2, timeoutMs = 20000, systemInstruction = '', withModel = false } = {}) {
+async function generate(parts, { json = false, temperature = 0.2, timeoutMs = 20000, systemInstruction = '', withModel = false, responseSchema = null } = {}) {
   if (!isConfigured()) return null;
+  const which = backend();
   // Each model gets one retry on 503 (overloaded) before moving on
   const chain = modelChain();
   const healthy = chain.filter(m => (cooldownUntil.get(m) || 0) < Date.now());
@@ -44,18 +80,15 @@ async function generate(parts, { json = false, temperature = 0.2, timeoutMs = 20
   for (let i = 0; i < attempts.length; i++) {
     const model = attempts[i];
     if (model === skip) continue;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.geminiApiKey}`;
+    const url = endpointFor(model, which);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const resp = await fetch(url, {
         method: 'POST',
         signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(Object.assign({
-          contents: [{ parts }],
-          generationConfig: Object.assign({ temperature }, json ? { responseMimeType: 'application/json' } : {})
-        }, systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}))
+        headers: which === 'vertex' ? await vertexHeaders() : { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildBody(parts, { json, temperature, systemInstruction, responseSchema }))
       });
       if (!resp.ok) {
         console.error(`[Feather-Weight] ${model}: ${resp.status} ${resp.statusText}`);
@@ -108,4 +141,4 @@ async function generateJsonDetailed(parts, opts = {}) {
   }
 }
 
-module.exports = { isConfigured, backend, generateText, generateJson, generateJsonDetailed, modelChain };
+module.exports = { isConfigured, backend, generateText, generateJson, generateJsonDetailed, modelChain, endpointFor, buildBody };

@@ -67,6 +67,7 @@ body{padding-bottom:96px}
 .review-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
 .review-row:first-of-type{border-top:0}
 .review-row .grow{flex:1}
+.ai-note.unsure{border:1px solid var(--mid,#c98a1b);border-radius:8px;padding:6px 8px}.unsure-tag{font-size:11.5px;font-weight:600;color:var(--mid-ink,#8a5a00);margin:0 6px}
 .prefill{display:flex;gap:14px;align-items:center;padding:16px;border-radius:12px;border:1px dashed var(--accent);background:var(--accent-soft);margin-top:20px;flex-wrap:wrap}
 .prefill .grow{flex:1;min-width:220px}
 .prefill b{display:block;font-size:13.5px}
@@ -439,7 +440,7 @@ function questionHtml(q) {
     body = `<textarea class="textarea" rows="2" data-field="value" placeholder="${esc(t('answerPlaceholder'))}" ${dis()}>${esc(a.value || '')}</textarea>`;
   }
   const ai = needsConfirm(q.id)
-    ? `<div class="ai-note">${icon('spark', 'sm')}<b>${esc(t('aiSuggested'))}</b>${a.source ? `<span class="src">“${esc(a.source)}”</span>` : ''}<button class="btn sm" type="button" data-confirm>${icon('check', 'sm')}${esc(t('confirm'))}</button></div>`
+    ? `<div class="ai-note${a.needs_confirmation ? ' unsure' : ''}">${icon('spark', 'sm')}<b>${esc(t('aiSuggested'))}</b>${a.needs_confirmation ? `<span class="unsure-tag" title="Dilly was not sure it read or matched this answer correctly. Please check it against your document.">Not sure (${Math.round((a.confidence || 0) * 100)}%). Please check</span>` : ''}${a.source ? `<span class="src">“${esc(a.source)}”</span>` : ''}<button class="btn sm" type="button" data-confirm>${icon('check', 'sm')}${esc(t('confirm'))}</button></div>`
     : '';
   const missing = showMissing && q.required !== false && !isAnswered(q);
   const flag = FLAGS[q.id] ? `<div class="flag-note">${icon('alert', 'sm')}<span><b>${esc(t('complianceAsked'))}</b> ${esc(FLAGS[q.id])}</span></div>` : '';

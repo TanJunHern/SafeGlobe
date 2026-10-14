@@ -53,13 +53,14 @@
   // Staff session shared with safe-globe.html / employee-portal.html
   const SESSION_KEY = 'safeglobe.session';
   function loadSession() {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; }
+    // A session saved before accounts existed has no token: it is dropped, and the person signs in again
+    try { const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); return s && (s.token || s.idToken) ? s : null; } catch (e) { return null; }
   }
   function apiFetch(url, opts = {}) {
     const session = loadSession();
     const headers = Object.assign({}, opts.headers || {});
     if (session) {
-      if (session.idToken) headers['Authorization'] = `Bearer ${session.idToken}`;
+      if (session.token || session.idToken) headers['Authorization'] = `Bearer ${session.token || session.idToken}`;
       else {
         headers['x-user-email'] = session.email;
         headers['x-user-name'] = session.name;

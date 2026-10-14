@@ -3,6 +3,13 @@ const assert = require('node:assert/strict');
 const { startServer, stopServer } = require('../src/server');
 const monitoring = require('../src/services/monitoringService');
 
+// Routes that used to be open now need a signed-in compliance officer (Accounts phase).
+// A call that names no persona acts as the demo compliance officer, except on routes that already checked the caller.
+const OFFICER_DEFAULT = { 'x-user-email': 'compliance@duedilly.com' };
+const fetch = (url, opts = {}) => globalThis.fetch(url, Object.assign({}, opts, {
+  headers: Object.assign(/\/api\/(kyc|monitoring|ddq-templates|config|health|auth)|\/v1\/|\/internal\//.test(url) ? {} : OFFICER_DEFAULT, opts.headers || {})
+}));
+
 const TEST_PORT = 8096;
 const BASE_URL = `http://localhost:${TEST_PORT}`;
 const EMPLOYEE = { 'x-user-email': 'john.doe@duedilly.com', 'x-user-role': 'employee' };

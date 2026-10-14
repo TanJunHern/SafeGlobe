@@ -105,7 +105,46 @@ const tools = {
  * @param {string} [params.jurisdiction] - Country code (e.g. 'SGP', 'RUS', 'ARE')
  * @returns {Promise<Object>} Full KYCP JSON Report
  */
-async function runKycpCheck({ query, type = 'organisation', jurisdiction = '' }) {
+/**
+ * The AI (or the offline engine) describes the counterparty; the number does not come from it.
+ * Whatever risk figure the report carries is replaced by the scorer's: the stored breakdown when the
+ * counterparty is already a case, otherwise the offline screening of the name (GEMINI.md section 4.1).
+ */
+function applyScorer(report, { query, entityKind, jurisdiction }) {
+  try {
+    const db = getDb();
+    const match = tools.searchEntities(query)[0];
+    let breakdown = match ? require('../risk/riskService').assessEntity(db, match.id) : null;
+    if (!breakdown) {
+      breakdown = require('./screening').screenCounterparty({
+        name: query, entity: entityKind === 'all' ? 'organisation' : entityKind, jurisdiction: jurisdiction || report.jurisdiction || 'SGP'
+      }).breakdown;
+    }
+    report.overallRisk = Object.assign({}, report.overallRisk, {
+      score: breakdown.risk,
+      level: breakdown.level.label,
+      confidence: breakdown.confidence,
+      quadrant: breakdown.route,
+      routeLabel: breakdown.routeLabel,
+      scoredBy: 'DueDilly points table (rules), not the AI'
+    });
+    report.scoring = {
+      lines: breakdown.lines.map(l => ({ finding: l.short, points: l.points, policy: l.policy, source: l.sourceName, sourceUrl: l.sourceUrl })),
+      routeReason: breakdown.routeReason,
+      confidenceExplanation: breakdown.confidenceExplanation
+    };
+  } catch (err) {
+    console.error('[Pond-Guard · AI KYCP] Scoring skipped:', err.message);
+  }
+  return report;
+}
+
+async function runKycpCheck(args) {
+  const report = await buildKycpReport(args);
+  return applyScorer(report, { query: String(args.query).trim(), entityKind: inferEntityKind(args.type || 'organisation', String(args.query)), jurisdiction: args.jurisdiction });
+}
+
+async function buildKycpReport({ query, type = 'organisation', jurisdiction = '' }) {
   if (!query || typeof query !== 'string') {
     throw new Error('Query string is required');
   }
