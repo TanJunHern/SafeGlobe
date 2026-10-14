@@ -59,8 +59,25 @@ details.panel[open] summary .chev{transform:rotate(90deg)}
 .modal[hidden]{display:none}
 .sheet{width:min(680px,100%);padding:20px;display:flex;flex-direction:column;gap:12px;max-height:80vh}
 .banner-note{padding:10px 12px;border-radius:10px;border:1px solid var(--mid);background:var(--mid-soft);font-size:12.5px}
-.sheet h3{margin:0;font-family:var(--f-display);font-weight:600;font-size:22px}
+/* Embedded mode inside SafeGlobe stage view */
+body.is-embedded .topbar{display:none}
+body.is-embedded .page-head{padding:16px 20px 0}
+body.is-embedded .side{top:16px}
 </style>
+<script>
+  try {
+    if (window.self !== window.top || location.search.includes('embed=1')) {
+      document.documentElement.classList.add('is-embedded');
+      document.addEventListener('DOMContentLoaded', () => document.body.classList.add('is-embedded'));
+      if (window.parent && window.parent.document && window.parent.document.documentElement) {
+        const pt = window.parent.document.documentElement.getAttribute('data-theme');
+        if (pt) document.documentElement.setAttribute('data-theme', pt);
+      }
+    } else if (!new URLSearchParams(location.search).has('standalone')) {
+      location.replace('/#ddq-manager');
+    }
+  } catch (e) {}
+</script>
 </head>
 <body>
 <header class="topbar">
@@ -72,8 +89,13 @@ details.panel[open] summary .chev{transform:rotate(90deg)}
 </header>
 
 <div class="page-head">
-  <div class="eyebrow">Compliance Officer · Questionnaire templates</div>
-  <h1>DDQ Manager</h1>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <div>
+      <div class="eyebrow">Compliance Officer · Questionnaire templates</div>
+      <h1>DDQ Manager</h1>
+    </div>
+    <span class="pill warn" id="dirty-head" hidden>Unsaved changes</span>
+  </div>
   <p>Import a questionnaire, then edit each slide and question the counterparty will see. The active template is sent with every new DDQ; questionnaires already issued keep the version they were sent with.</p>
 </div>
 
@@ -126,7 +148,12 @@ async function api(url, opts) {
   if (!res.ok) throw new Error(data.message || data.error || `Request failed (${res.status})`);
   return data;
 }
-function setDirty(v) { dirty = v; $('#dirty').hidden = !v; }
+function setDirty(v) {
+  dirty = v;
+  if ($('#dirty')) $('#dirty').hidden = !v;
+  if ($('#dirty-head')) $('#dirty-head').hidden = !v;
+}
+window.loadList = loadList;
 const lines = v => String(v || '').split('\n').map(s => s.trim()).filter(Boolean);
 
 /* ===================== template list ===================== */

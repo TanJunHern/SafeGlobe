@@ -40,18 +40,21 @@ test('Environment validation', () => {
 
 test('Health endpoints report the environment without secrets', async () => {
   await startServer(TEST_PORT);
-  // The test command blanks the Gemini keys, so the shared client is in "Gemini disabled" mode
-  assert.equal(gemini.backend(), 'disabled');
-  assert.equal(gemini.isConfigured(), false);
+  try {
+    // The test command blanks the Gemini keys, so the shared client is in "Gemini disabled" mode
+    assert.equal(gemini.backend(), 'disabled');
+    assert.equal(gemini.isConfigured(), false);
 
-  const res = await fetch(`http://localhost:${TEST_PORT}/healthz`);
-  assert.equal(res.status, 200);
-  assert.deepEqual(await res.json(), { env: 'local', version: config.version, gemini: 'disabled' });
+    const res = await fetch(`http://localhost:${TEST_PORT}/healthz`);
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { env: 'local', version: config.version, gemini: 'disabled' });
 
-  const health = await (await fetch(`http://localhost:${TEST_PORT}/api/health`)).json();
-  assert.equal(health.status, 'healthy');
-  assert.equal(health.env, 'local');
-  assert.equal(health.gemini, 'disabled');
-  assert.equal(health.service, 'DueDilly Compliance Platform');
-  await stopServer();
+    const health = await (await fetch(`http://localhost:${TEST_PORT}/api/health`)).json();
+    assert.equal(health.status, 'healthy');
+    assert.equal(health.env, 'local');
+    assert.equal(health.gemini, 'disabled');
+    assert.equal(health.service, 'DueDilly Compliance Platform');
+  } finally {
+    await stopServer();
+  }
 });
