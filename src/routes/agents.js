@@ -53,4 +53,47 @@ router.post('/orchestrator/analyze', async (req, res) => {
   }
 });
 
+// POST /api/agent/orchestrator/screen-kyc - Screen KYC form against Orchestrator PDF sanctions
+router.post('/orchestrator/screen-kyc', async (req, res) => {
+  try {
+    const { kycForm, entityId, pdfPath, useModel } = req.body || {};
+    const db = require('../db').getDb();
+    let finalKycForm = kycForm;
+    if (!finalKycForm && entityId) {
+      const allKyc = db.getAllKycRequests ? db.getAllKycRequests() : [];
+      finalKycForm = allKyc.find(k => k.id.toLowerCase() === entityId.toLowerCase() || (entityId.startsWith('kyc-') && k.id.toLowerCase() === entityId.replace('kyc-', '').toLowerCase()));
+      if (!finalKycForm) {
+        finalKycForm = allKyc.find(k => k.counterparty_name && k.counterparty_name.toLowerCase().trim() === entityId.toLowerCase().trim());
+      }
+      if (!finalKycForm) {
+        const ent = db.getEntityById(entityId);
+        if (ent) {
+          finalKycForm = {
+            id: `KYC-${ent.id.toUpperCase()}`,
+            counterparty_name: ent.name,
+            entity_type: ent.kind === 'vessel' ? 'Vessel' : ent.kind === 'person' ? 'Person' : 'Organisation',
+            country: ent.a3 || ent.flag || 'SGP',
+            relationship_type: ent.role || 'Vendor/Supplier',
+            contract_value: (ent.request && ent.request.contract_value) || 250000,
+            attributes: {
+              reg_no: ent.reg || '',
+              imo: ent.imo || '',
+              directors_ubo: (ent.factors && ent.factors.map(f => f[1]).join('; ')) || ent.controllers || '',
+              vessel_flag: ent.flag || '',
+              vessel_type: ent.type || ''
+            },
+            location: { address: `${ent.city || ''}, ${ent.a3 || ''}` },
+            remarks: ent.summary || ''
+          };
+        }
+      }
+    }
+    const result = await orchestrator.screenKycAgainstSanctions(finalKycForm || {}, { pdfPath, useModel: useModel !== false });
+    res.json(result);
+  } catch (err) {
+    console.error('[Orchestrator] screen-kyc error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
