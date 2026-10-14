@@ -99,7 +99,7 @@ test('Gemini on Vertex AI: backend, endpoint, model chain and request body', asy
 test('Pond-Guard: each agent gets its own evidence, and only evidence the app holds', () => {
   const db = getDb();
   const ev = pondGuard.gatherEvidence(db, db.getEntityById('aurora'), getRules(db));
-  assert.deepEqual(ev.kinds, ['sanctions', 'pep', 'adverse_media', 'ownership', 'vessel_behaviour']);
+  assert.deepEqual(ev.kinds, ['sanctions', 'pep', 'adverse_media', 'ownership', 'country_contract', 'vessel_behaviour']); // five for everyone, a sixth for a vessel
   assert.deepEqual(ev.briefs.vessel_behaviour.categories.map(c => c.id), ['vessel_ais_dark', 'vessel_sts_transfer', 'vessel_flag_changes']);
   assert.ok(ev.briefs.vessel_behaviour.evidence.some(e => /AIS dark for 31 h/.test(e.text)));
   assert.ok(ev.briefs.ownership.evidence.some(e => /nominee/.test(e.text)));
@@ -178,7 +178,7 @@ test('Pond-Guard offline: without the agents service the stored findings are sho
     await pondGuard.screenEntity(db, 'aurora', e => events.push(e));
     assert.equal(events[0].type, 'started');
     assert.equal(events[0].mode, 'offline');
-    assert.equal(events.filter(e => e.type === 'agent_done').length, 5);
+    assert.equal(events.filter(e => e.type === 'agent_done').length, 6);
     const scored = events.at(-1);
     assert.equal(scored.type, 'scored');
     assert.equal(scored.offline, true);

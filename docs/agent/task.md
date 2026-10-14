@@ -113,3 +113,28 @@
 - [ ] Not built: Basel, TRACE, FSI, CTHI (user: not used); following links one level deep; PDF statements; upload block in the Sources tab (it is in the Layers panel)
 - [ ] "How Dilly works" line: served by the API and shown in the Layers panel; the page itself (feature 15) is not built
 - [ ] Deployed to UAT by the user, with `COUNTRY_RISK_FETCH=live`
+
+## HUD, Firestore and BigQuery AI (requested and withdrawn on 14 Oct 2026)
+- [x] Phase A discovery written (`implementation_plan.hud-firestore-bigquery.md`)
+- [x] Withdrawn by the user before any answer. Nothing built
+
+## Strengthen Pond-Guard: Dilly the orchestrator (requested 14 Oct 2026)
+- [x] What is built today read and compared with the user's picture; plan written
+- [x] Questions 1 to 6 answered; A to E approved in that order; answers in `decisions.md`
+- [x] Cloud Run CPU check done (docs read); choice written into the plan
+- [x] Three demo clauses drafted with numbers (1.1, 1.2, 1.3) and shown to the user
+- [ ] User's OK on the updated plan and on the clause texts
+- [ ] A1: `screening-requested` on KYC submit; entity for a new request; result written back; status on the request
+- [ ] A2: reuse within 24 hours; cap message and runs left; "Offline" label
+- [ ] A3: `POST /api/kyc/:id/screen-now` for inline events on Cloud Run; subscription check in the script
+- [ ] B1: three clauses saved; policy files and PDF rebuilt; policy column of the points rows
+- [ ] B2: policy text in each brief; `policy_clause`, `policy_quote`, `suggested_action`; checks in code
+- [ ] B3: Country and contract agent; number checks; riskiest country once
+- [ ] C: `dilly` agent; next steps, "Dilly's note", "AI suggestion" labels; copilot starts from the summary
+- [ ] D: "Dilly suggests" wording; suggestion stored per run
+- [ ] E1: outcomes stored; Agreed / stricter / more lenient / Waiting; SQLite logic; Reviews panel and list
+- [ ] E2: BigQuery table and view script; app inserts and reads; section 9.1 before the first insert
+- [ ] E3 (first to cut): "How likely an officer marks this red" column; suggestion added to the feature list
+- [ ] Tests offline (Node and Python)
+- [ ] Section 9.1: ask, then live run on Vertex AI (Aurora Venture and one new request)
+- [ ] `DEPLOY_GUIDE.md` steps 6, 7, 8; README; `walkthrough.md` with demo scores before and after

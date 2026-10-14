@@ -24,11 +24,21 @@ class Category(BaseModel):
   label: str
 
 
+class PolicyClause(BaseModel):
+  """One clause of the company's policy, as text. An agent may only cite a clause it was given."""
+
+  id: str
+  title: str = ""
+  text: str
+
+
 class AgentBrief(BaseModel):
   """What one sub-agent may look at and which rows of the points table it may report."""
 
   evidence: list[EvidenceItem] = Field(default_factory=list)
   categories: list[Category] = Field(default_factory=list)
+  # The policy clauses this agent maps its findings against. Empty when the policy has none for its subject.
+  policy: list["PolicyClause"] = Field(default_factory=list)
 
 
 class Subject(BaseModel):
@@ -41,7 +51,7 @@ class Subject(BaseModel):
 
 class ScreenRequest(BaseModel):
   subject: Subject
-  # Keyed by agent: sanctions, pep, ownership, vessel_behaviour, adverse_media
+  # Keyed by agent: sanctions, pep, ownership, country_contract, vessel_behaviour, adverse_media
   briefs: dict[str, AgentBrief]
 
 
@@ -54,11 +64,68 @@ class AgentFinding(BaseModel):
   evidence_quote: str = Field(description="Exact words copied from the cited evidence, at most 300 characters.")
   evidence_ref: str = Field(description="The ref of the evidence item, or the page URL for adverse media.")
   match_basis: MatchBasis = Field(description="How the subject was matched: second_identifier, strong_name, weak_name, or not_name when it is not a name match.")
+  policy_clause: str = Field(default="", description="The id of the policy clause this fact falls under (for example §5.4), from the clauses given. Empty when none fits.")
+  policy_quote: str = Field(default="", description="Exact words copied from that clause, at most 300 characters. Empty when policy_clause is empty.")
+  suggested_action: str = Field(default="", description="One plain sentence: what a compliance reviewer should do next about this fact. Never a score, a risk level or a route.")
 
 
 class AgentOutput(BaseModel):
   findings: list[AgentFinding] = Field(default_factory=list)
   note: str = Field(default="", description="One sentence on what was checked, for the reviewer.")
+
+
+class DillyFinding(BaseModel):
+  """A finding that passed the app's checks, with the points the user's table gave it."""
+
+  id: str
+  agent: str
+  rule: str
+  summary: str
+  points: int = 0
+  policy_clause: str = ""
+  suggested_action: str = ""
+
+
+class DillyCheck(BaseModel):
+  agent: str
+  ran: bool
+  note: str = ""
+
+
+class DillyRequest(BaseModel):
+  """What Dilly, the Pond-Guard orchestrator, is given: the checked findings and the result computed by the app."""
+
+  subject: Subject
+  findings: list[DillyFinding] = Field(default_factory=list)
+  not_counted: int = 0
+  checks: list[DillyCheck] = Field(default_factory=list)
+  clauses: list[PolicyClause] = Field(default_factory=list)
+  # Computed by the app from the user's points table. Given to Dilly to explain, never to change.
+  risk: int
+  risk_cap: int = 100
+  level: str
+  confidence: int
+  route: str
+
+
+class DillyStep(BaseModel):
+  action: str = Field(description="One plain sentence: a next step for the compliance reviewer.")
+  finding_ids: list[str] = Field(default_factory=list, description="The ids of the findings this step rests on.")
+  policy_clauses: list[str] = Field(default_factory=list, description="The ids of the policy clauses this step rests on.")
+
+
+class DillyOutput(BaseModel):
+  """Dilly's suggestion. There is no field for a score or a route: those come from the app."""
+
+  summary: str = Field(description="Two or three plain sentences on what the agents found.")
+  next_steps: list[DillyStep] = Field(default_factory=list, description="Next steps in the order to do them, at most six.")
+  note_reason: Literal["none", "agents_disagree", "check_not_run"] = Field(default="none", description="Why a note is needed, or none.")
+  note: str = Field(default="", description="One line for the reviewer, only when the agents disagree or a check could not run. Otherwise empty.")
+
+
+class DillyResponse(DillyOutput):
+  model_id: str = ""
+  prompt_version: str = ""
 
 
 class ExtractRequest(BaseModel):

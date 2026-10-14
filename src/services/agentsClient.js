@@ -67,6 +67,12 @@ async function ask(payload, { timeoutMs = 45000 } = {}) {
   try { return await res.json(); } finally { done(); }
 }
 
+/** Dilly, the Pond-Guard orchestrator: a summary and next steps for findings the app has already checked and scored. */
+async function dilly(payload, { timeoutMs = 60000 } = {}) {
+  const { res, done } = await post('/pond-guard/dilly', payload, timeoutMs);
+  try { return await res.json(); } finally { done(); }
+}
+
 /** Crawler agent (feature 3): the records one page names. { records: [{ name, kind, country, identifier, summary, quote }], note, model_id } */
 async function crawlerExtract(payload, { timeoutMs = 60000 } = {}) {
   const { res, done } = await post('/crawler/extract', payload, timeoutMs);
@@ -95,4 +101,4 @@ async function health({ timeoutMs = 5000 } = {}) {
   }
 }
 
-module.exports = { configured, screen, ask, crawlerExtract, crawlerProposeFix, countryRiskExtract, health };
+module.exports = { configured, screen, ask, dilly, crawlerExtract, crawlerProposeFix, countryRiskExtract, health };

@@ -190,7 +190,8 @@ test('recommended changes: a policy that differs from the rules', () => {
   assert.deepEqual(byKey['threshold:aisDarkHours:12'].patch, { thresholds: { aisDarkHours: 12 } });
   assert.deepEqual(byKey['threshold:contractValueSgd:250000'].patch, { thresholds: { contractValueSgd: 250000 } });
   assert.equal(byKey['threshold:cpiLow:40'], undefined); // already matches
-  assert.deepEqual(byKey['policy:sanctions_possible:§3.2'].patch, { policy: { sanctions_possible: '§3.2' } });
+  // The sanctions rows now carry their own clause (§1.1, demo clause), so no clause is suggested for them
+  assert.equal(byKey['policy:sanctions_possible:§3.2'], undefined);
   assert.equal(byKey['row:§9.9'].patch.addRows[0].points, 0); // a person sets the number
   for (const s of found) if (s.patch) assert.doesNotThrow(() => applyPatch({}, s.patch));
   assert.equal(suggestions.readableText('%PDF-1.7 binary'), '');

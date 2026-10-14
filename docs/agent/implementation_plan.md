@@ -1,229 +1,237 @@
-# Implementation plan: country risk views on the Globe, refreshed by an ADK agent
+# Implementation plan: strengthen Pond-Guard (Dilly the orchestrator)
 
-Status: **answered and approved by the user on 13 Oct 2026 ("Ok do the 4 first"), built on 14 Oct. See `decisions.md`
-for the answers and for what differs from this plan, and `walkthrough.md` for how to use it.**
-Earlier plans: `.phase1.md`, `.phase2.md`, `.accounts.md`, `.phase3.md`, `.phase4-bigquery-ai.md` (not built),
-`.review-model.md` (built).
+Status: **parts A to E approved by the user on 14 Oct 2026, with the answers below. Updated with those answers,
+the Cloud Run check and the three clause drafts. No code is changed. Waiting for the user's OK on this version
+and on the clause texts (section "Three demo clauses").**
+The HUD, Firestore and BigQuery AI track was withdrawn; its notes are in `implementation_plan.hud-firestore-bigquery.md`.
 
-## Goal
+Order: A, B, C, D, E. If time runs short before 16 Oct 12:00: A to D first, then the agreement labels and rate
+from E; the model probability column is cut first.
 
-In the Globe's Layers panel, under "Country fill", the user picks one country risk view to colour the map. At the
-bottom of the panel a compliance officer sets how often DueDilly refreshes the data. A country risk agent reads each
-source, the countries end up in one JSON file per view, and the map is coloured only from validated JSON.
-Display only: no risk score, points row, confidence or route changes.
+## What is built today, and the gaps
 
-## What I found in the repo that changes the request
-
-These are differences between the request and the code as it is. Each one has a recommendation; four of them need
-your answer (questions 6 to 9).
-
-1. **The feature 3 crawler does not fetch in Python.** The DueDilly app (Express, `src/services/crawlerService.js`)
-   does the fetch: `robots.txt`, the terms tick, the no-sign-in checks, the public-address check, the 5-second gap,
-   the identifying user agent `DueDillyBot/1.0`, and the snapshot. The ADK agent (`agents/app/crawler.py`) has no
-   tools and only reads page text it is handed. The agents service also has no database and no storage. So "an ADK
-   agent in the agents service fetches each source" and "reuse the crawler from feature 3" point at two different
-   places. See question 6.
-2. **There is no hourly tick.** Two schedules exist: `duedilly-uat-rescreen-due` (daily, 06:00 Singapore time, through
-   Pub/Sub) and `duedilly-uat-crawl-due` (Mondays 06:30). Both call the app, not the agents service. Daily is enough
-   for Daily, Weekly and Monthly, so the plan hooks the due-check onto the existing daily `rescreen-due` event. No
-   scheduler job is created or changed, by the app or by a script.
-3. **The page fetcher only accepts web pages up to 2 MB.** CSV, XML, XLSX and PDF are refused today. File downloads
-   need their own, larger limit and a hash computed on the bytes.
-4. **The "How Dilly works" page (feature 15) is not built.** There is nowhere to add the line yet. See question 8.
-5. **CPI in the app is 21 of 182 countries** (`src/db/seed-data.js`, 9 of them repeated in the page). "Reuse its
-   data" therefore gives a 21-country view. See question 9.
-6. **`safe-globe.html` is the page that is served**; `saf-globe.html` is an older copy served by the same handler.
-   Only `safe-globe.html` is changed.
-7. **Samples cannot be written from memory.** Rule 7 (do not invent data) and your "do not hard-code which countries
-   are on any list" mean each sample JSON must be the saved output of a real, permitted fetch. Until the first
-   go-ahead for a source, its view shows "No data yet", not a made-up sample. CPI is the exception: its sample is
-   built from the app's own table.
-
-## Design
-
-### Who does what (recommended; depends on question 6)
-
-| Step | Where | LLM |
+| Point | Today | Gap |
 | --- | --- | --- |
-| Decide which views are due (setting, last checked, per-view on/off) | App: `src/countryRisk/countryRiskService.js` | No |
-| Fetch with `robots.txt`, terms, no sign-in, rate limit, user agent; save the snapshot; hash it | App: the existing `fetchPage` guards, extended for files and for one level of same-site links | No |
-| Hash unchanged: stop. Record "checked, no change" | App | No |
-| Structured file (CSV, XML, XLSX): parse in code | App: `src/countryRisk/parsers/` (`exceljs` is already installed) | No |
-| HTML statement (FATF): extract countries, category and quote with structured output | Agents service: new ADK agent `country_risk` in `agents/app/country_risk.py`, endpoint `POST /country-risk/extract` | Yes, only when the hash changed |
-| Uploaded file (Basel, TRACE): parse the officer's file | App | No |
-| Validate: schema, quote found word for word in the snapshot, name mapped to ISO-3 by a fixed list in code | App: `src/countryRisk/validate.js`, `iso3166.js` | No |
-| Save the JSON (database and one file per view), or keep the last good one and mark it stale | App | No |
+| First instance | A new KYC request is screened by non-agent code in `kycService.js` (`screenCounterparty`, `calculateAiRisk`). Pond-Guard runs only on an officer's "Screen" or a High ripple. A new request has no entity record | Pond-Guard never sees a request when it arrives |
+| Orchestrator, sub-agents | `pond_guard` is an ADK `ParallelAgent` over Sanctions, PEP, Adverse media, Ownership, Vessel behaviour. Country, contract value and broker are worked out in code | No orchestrating agent. No Country and contract agent |
+| Policy | No agent is given policy text. The policy has no clause for sanctions, adverse media or ownership | Nothing to map against |
+| What to do | The prompt forbids recommendations | No suggested next step |
+| Suggestion | The score is computed from the Reviews points table already; only the latest is kept | Not stored per run; not worded as a suggestion |
+| Nearness | A BigQuery ML model predicts the officer's red or green | Nothing compares the suggestion with the final decision |
 
-The agent never fetches, never maps a name to a code and never decides a colour. Its output is checked in code
-before anything is saved, the same way crawler records are checked today.
+---
 
-### The views
+## A. Pond-Guard at the first instance
 
-One registry file, `src/countryRisk/views.config.js`, is the single definition of each view: id, label, source name,
-source URL, kind (categorical or score), which way the source's scale runs, the scale ends, method, and the parser.
-The service, the API, the legend and the tests read it. Nothing about which countries are listed is in it.
+**Decision (answer 1): automatic, in the background, on every new KYC request.**
 
-| View id | Method (to be confirmed on the first permitted look at each site) | Kind |
-| --- | --- | --- |
-| `fatf_lists` | Page, then same-site links to the latest two statements, then the ADK agent | Categorical: `call_for_action` red, `increased_monitoring` amber, not listed neutral |
-| `basel_aml` | Parsed file if a public file exists; otherwise "Needs upload" | Score, high is bad |
-| `cpi` | The app's own CPI table. Not fetched. This is the existing "CPI 2025" button, not a second entry | Score, low is bad, inverted for colour |
-| `trace_bribery` | Parsed file if a public file exists; otherwise "Needs upload" | Score, high is bad |
-| `fsi` | Parsed file | Score, high is bad |
-| `cthi` | Parsed file | Score, high is bad |
-| `ofac_programmes` | See "OFAC and EU" below | Categorical, one category |
-| `eu_regimes` | See "OFAC and EU" below | Categorical, one category |
+1. `POST /api/kyc/submit` saves the request as today, with today's rule-based result as its first value, and
+   answers at once.
+2. It then publishes the existing event `screening-requested` with a new field `kycId` (nothing renamed).
+3. The handler: finds or creates the entity for the request (the same builder monitoring uses, without switching
+   monitoring on), runs `pondGuard.screenEntity`, and writes the result back to the request's existing fields
+   (AI result, score, confidence, rationale, screening result).
+4. The request carries a small status the pages read: `screening`, `done`, `reused`, `limit` or `offline`.
 
-I have not opened any of these sites. Whether a file exists, its columns, the scale ends, and each site's terms are
-**not verified**. Rule 6 (do not guess) applies: the parsers are written only after a permitted look (question 7).
-If a site needs JavaScript to show its content, blocks the bot, or disallows it in `robots.txt`, the view becomes
-"Needs upload" and nothing is worked around.
+**Reuse within 24 hours.** "The same entity" means: the same registration number, IMO number or ID document number
+in the same workspace; or, when the request has none of those, the same normalised name and country. If such an
+entity has a live Pond-Guard result less than 24 hours old, no run is made: the request is linked to that entity,
+takes its result, and says "Reused from the screening at <time>". An officer's "Screen" button always runs afresh.
 
-### OFAC and EU: how the country view would be derived
+**Daily cap reached.** The rule-based result stays, with "Pond-Guard daily limit reached, press Screen tomorrow".
+Compliance officers see "Pond-Guard runs left today: n of 30" (from the existing `GET /api/pond-guard/status`).
 
-Both lists name people and entities. The data carries a **programme** (OFAC) or **regime** (EU) per entry, not a
-target country. Getting from a programme to a country without a hard-coded table leaves two options:
+**Gemini disabled, agents service off, or the run fails.** The rule-based result stays, labelled "Offline".
 
-- **A (recommended):** take the distinct programme or regime names from the source, and match each name against the
-  fixed ISO country-name list in code. A programme whose name contains a country name colours that country. The
-  evidence quote is the programme name exactly as the source writes it. No LLM.
-- **B:** the ADK agent maps programmes to countries with a quote. Costs LLM calls and is harder to check.
+### The Cloud Run check you asked for
 
-What you must know about A, and why the label matters:
-- A country is coloured because **a programme is named after it**, not because of how many names are listed. The
-  view is labelled "Named in an OFAC sanctions programme" / "Named in an EU sanctions regime", with "programme
-  level, not a count of names" in the legend.
-- A name match is not the same as "targeted". A programme about Russia's actions in Ukraine names Ukraine. Under A
-  both countries are coloured, and the tooltip shows the programme name so the user can see why. I would rather show
-  that honestly than keep a hand-written exceptions list, which would be hard-coding.
-- Programmes with no country in the name (terrorism, narcotics, cyber, human rights) colour nothing and are logged.
-- "Comprehensive" versus "targeted" sanctions is not in the data as far as I know, so the view has one category and
-  one colour. See question 3.
+What the Cloud Run documentation says (billing settings page, read 14 Oct 2026): request-based billing is the
+default; "With request-based billing, CPU is only allocated during request processing"; instance-based billing
+(`--no-cpu-throttling`) "allocates CPU even outside of request processing" and is charged "for the entire lifecycle
+of instances, even when there are no incoming requests". `scripts/deploy.sh` sets neither flag, so both services
+are on the default: **a run started after the response has no CPU. Your concern is right.**
 
-Which file or page carries the programme names for each list is **not verified**; I will report the exact fields
-used, with examples, in the walkthrough.
+**What I chose: the run always happens inside a request. No billing setting changes.**
 
-### JSON, database and files
+| Where | How the run gets a request |
+| --- | --- |
+| UAT on Cloud Run (`PUBSUB_MODE=pubsub`, already set) | `screening-requested` is published to the topic `uat-screening-requested`. The existing push subscription delivers it to `POST /events/screening-requested`, which already waits for the handler before it answers. The run is inside that request. This path exists today for ripples |
+| Publish to Pub/Sub fails, or `PUBSUB_MODE=inline` on Cloud Run | Nothing is started in the background. The request stays `screening`, and the page that shows it calls a new `POST /api/kyc/:id/screen-now`, which runs Pond-Guard inside that request (signed-in staff only, rate limited, same cap). Opening the request is enough |
+| Dev and tests (`PUBSUB_MODE=inline`, not Cloud Run) | Handled inside the app as today: there is no CPU throttling on your own computer |
 
-- Format exactly as you gave it. Added fields only, none renamed: `last_changed_at`, `sample` (true for a shipped
-  sample), `rejected` (names that failed, with the reason), and for OFAC and EU `programme` per country.
-- New tables (added, nothing existing changes): `country_risk_views` (one row per view: the last good JSON, hash,
-  last checked, last changed, enabled, stale since, stale reason) and `country_risk_log` (one row per check: result,
-  LLM calls, reason). Each workspace has its own database, as today.
-- Setting `country_risk_refresh` (`manual` | `daily` | `weekly` | `monthly`, default `weekly`) in the existing
-  per-workspace `app_settings` table.
-- Files: `country-risk/<workspace>/<view_id>.json` and snapshots under `snapshots/<workspace>/country-risk/`, through
-  the existing `objectStorage` (Cloud Storage on UAT, local folder in dev).
-- Samples: `demo-data/country-risk/<view_id>.sample.json`, labelled "Sample data, may be out of date (<date>)".
-- One fetch per source per tick, shared across workspaces in memory, so a site is not read once per workspace and
-  Gemini is not called once per workspace.
+Why not `--no-cpu-throttling`: it bills the instance for its whole life, against the USD 100 limit, and an idle
+instance can still be shut down mid-run. Why not Cloud Tasks: a new service and queue for something Pub/Sub push
+already does here.
 
-### Validation and "Stale"
+Checked against the settings already in place: the push subscriptions have `--ack-deadline 300` and the app has
+`--timeout 300`; a Pond-Guard run stops itself at 120 seconds (150 on the app's side), so one delivery covers one
+run. A redelivered event does nothing (`events_seen`). The app runs one instance; the agents service up to two.
 
-A country is rejected when: it has no `evidence_quote`; the quote is not in the saved snapshot word for word; its
-name is not in the fixed ISO list; its category is not one the view allows; a score is outside the view's scale.
-The whole refresh is rejected, the last good version kept, and the view marked "Stale since <date>" when: the fetch
-fails; the schema fails; no country survives; or the number of countries drops by more than half against the last
-good version (a guard against a half-read page; the fraction is a setting in the registry). The reason is logged.
-The map is never coloured from anything that failed.
+**Nothing new for you to run** if `scripts/pubsub-subscriptions.sh` was run (it was, 12 Oct). I will add to
+`scripts/pubsub-subscriptions.sh check` a line that fails loudly if `uat-screening-requested-push` is missing or
+its deadline is under 180 seconds, and write this section into `DEPLOY_GUIDE.md` step 7.
 
-### API
+---
 
-| Route | Who | What |
-| --- | --- | --- |
-| `GET /api/country-risk/views` | Any signed-in account | The views with status, last checked, next check, last changed, method, LLM calls this month, refresh setting |
-| `GET /api/country-risk/views/:id` | Any signed-in account | The validated JSON of one view |
-| `PUT /api/country-risk/settings` | Compliance officers | The refresh frequency |
-| `PUT /api/country-risk/views/:id` | Compliance officers | Turn one view's refresh on or off |
-| `POST /api/country-risk/refresh` | Compliance officers, rate limited | "Refresh now", one view or all |
-| `POST /api/country-risk/views/:id/upload` | Compliance officers | The downloaded file for a "Needs upload" view |
+## B. Sub-agents and the policy
 
-### Screen (`safe-globe.html`)
+**Decision (answer 3): every entity gets five; a vessel gets a sixth.**
 
-- Country fill: the three-button row cannot hold eleven options. It becomes a short list of radio rows in the same
-  panel: the existing three first, then the new views, each with a small status mark (Sample, Stale, Needs upload).
-- Bottom of the Layers panel: "Refresh" (Manual only, Daily, Weekly, Monthly), "Refresh now", "LLM calls this month:
-  n", and per view "Last checked / Next check" with an on/off switch. Read-only for employees.
-- Legend per view: source name, last fetched, last changed, method (Parsed file, AI extracted, Uploaded), which way
-  the scale runs, and the sample or stale label.
-- Clicking a country: its value in the source's own number, category, evidence quote, and a link to the source.
-- Colour: one small shared file, `country-risk-views.js`, used by the page and by the tests (the same pattern as
-  `dilly-loader.js`). It turns a view and a country value into "how risky, 0 to 1" and a colour from the existing
-  tokens `--low`, `--mid`, `--high`. No data is `--land-none` (grey). Score views run as one gradient between the
-  source's own scale ends; I do not invent bands the source does not publish.
-- Sources tab: a "Country risk files" block where an officer uploads the Basel or TRACE file.
+| Agent | Policy section it is given | Points rows it may report | Evidence it is given |
+| --- | --- | --- | --- |
+| Sanctions | new sanctions clause | `sanctions_confirmed`, `sanctions_possible` | the app's lists and source records (as today) |
+| PEP | §3.6 | `pep_owner`, `pep_associate` | as today |
+| Adverse media | new adverse media clause | `adverse_media_severe`, `adverse_media_other` | Grounding with Google Search (as today) |
+| Ownership | new ownership clause | `ownership_unclear` | ownership graph, registry notes (as today) |
+| **Country and contract** (new) | §4.1, §2.1, §5.2 | `country_cpi_low`, `country_cpi_mid`, `contract_value_high`, `broker_intermediary` | the CPI 2025 rows for the countries on file; the contract value and relationship type from the KYC request |
+| Vessel behaviour (vessels only) | §5.4 | `vessel_ais_dark`, `vessel_sts_transfer`, `vessel_flag_changes` | AIS signals, flag history (as today) |
 
-### Offline, placeholders, guide
+- Each brief gains `policy`: the clause text, from `policySearch` (Agent Search when connected, built-in text
+  otherwise).
+- Each finding gains three optional fields (added, none renamed): `policy_clause`, `policy_quote` (exact words of
+  the clause) and `suggested_action` (one sentence).
+- Checks in code, on top of today's: the policy quote must be in the clause the agent was given, or it is blanked
+  with the reason kept. For Country and contract the numbers are checked too: a CPI finding only stands if the
+  cited CPI row really is below the threshold in the rules, the riskiest country counts once, and a contract
+  finding only stands if the request's value really is above the rule's threshold. Sources: the CPI data
+  (Transparency International, as stored in the app) and the request itself, linked by its KYC id.
+- A watchlist entity that has no KYC request has no contract value: the agent then reports country only.
+- `country_cpi_mid` keeps its note "Proposed, not in policy yet": §4.1 only speaks of CPI below 40.
+- A clause never adds or removes points. The points row is decided by the finding's category and your table.
 
-- With every placeholder commented and no internet: the map works from the samples; refresh says "Offline sample".
-- With no agents service: structured views still refresh; FATF keeps its last good data and says why.
-- New placeholder block: `COUNTRY_RISK_DAILY_CAP` (Gemini calls by the country risk agent per day). No new secret.
-- `DEPLOY_GUIDE.md` steps 7 (the daily tick now also checks the views) and 13 (the cap), in the same change.
-- No new Google Cloud resource. No scheduler job, topic or bucket is added.
+### Three demo clauses (answer 4): please approve the numbers and texts
+
+The policy today: Section 1 "General Principles" is one sentence with no clauses ("...automated screening against
+sanctions, watchlists, adverse media, and jurisdictional risk..."); then 2.1, 2.2, 3.6, 4.1, 5.2, 5.4. The three
+new subjects are exactly what Section 1 names, so I propose they become **Clauses 1.1, 1.2 and 1.3** under it.
+Each is marked "Demo clause" in its title, and the files and the PDF already say "Demo policy".
+
+"The wording must match the points table exactly": your drafts differ from the table in three places. I changed
+only those, shown in bold. Say if you would rather change the points row instead.
+
+**Clause 1.1 (Sanctions screening, demo clause)**
+> Every counterparty, its directors, shareholders and beneficial owners, and every vessel by IMO number, must be
+> screened against the sanctions lists before onboarding and at each re-screen. A name-only match **with strong
+> similarity** is a possible match and must be investigated. A match confirmed by a second identifier (date of
+> birth, registration number or IMO number) must be escalated, and the relationship must not proceed.
+
+- Changed: added "with strong similarity" (points row: "name only, strong similarity").
+- To know: "the relationship must not proceed" is policy wording. In the app a confirmed match still goes to
+  Escalate and a person decides; nothing is rejected automatically.
+
+**Clause 1.2 (Adverse media, demo clause)**
+> Adverse media from the last 24 months must be reviewed. Media alleging **fraud, bribery or sanctions evasion**
+> is severe and must be investigated before approval. Other negative media must be recorded and considered.
+
+- Changed: your draft listed "fraud, bribery, corruption, money laundering or sanctions evasion". The points row
+  says "(fraud, bribery, sanctions evasion)". With the longer list the clause would call corruption and money
+  laundering severe while the row does not name them. Alternative: keep your five and I add "corruption, money
+  laundering" to the row's label (the row's id and points stay). Your choice.
+- To know: "24 months" is a number you can edit in Reviews. If you change it there, the existing "recommended
+  change" alert is how the clause and the rule are brought back in line.
+
+**Clause 1.3 (Beneficial ownership, demo clause)**
+> The counterparty must disclose its ownership up to its ultimate beneficial owners. Nominee shareholders, bearer
+> shares, an offshore holding **company**, or an unknown beneficial owner make ownership unclear and require
+> enhanced due diligence.
+
+- Changed: removed "with no clear business purpose". The points row says "offshore holding" with no condition; an
+  agent reading your draft would have to judge business purpose, and could skip the row.
+
+Where they go once approved: `src/services/policyRagService.js` (the policy text), then
+`node scripts/build-policy-files.js` writes `policy-clause-1-1.txt`, `1-2`, `1-3` and both `kyc_policy.pdf` files.
+The points rows `sanctions_*`, `adverse_media_*` and `ownership_unclear` get `§1.1`, `§1.2`, `§1.3` in their
+policy column. For Agent Search on UAT the three files have to be imported: you rerun
+`bash scripts/agent-search-setup.sh` (I will not); until then the built-in text is used and says so.
+
+---
+
+## C. Dilly, the orchestrator
+
+**Decision (answer 2): next steps only.**
+
+- New ADK `LlmAgent` named `dilly`. A Pond-Guard run becomes: sub-agents in parallel → the app checks the findings
+  and adds up the points from your table → Dilly is given the checked findings, the points lines, the total, the
+  confidence, the computed route, and which checks ran or failed.
+- Dilly returns: a short summary; an ordered list of next steps, each citing finding ids and policy clauses; and at
+  most one line, **"Dilly's note"**, only when the agents disagree or a check could not run.
+- Dilly cannot change the score or the route. Its output schema has no field for a number or a route, and the app
+  ignores anything else. The note never changes the route.
+- Checks in code: every cited finding id is from this run; every cited clause was given; a next step that cites
+  nothing is dropped.
+- Everything Dilly writes is labelled **"AI suggestion"** wherever it is shown.
+- If Dilly fails, the findings, score and route stand without it, and the card says so.
+- The reviewer copilot starts its draft from Dilly's summary instead of a second Gemini call.
+
+## D. The score as a suggestion
+
+- Shown as "Dilly suggests: 85, High, Escalate", with the points lines, until a person decides.
+- Each run stores a suggestion record: risk, confidence, route, the rules in force, the finding ids, when, and
+  whether it was live, reused or offline. This is what E compares with the decision.
+
+## E. How near Dilly was to the final decision
+
+**Decisions (answers 5 and 6): no new model, no retraining.**
+
+- **Which decision:** the officer's decision on the request. Approve and Reject are final. "Request more info"
+  (stored as "Bounce Back", unchanged) is not: the case shows "Waiting" and is counted when it is later approved or
+  rejected.
+- **The rule, with 50 points as the line**, on the suggestion that was current when the decision was made:
+
+  | Dilly suggested | Officer | Result |
+  | --- | --- | --- |
+  | 50 or more | Reject | Agreed |
+  | under 50 | Approve | Agreed |
+  | 50 or more | Approve | Dilly was stricter |
+  | under 50 | Reject | Dilly was more lenient |
+
+  The line is read from the rules (the Medium band's lower edge), not written a second time.
+- **BigQuery does the judging.** A table `suggestion_outcomes` (one row per decided request: suggested risk, route,
+  decision, times, workspace, is_demo) and a view `dilly_agreement` holding the rule above as SQL. The same SQL
+  logic runs on SQLite as the offline fallback, and a test checks both give the same answer on the same rows.
+  The view is created by a script you run (`scripts/bq-agreement.sh`, with a dry run that prints the bytes first);
+  the app only inserts rows and reads the view, with `BIGQUERY_MAX_BYTES_BILLED` on every query.
+- **Reviews**, under "Dilly learns": agreement rate; counts of "stricter" and "more lenient"; "Waiting"; and a list
+  of the disagreements, each opening its case.
+- **Model probability** (first to cut): next to each case, "How likely an officer marks this red", from the
+  existing model's stored predictions. The model keeps learning from the red and green marks only.
+- **Dilly's suggestion as a model feature:** added to the feature list so it is used the next time you press
+  "Train the model". I do not retrain.
+- Section 9.1: BigQuery is live for the review model already, but this is a new table and view, so I ask before
+  the first insert.
+
+---
 
 ## Files
 
-New: `src/countryRisk/{views.config,countryRiskService,validate,iso3166}.js`, `src/countryRisk/parsers/*.js`,
-`src/routes/countryRisk.js`, `country-risk-views.js`, `agents/app/country_risk.py`,
-`demo-data/country-risk/*.sample.json`, `tests/country-risk.test.js`.
-Changed: `src/services/crawlerService.js` (file downloads, one level of same-site links; existing behaviour and
-exports unchanged), `src/db/sqlite.js` (two tables), `src/events/handlers.js` (due-check on `rescreen-due`),
-`src/services/agentsClient.js`, `src/server.js`, `src/config.js`, `agents/app/{main,models}.py`,
-`agents/tests/test_agents.py`, `safe-globe.html`, `Dockerfile`, `package.json` (test list), `.env.example`,
-`DEPLOY_GUIDE.md`, `README.md`, `docs/agent/{task,walkthrough,decisions}.md`.
-
-## Order of work
-
-1. Registry, ISO list, validation, tables, service with sample data, API, role checks, tests. No network.
-2. Screen: the view list, colours, legend, country click, refresh control.
-3. Fetch extensions and the due-check, tested against local fixtures.
-4. The ADK agent and its endpoint, tested with a stand-in model.
-5. Section 9.1: ask before the first live fetch of each website, one site at a time. Write each parser from what the
-   site really serves. Save the first good result as that view's sample.
-6. `walkthrough.md`: how to switch views, change the refresh setting and trigger a refresh. Stop and wait.
+- Agents service: `agents/app/pond_guard.py`, `models.py`, `main.py`, `tests/test_agents.py`.
+- App: `src/services/pondGuardService.js`, `src/risk/findingSchema.js`, `src/risk/points.config.js` (policy column
+  of five rows), `src/services/policyRagService.js` (three clauses), `src/services/kycService.js`,
+  `src/routes/kyc.js`, `src/routes/pondGuard.js`, `src/events/handlers.js`, `src/db/sqlite.js` (suggestions and
+  outcomes), `src/learning/*`, `src/services/copilotService.js`, `src/services/bigquery.js`,
+  `safe-globe.html`, `employee-portal.html`.
+- New: `tests/pond-guard.test.js`, `scripts/bq-agreement.sh`, `docs/policies/policy-clause-1-{1,2,3}.txt`.
+- `scripts/pubsub-subscriptions.sh` (check only), `DEPLOY_GUIDE.md` steps 6, 7 and 8, `README.md`, `docs/agent/*`.
+- No new Google Cloud service, no new variable, no new dependency.
 
 ## Tests (offline, Gemini disabled)
 
-JSON schema; ISO-3 mapping including alternative spellings and unknown names; a country with no quote, or a quote
-not in the snapshot, is rejected; an unchanged hash makes no agent call; a failed refresh keeps the last good data
-and reports "Stale since"; only a compliance officer can change the setting, switch a view off, upload or refresh,
-while an employee can read; every view's scale gives a higher colour value for higher risk, with CPI inverted and no
-data grey; the due-check for each frequency; no score, confidence or route changes after a refresh; the Python
-agent's output parsing.
+A new request publishes one event and is screened once; a second request for the same entity within 24 hours
+reuses the result and makes no run; over the cap the rule-based result stays with the limit message; with no
+agents service it stays, labelled Offline; on Cloud Run with inline events nothing runs in the background and
+`screen-now` runs it inside the request; a policy quote that is not in the clause is blanked; a CPI or contract
+finding whose number does not meet the rule is rejected; the riskiest country counts once; Dilly citing an unknown
+finding or clause is dropped; Dilly cannot move the score or the route; the note appears only on disagreement or
+a failed check; the four agreement cases; "Request more info" waits and counts later; SQLite and the BigQuery SQL
+agree; nothing here changes a score or route; Python: `dilly` and `country_contract` have no tools and checked
+output schemas.
 
-## Risks
+## What will change that you should expect
 
-- **Time.** Submission is 16 Oct 2026, 12:00 Singapore time. Eight sources with eight different formats is the
-  largest part. Recommended first version in question 1.
-- **Sites that block bots or need JavaScript.** The view becomes "Needs upload". Not worked around.
-- **Large files.** Sanctions data files can be tens of megabytes. They are hashed and parsed as a stream, with a size
-  limit; if a file is over the limit the view is stale with that reason.
-- **Statements that exist only as PDF.** Checking a quote word for word needs the PDF's text in code, which needs a
-  new library. Not added unless a source needs it, and I will ask first.
-- **Licences.** Some indices may not allow their data to be redistributed. A sample is committed to the repository
-  only when the terms I find allow it; the `licence_note` field records what I found.
-- **Spend.** Gemini is called only for FATF and only when the page changed: a few calls a month.
-
-## Questions
-
-Yours:
-1. Which views in the first version, and in what order? Recommended: FATF lists, OFAC, EU, CPI (existing), then
-   Financial Secrecy Index and Corporate Tax Haven Index if time allows; Basel and TRACE as "Needs upload".
-2. Basel AML Index and TRACE: if a download needs registration, will you upload the files, or leave those views out?
-3. OFAC and EU: is "named in a sanctions programme" (option A above, one colour) the right meaning, knowing that a
-   programme name can mention a country that is not the target? Red or amber for that one colour?
-4. Default refresh: Weekly?
-5. Should the FATF lists later add risk points, or stay display only? (This plan: display only.)
-
-Mine:
-6. Where does the fetch run? **(a) Recommended:** as feature 3 works today: the app fetches and parses, the ADK
-   agent in the agents service only extracts (FATF). The tested guards are reused and file-based views work with the
-   agents service off. **(b)** As your message reads: the agents service fetches, parses and extracts in Python. The
-   guards are written a second time, and it needs a way to save snapshots from that service.
-7. May I open each of the eight sites now, read-only, from this computer (the page, `robots.txt`, the terms and the
-   download links), so the parsers and the "Needs upload" answers are based on what is really there? This is separate
-   from the app's first live fetch, which I will still ask about site by site.
-8. "How Dilly works" is not built. Build a minimal page now for this line, or record the line in `walkthrough.md`
-   and add it when feature 15 is built? Recommended: the second.
-9. CPI covers 21 of 182 countries in the app. Keep the 21, or may the CPI view fetch the full file from Transparency
-   International once (which is fetching it, against "reuse, don't fetch")?
+- **Demo scores will move**, because country, contract and broker points now come through an agent's finding and
+  the checks around it. `walkthrough.md` will list before and after for every demo counterparty, and Aurora
+  Venture is checked against 85.
+- Each new request costs one Pond-Guard run: six or seven model calls (five or six sub-agents, one of them with
+  Google Search, plus Dilly), inside the cap of 30 a day.
+- The first live run is on Vertex AI from this computer. Pond-Guard on Vertex AI was approved on 12 Oct; I will
+  still ask before the first run of the changed agents, as you said.

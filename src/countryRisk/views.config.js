@@ -33,7 +33,7 @@ const VIEWS = [
     id: 'fatf_lists',
     label: 'FATF lists',
     sourceName: 'FATF',
-    sourceUrl: 'https://www.fatf-gafi.org/en/topics/high-risk-and-other-monitored-jurisdictions.html',
+    sourceUrl: 'https://www.fatf-gafi.org/en/countries/black-and-grey-lists.html',
     kind: 'categorical',
     method: 'llm',
     fetch: { type: 'page' },

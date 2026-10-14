@@ -34,4 +34,4 @@ def app_url() -> str:
   return os.environ.get("DUEDILLY_INTERNAL_URL", "").rstrip("/")
 
 
-PROMPT_VERSION = "pond-guard-2026-10-12b"
+PROMPT_VERSION = "pond-guard-2026-10-14a"

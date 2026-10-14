@@ -149,9 +149,10 @@ const looksLikeSignIn = pathname => /\/(login|log-in|signin|sign-in|sso|auth|oau
  * Reads one page, or says why it was not read.
  * Returns { status: 'read' | 'blocked' | 'needs_sign_in' | 'failed', reason, html, finalUrl, robots }.
  */
-async function fetchPage(db, pageUrl, { fetchImpl = fetch, lookup = dns.lookup, gapMs = LIMITS.gapMs, demoPage = false, file = null } = {}) {
+async function fetchPage(db, pageUrl, { fetchImpl = fetch, lookup = dns.lookup, gapMs = LIMITS.gapMs, demoPage = false, file = null, slowSiteMs = 0 } = {}) {
   // file: a data file instead of a web page (country risk views): { types: RegExp, maxBytes, timeoutMs, accept }
-  const timeoutMs = (file && file.timeoutMs) || LIMITS.timeoutMs;
+  // slowSiteMs: a longer wait for a site known to answer slowly (robots.txt and the page alike)
+  const timeoutMs = (file && file.timeoutMs) || slowSiteMs || LIMITS.timeoutMs;
   let url;
   try { url = new URL(pageUrl); } catch (err) { return { status: 'failed', reason: 'That is not a web address.' }; }
 
@@ -172,7 +173,7 @@ async function fetchPage(db, pageUrl, { fetchImpl = fetch, lookup = dns.lookup, 
       await polite(url.host, gapMs);
       let rules = '';
       try {
-        const res = await fetchImpl(new URL('/robots.txt', url.origin).href, { headers, redirect: 'manual', signal: AbortSignal.timeout(LIMITS.timeoutMs) });
+        const res = await fetchImpl(new URL('/robots.txt', url.origin).href, { headers, redirect: 'manual', signal: AbortSignal.timeout(slowSiteMs || LIMITS.timeoutMs) });
         // RFC 9309: a missing robots.txt (4xx) allows everything; a server error means "do not read"
         if (res.status >= 500) return { status: 'blocked', reason: 'robots.txt could not be read (the site answered an error), so the page was not read.' };
         if (res.ok) rules = await readBody(res, 500 * 1024);

@@ -3,7 +3,7 @@
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Kids [6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R] /Count 7 >>
+<< /Type /Pages /Kids [6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R 20 0 R] /Count 8 >>
 endobj
 3 0 obj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
@@ -12,12 +12,12 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
 endobj
 5 0 obj
-<< /Length 3029 >>
+<< /Length 3667 >>
 stream
 BT
 /F2 9 Tf
 50 800 Td
-(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 1 of 7) Tj
+(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 1 of 8) Tj
 /F1 10.5 Tf
 0 -26 Td
 14.5 TL
@@ -26,6 +26,19 @@ BT
 /F2 11 Tf (Section 1: General Principles) Tj T* /F1 10.5 Tf
 (All counterparties onboarded by DueDilly employees must undergo automated screening against) Tj T*
 (sanctions, watchlists, adverse media, and jurisdictional risk before contract execution.) Tj T*
+(Clause 1.1 \(Sanctions screening, demo clause\): Every counterparty, its directors,) Tj T*
+(shareholders and beneficial owners, and every vessel by IMO number, must be screened against) Tj T*
+(the sanctions lists before onboarding and at each re-screen. A name-only match with strong) Tj T*
+(similarity is a possible match and must be investigated. A match confirmed by a second) Tj T*
+(identifier \(date of birth, registration number or IMO number\) must be escalated, and the) Tj T*
+(relationship must not proceed.) Tj T*
+(Clause 1.2 \(Adverse media, demo clause\): Adverse media from the last 24 months must be) Tj T*
+(reviewed. Media alleging fraud, bribery or sanctions evasion is severe and must be) Tj T*
+(investigated before approval. Other negative media must be recorded and considered.) Tj T*
+(Clause 1.3 \(Beneficial ownership, demo clause\): The counterparty must disclose its ownership) Tj T*
+(up to its ultimate beneficial owners. Nominee shareholders, bearer shares, an offshore) Tj T*
+(holding company, or an unknown beneficial owner make ownership unclear and require enhanced) Tj T*
+(due diligence.) Tj T*
 () Tj T*
 /F2 11 Tf (Section 2: Contract Value & Financial Exposure Thresholds) Tj T* /F1 10.5 Tf
 (Clause 2.1: Any proposed engagement with anticipated contract value exceeding SGD 100,000) Tj T*
@@ -56,6 +69,22 @@ BT
 () Tj T*
 (Annex: Supplier CDDQ policy template) Tj T*
 () Tj T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 2511 >>
+stream
+BT
+/F2 9 Tf
+50 800 Td
+(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 2 of 8) Tj
+/F1 10.5 Tf
+0 -26 Td
+14.5 TL
 (Supplier CDDQ Policy Template) Tj T*
 () Tj T*
 (Oct 9, 2026  @h) Tj T*
@@ -69,22 +98,6 @@ BT
 () Tj T*
 (How to complete it) Tj T*
 () Tj T*
-ET
-endstream
-endobj
-6 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
-endobj
-7 0 obj
-<< /Length 2661 >>
-stream
-BT
-/F2 9 Tf
-50 800 Td
-(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 2 of 7) Tj
-/F1 10.5 Tf
-0 -26 Td
-14.5 TL
 (1. Answer every question. Write "Not applicable" with a reason rather than leaving a field) Tj T*
 (blank.) Tj T*
 (2. Where a question asks Yes / No and you answer Yes, give full details in the Response) Tj T*
@@ -120,6 +133,22 @@ BT
 (1.9 Principal business activities) Tj T*
 (1.10 Goods or services to be supplied to [Issuing Company]) Tj T*
 (1.11 Countries in which the company operates or has offices) Tj T*
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Length 2071 >>
+stream
+BT
+/F2 9 Tf
+50 800 Td
+(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 3 of 8) Tj
+/F1 10.5 Tf
+0 -26 Td
+14.5 TL
 (1.12 Number of employees) Tj T*
 (1.13 Annual revenue for the last financial year \(range is acceptable\)) Tj T*
 (1.14 Is the company or its parent listed on a stock exchange? Yes / No. If Yes, which) Tj T*
@@ -133,22 +162,6 @@ BT
 (2. Company ownership structure) Tj T*
 () Tj T*
 (No. Question Response) Tj T*
-ET
-endstream
-endobj
-8 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
-endobj
-9 0 obj
-<< /Length 2271 >>
-stream
-BT
-/F2 9 Tf
-50 800 Td
-(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 3 of 7) Tj
-/F1 10.5 Tf
-0 -26 Td
-14.5 TL
 (--- --- ---) Tj T*
 (2.1 Name and country of the immediate parent company, if any) Tj T*
 (2.2 Name and country of the ultimate parent company, if any) Tj T*
@@ -184,6 +197,22 @@ BT
 () Tj T*
 () Tj T*
 () Tj T*
+ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 9 0 R >>
+endobj
+11 0 obj
+<< /Length 3094 >>
+stream
+BT
+/F2 9 Tf
+50 800 Td
+(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 4 of 8) Tj
+/F1 10.5 Tf
+0 -26 Td
+14.5 TL
 (3. Government relations) Tj T*
 () Tj T*
 (No. Question Response) Tj T*
@@ -197,22 +226,6 @@ BT
 (3.4 Has any of the persons in 3.2 held a public office or government position in the last 5) Tj T*
 (years? Yes / No. If Yes, give details) Tj T*
 (3.5 Will the goods or services require dealing with Government Officials on behalf of) Tj T*
-ET
-endstream
-endobj
-10 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 9 0 R >>
-endobj
-11 0 obj
-<< /Length 3156 >>
-stream
-BT
-/F2 9 Tf
-50 800 Td
-(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 4 of 7) Tj
-/F1 10.5 Tf
-0 -26 Td
-14.5 TL
 ([Issuing Company] \(e.g. permits, licences, customs, inspections\)? Yes / No. If Yes, describe) Tj T*
 (3.6 Will you use agents, consultants or other Intermediaries to deal with Government) Tj T*
 (Officials? Yes / No. If Yes, name them) Tj T*
@@ -248,6 +261,22 @@ BT
 (reference and outcome.) Tj T*
 () Tj T*
 (No. Matter Response) Tj T*
+ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 11 0 R >>
+endobj
+13 0 obj
+<< /Length 2973 >>
+stream
+BT
+/F2 9 Tf
+50 800 Td
+(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 5 of 8) Tj
+/F1 10.5 Tf
+0 -26 Td
+14.5 TL
 (--- --- ---) Tj T*
 (5.1 Bribery or Corruption, including Facilitation Payments Yes / No) Tj T*
 (5.2 Fraud, false accounting or tax evasion Yes / No) Tj T*
@@ -261,22 +290,6 @@ BT
 (No) Tj T*
 (5.10 Any other regulatory enforcement action or penalty Yes / No) Tj T*
 (5.11 Is any investigation, prosecution or material litigation on these matters currently) Tj T*
-ET
-endstream
-endobj
-12 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 11 0 R >>
-endobj
-13 0 obj
-<< /Length 3023 >>
-stream
-BT
-/F2 9 Tf
-50 800 Td
-(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 5 of 7) Tj
-/F1 10.5 Tf
-0 -26 Td
-14.5 TL
 (pending? Yes / No) Tj T*
 (5.12 Has the company been subject to insolvency, receivership or winding-up proceedings? Yes) Tj T*
 (/ No) Tj T*
@@ -312,6 +325,22 @@ BT
 (No. Question Response) Tj T*
 (--- --- ---) Tj T*
 (7.1 Is the Supplier, its parent, any subsidiary, director, Senior Management or Beneficial) Tj T*
+ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 13 0 R >>
+endobj
+15 0 obj
+<< /Length 3400 >>
+stream
+BT
+/F2 9 Tf
+50 800 Td
+(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 6 of 8) Tj
+/F1 10.5 Tf
+0 -26 Td
+14.5 TL
 (Owner a Sanctioned Person? Yes / No) Tj T*
 (7.2 Is the Supplier 50% or more owned, or otherwise controlled, by one or more Sanctioned) Tj T*
 (Persons? Yes / No) Tj T*
@@ -325,22 +354,6 @@ BT
 (Goods? Yes / No. If Yes, give the classification and licences held) Tj T*
 (7.7 Does the Supplier own, operate, manage or charter vessels? Yes / No. If Yes, list vessel) Tj T*
 (names and IMO numbers) Tj T*
-ET
-endstream
-endobj
-14 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 13 0 R >>
-endobj
-15 0 obj
-<< /Length 2831 >>
-stream
-BT
-/F2 9 Tf
-50 800 Td
-(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 6 of 7) Tj
-/F1 10.5 Tf
-0 -26 Td
-14.5 TL
 (7.8 If Yes to 7.7, in the last 12 months has any vessel called at a port in a Sanctioned) Tj T*
 (Jurisdiction, carried out ship-to-ship transfers, or switched off its AIS transponder other) Tj T*
 (than for safety? Yes / No. If Yes, give details) Tj T*
@@ -376,6 +389,22 @@ BT
 (Field Details) Tj T*
 (--- ---) Tj T*
 (Full name) Tj T*
+ET
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 15 0 R >>
+endobj
+17 0 obj
+<< /Length 3497 >>
+stream
+BT
+/F2 9 Tf
+50 800 Td
+(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 7 of 8) Tj
+/F1 10.5 Tf
+0 -26 Td
+14.5 TL
 (Job title) Tj T*
 (Company name) Tj T*
 (Signature) Tj T*
@@ -389,22 +418,6 @@ BT
 (Term Meaning) Tj T*
 (--- ---) Tj T*
 (Adverse Media Negative news or public reports linking a person or company to financial) Tj T*
-ET
-endstream
-endobj
-16 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 15 0 R >>
-endobj
-17 0 obj
-<< /Length 4052 >>
-stream
-BT
-/F2 9 Tf
-50 800 Td
-(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 7 of 7) Tj
-/F1 10.5 Tf
-0 -26 Td
-14.5 TL
 (crime, corruption, Sanctions breaches, serious misconduct or reputational risk.) Tj T*
 (Beneficial Owner An individual who ultimately owns or controls 25% or more of the shares or) Tj T*
 (voting rights of the Supplier, directly or through other entities, or who otherwise) Tj T*
@@ -440,6 +453,22 @@ BT
 (Enterprise, or a senior official of an international organisation.) Tj T*
 (Sanctioned Jurisdiction A country or territory subject to comprehensive, country-wide) Tj T*
 (Sanctions. [Compliance to insert the current list maintained by Issuing Company.]) Tj T*
+ET
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 17 0 R >>
+endobj
+19 0 obj
+<< /Length 1093 >>
+stream
+BT
+/F2 9 Tf
+50 800 Td
+(Demo policy: written for the DueDilly demo. The company and its policy are fictional.  Page 8 of 8) Tj
+/F1 10.5 Tf
+0 -26 Td
+14.5 TL
 (Sanctioned Person Any individual, entity or vessel named on a Sanctions list, or owned 50%) Tj T*
 (or more, or controlled, by one or more such persons.) Tj T*
 (Sanctions Economic, financial or trade restrictions imposed by a Sanctions Authority,) Tj T*
@@ -456,36 +485,38 @@ BT
 ET
 endstream
 endobj
-18 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 17 0 R >>
+20 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 19 0 R >>
 endobj
-19 0 obj
+21 0 obj
 << /Title (KYC policy \(demo\)) /Producer (DueDilly scripts/build-policy-files.js) >>
 endobj
 xref
-0 20
+0 22
 0000000000 65535 f 
 0000000009 00000 n 
 0000000058 00000 n 
-0000000156 00000 n 
-0000000226 00000 n 
-0000000301 00000 n 
-0000003382 00000 n 
-0000003518 00000 n 
-0000006231 00000 n 
-0000006367 00000 n 
-0000008690 00000 n 
-0000008827 00000 n 
-0000012036 00000 n 
-0000012174 00000 n 
-0000015250 00000 n 
-0000015388 00000 n 
-0000018272 00000 n 
-0000018410 00000 n 
-0000022515 00000 n 
-0000022653 00000 n 
+0000000163 00000 n 
+0000000233 00000 n 
+0000000308 00000 n 
+0000004027 00000 n 
+0000004163 00000 n 
+0000006726 00000 n 
+0000006862 00000 n 
+0000008985 00000 n 
+0000009122 00000 n 
+0000012269 00000 n 
+0000012407 00000 n 
+0000015433 00000 n 
+0000015571 00000 n 
+0000019024 00000 n 
+0000019162 00000 n 
+0000022712 00000 n 
+0000022850 00000 n 
+0000023996 00000 n 
+0000024134 00000 n 
 trailer
-<< /Size 20 /Root 1 0 R /Info 19 0 R >>
+<< /Size 22 /Root 1 0 R /Info 21 0 R >>
 startxref
-22755
+24236
 %%EOF

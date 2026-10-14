@@ -58,6 +58,9 @@ function validateFinding(raw, rules) {
   };
   if (text(f.ddq_answer_id)) finding.ddq_answer_id = text(f.ddq_answer_id);
   if (f.demo) finding.demo = true;
+  // What the screening agent added about the policy (optional): the clause, its words, and a suggested next step.
+  // They are checked where the agent's answer is checked (pondGuardService). None of them adds or removes points.
+  for (const key of ['policy_clause', 'policy_quote', 'suggested_action', 'policy_note']) if (text(f[key])) finding[key] = text(f[key]).slice(0, 320);
 
   const reject = reason => ({ ok: false, finding, reason });
   const row = rules.rowById[finding.category];

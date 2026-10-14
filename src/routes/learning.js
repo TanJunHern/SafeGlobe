@@ -83,4 +83,25 @@ router.put('/threshold', async (req, res) => {
   } catch (err) { fail(res, err); }
 });
 
+// GET /api/learning/agreement   how near Dilly's suggestions were to the officers' final decisions (judged inside the app)
+router.get('/agreement', (req, res) => {
+  const agreement = require('../learning/agreement');
+  const db = getDb();
+  const out = agreement.overview(db);
+  // "How likely an officer marks this red": the review model's stored prediction for the same case, when it has one
+  const byId = new Map(learning.predictions(db).map(p => [p.entityId, p]));
+  for (const c of out.cases) { const p = byId.get(c.entity_id); c.officerRedPercent = p && p.percent !== null && p.percent !== undefined ? p.percent : null; }
+  res.json(out);
+});
+
+// POST /api/learning/agreement/judge   BigQuery does the judging: uploads the decided requests, keeps the rule as a view, reads it
+router.post('/agreement/judge', aiRateLimit, async (req, res) => {
+  try {
+    res.json(await require('../learning/agreement').judgeInBigQuery(getDb()));
+  } catch (err) {
+    console.error('[Agreement]', err);
+    res.status(500).json({ error: 'Request failed', message: 'Please try again.' });
+  }
+});
+
 module.exports = router;

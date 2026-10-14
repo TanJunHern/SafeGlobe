@@ -108,7 +108,7 @@ test('checks: a country named twice keeps the riskier category and both quotes',
 });
 
 test('JSON shape: the shipped samples are valid, and a broken document is refused', () => {
-  for (const view of [OFAC, EU]) {
+  for (const view of [OFAC, EU, FATF]) {
     const sample = countryRisk.loadSample(view.id);
     assert.ok(sample, `${view.id} has a sample`);
     assert.deepEqual(documentErrors(sample, view), []);
@@ -264,7 +264,8 @@ test('a site that refuses robots is not worked around: "Needs upload", then an o
     assert.match(blocked.reason, /does not get around/);
     assert.equal(dilly.calls.length, 0);
     assert.equal(countryRisk.describeView(db, FATF).status, 'needs_upload');
-    assert.equal(countryRisk.viewData(db, 'fatf_lists').data, null, 'no data: the map stays grey, never coloured from a guess');
+    // Nothing of the blocked read is used: the map keeps the saved sample, labelled as one
+    assert.equal(countryRisk.viewData(db, 'fatf_lists').data.sample, true);
 
     const page = '<html><body><p>High-Risk Jurisdictions subject to a Call for Action: Iran</p><p>Jurisdictions under Increased   Monitoring: Iraq</p></body></html>';
     await assert.rejects(countryRisk.refreshView(db, 'fatf_lists', { upload: { filename: 'fatf.pdf', content: page } }), /Upload one of/);

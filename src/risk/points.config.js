@@ -12,15 +12,15 @@ const RULES_VERSION = 1;
 
 // Each row counts at most once per case. `group` rows are alternatives: only the highest one present counts.
 const ROWS = [
-  { id: 'sanctions_confirmed', label: 'Confirmed sanctions match: name plus a second identifier (date of birth, registration number or IMO)', short: 'Confirmed sanctions match', points: 100, policy: 'Sanctions lists', check: 'sanctions', setsTotal: true, alwaysEscalate: true, locked: true, lockedReason: 'A confirmed sanctions match is always 100 and always goes to Escalate.' },
-  { id: 'sanctions_possible', label: 'Possible sanctions match: name only, strong similarity', short: 'Possible sanctions match', points: 40, policy: '', check: 'sanctions' },
+  { id: 'sanctions_confirmed', label: 'Confirmed sanctions match: name plus a second identifier (date of birth, registration number or IMO)', short: 'Confirmed sanctions match', points: 100, policy: '§1.1', check: 'sanctions', setsTotal: true, alwaysEscalate: true, locked: true, lockedReason: 'A confirmed sanctions match is always 100 and always goes to Escalate.' },
+  { id: 'sanctions_possible', label: 'Possible sanctions match: name only, strong similarity', short: 'Possible sanctions match', points: 40, policy: '§1.1', check: 'sanctions' },
   { id: 'pep_owner', label: 'Director, shareholder or beneficial owner is a PEP', short: 'PEP owner or director', points: 25, policy: '§3.6', check: 'pep' },
   { id: 'pep_associate', label: 'Family member or close associate of a PEP', short: 'PEP family or associate', points: 15, policy: '§3.6', check: 'pep' },
   { id: 'country_cpi_low', label: 'Country CPI below {cpiLow}', short: 'High-risk country', points: 20, policy: '§4.1', check: 'country', group: 'country' },
   { id: 'country_cpi_mid', label: 'Country CPI {cpiLow} to {cpiMidMax}', short: 'Medium-risk country', points: 10, policy: 'Proposed, not in policy yet', check: 'country', group: 'country' },
-  { id: 'adverse_media_severe', label: 'Severe adverse media in the last {adverseMediaMonths} months (fraud, bribery, sanctions evasion)', short: 'Severe adverse media', points: 25, policy: '', check: 'adverse_media' },
-  { id: 'adverse_media_other', label: 'Other adverse media in the last {adverseMediaMonths} months', short: 'Other adverse media', points: 10, policy: '', check: 'adverse_media' },
-  { id: 'ownership_unclear', label: 'Ownership unclear (nominees, bearer shares, offshore holding, beneficial owner unknown)', short: 'Ownership unclear', points: 15, policy: '', check: 'ownership' },
+  { id: 'adverse_media_severe', label: 'Severe adverse media in the last {adverseMediaMonths} months (fraud, bribery, sanctions evasion)', short: 'Severe adverse media', points: 25, policy: '§1.2', check: 'adverse_media' },
+  { id: 'adverse_media_other', label: 'Other adverse media in the last {adverseMediaMonths} months', short: 'Other adverse media', points: 10, policy: '§1.2', check: 'adverse_media' },
+  { id: 'ownership_unclear', label: 'Ownership unclear (nominees, bearer shares, offshore holding, beneficial owner unknown)', short: 'Ownership unclear', points: 15, policy: '§1.3', check: 'ownership' },
   { id: 'broker_intermediary', label: 'Broker or intermediary', short: 'Broker or intermediary', points: 10, policy: '§5.2', check: null },
   { id: 'vessel_ais_dark', label: 'Vessel: AIS dark for more than {aisDarkHours} hours in the last {aisWindowDays} days', short: 'Vessel AIS dark', points: 20, policy: '§5.4', check: 'vessel_behaviour' },
   { id: 'vessel_sts_transfer', label: 'Vessel: ship-to-ship transfer in a high-risk area', short: 'Vessel ship-to-ship transfer', points: 20, policy: '§5.4', check: 'vessel_behaviour' },

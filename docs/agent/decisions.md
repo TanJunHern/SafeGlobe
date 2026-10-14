@@ -299,6 +299,66 @@ Differences from the plan: no "one level of same-site links" and no PDF reading 
 so neither could be tried); the upload button is in the Layers panel, not the Sources tab; a failed check is tried
 again the next day; new setting `COUNTRY_RISK_FETCH` (off unless `live`) so dev and the tests contact no website.
 
+## HUD, Firestore and BigQuery AI track (14 Oct 2026)
+
+- The user gave a new brief in six phases (A to F): Firestore as the live database on Cloud Run, BigQuery as the
+  analytics mirror with `AI.FORECAST`, `AI.DETECT_ANOMALIES` and embeddings with `VECTOR_SEARCH`, a HUD on the
+  Globe, and demo readiness. **This track replaces `CLAUDE.md` Phase 4** and adds Firestore and the HUD. The old
+  Phase 4 plan (`implementation_plan.phase4-bigquery-ai.md`) is superseded; features 4, 11 and 13 are built here.
+- Phase A (discovery, no code changes) is done; the findings and the questions are in `implementation_plan.md`.
+  **The answers are not given yet.** Nothing is built.
+- Stops raised, as the brief asked: `AI.GENERATE_EMBEDDING` needs `CREATE MODEL ... REMOTE WITH CONNECTION`
+  (`AI.EMBED` does not); and Phase B as written cannot keep "the same return shapes", because the SQLite layer is
+  synchronous and Firestore is not.
+- No function was found to be unsupported in `asia-southeast1`. Not confirmed until a dry run: TimesFM by name in
+  Singapore, and `VECTOR_SEARCH` location limits.
+
+## Track withdrawn; Pond-Guard to be strengthened instead (14 Oct 2026)
+
+- The user withdrew the HUD, Firestore and BigQuery AI track before answering its questions: "i dont want that
+  instead can u see what already being build and to strengthen it i dont want to add the forecast etc." Nothing of
+  it was built. Its plan is kept as `implementation_plan.hud-firestore-bigquery.md`. So `CLAUDE.md` features 4
+  (forecast), 11 (name matching) and 13 (AIS anomalies) are **not** being built.
+- The user's picture, in their words: "Dilly orchestor agent. It's called pond guard. Idea is to have 5 sub agents
+  that reads the sections on sanctions for example and maps it against the policy with the sanctions part. Then
+  they provide their findings with citations to the pond guard. And then they suggest what to do. Scoring is a
+  suggestion based on the orchestrator finding against the points rule set by the user in reviews tab. Another BIG
+  QUERY ML is to also judge how near this output is against the users final decision." Also: "right now the pond
+  guard is not running at the first instance."
+- Found: a new KYC request is screened by the older non-agent code; Pond-Guard runs only on an officer's click or a
+  High ripple. `pond_guard` is a `ParallelAgent` with no orchestrating model. No agent is given policy text. The
+  policy has no clause for sanctions, adverse media or ownership. Nothing compares a suggestion with the decision.
+- Plan written (`implementation_plan.md`), **not approved yet**. Questions 1 to 6 are open.
+
+## Pond-Guard plan: the user's answers (14 Oct 2026)
+
+"Approved: build A, B, C, D, E in that order." Then: update the plan and the task list first, and wait for an OK.
+
+| # | Topic | Decision |
+| --- | --- | --- |
+| 1 | First instance | Automatic, in the background, on every new KYC request. Reuse a result under 24 hours old for the same entity. Cap reached: keep the rule-based result, "Pond-Guard daily limit reached, press Screen tomorrow"; officers see runs left. Gemini off or run fails: rule-based result, labelled "Offline". The run must happen inside a request on Cloud Run |
+| 2 | What Dilly may suggest | Next steps only. Score and route always come from the points table in Reviews. One optional line, "Dilly's note", when agents disagree or a check could not run; it does not change the route. All of Dilly's text is labelled "AI suggestion" |
+| 3 | Sub-agents | Five for every entity: Sanctions, PEP, Adverse media, Ownership, Country and contract (§4.1, §2.1, §5.2). Vessels get a sixth, Vessel behaviour (§5.4). Country and contract cites the CPI data and the request's contract value |
+| 4 | Policy gaps | Three clauses added to the demo policy, each labelled "Demo clause", numbered to fit, wording matching the points table. Text and numbers shown to the user before saving |
+| 5 | Final decision | Agreement uses the decision on the request (Approve / Reject). "Request more info" is not final: "Waiting", counted when approved or rejected. The BigQuery ML model keeps using the red and green marks |
+| 6 | Nearness | No new model. 50 points is the line: 50+ and Reject, or under 50 and Approve, is Agreed; 50+ and Approve is "Dilly was stricter"; under 50 and Reject is "Dilly was more lenient". The comparison is a SQL view in BigQuery, with the same logic on SQLite offline. Reviews shows the rate, both counts and the disagreements. The model's probability is shown as "How likely an officer marks this red". The suggestion becomes a feature only when the user reruns training. No retraining by Claude |
+
+Priority if time is short: A to D, then the agreement labels and rate; the probability column is cut first.
+
+Cloud Run check (billing settings page, read 14 Oct): request-based billing is the default and "CPU is only
+allocated during request processing"; `scripts/deploy.sh` does not set `--no-cpu-throttling`. Chosen: the run is
+always inside a request. On UAT that is the existing Pub/Sub push to `POST /events/screening-requested` (ack
+deadline 300 s, service timeout 300 s, run limit 120 s). When events are inline on Cloud Run, or the publish
+fails, nothing runs in the background; the page calls a new `POST /api/kyc/:id/screen-now`. No billing setting is
+changed: instance-based billing would be charged for the instance's whole life.
+
+Claude's readings, to confirm: "the same entity" is the same registration, IMO or ID number in the workspace, or
+the same normalised name and country when there is none. The three clauses are proposed as 1.1, 1.2 and 1.3 under
+Section 1, with three wording changes against the user's drafts so they match the points rows (see the plan).
+
+**Waiting for:** the user's OK on the updated plan and on the clause numbers and texts. No code is changed.
+
 ## Open questions
 
-- Build the rest of the old Phase 4 (forecast, anomalies, name matching), or go to Phase 5?
+- The user's OK on the updated Pond-Guard plan, and on Clauses 1.1 to 1.3 (adverse media: three terms as in the points row, or the user's five with the row's label extended).
+- Quack-Back (6), automatic DDQ email (16), Request more info (17) and "How Dilly works" (15) are not built and are not in the new track.
