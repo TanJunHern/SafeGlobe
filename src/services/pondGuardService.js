@@ -385,8 +385,9 @@ function offlineRun(db, entity, kinds, emit, reason, kind = 'offline', orchAsses
     });
   }
 
-  // Record suggestion with orchestrator assessment
-  db.addSuggestion(suggestionOf(`PG-${entity.id}-offline-${Date.now()}`, entity.id, breakdown, getRules(db), {
+  // Record suggestion with orchestrator assessment. A counterparty with no scored findings yet (for example an
+  // approved KYC request now on the globe) has no breakdown, so there is nothing to suggest.
+  if (breakdown) db.addSuggestion(suggestionOf(`PG-${entity.id}-offline-${Date.now()}`, entity.id, breakdown, getRules(db), {
     mode: 'offline',
     detail: { orchestrator: orchAssessment, dilly: { ok: true, verdict: orchAssessment ? orchAssessment.verdict : 'Review' } }
   }));

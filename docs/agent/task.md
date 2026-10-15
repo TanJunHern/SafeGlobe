@@ -138,3 +138,24 @@
 - [ ] Tests offline (Node and Python)
 - [ ] Section 9.1: ask, then live run on Vertex AI (Aurora Venture and one new request)
 - [ ] `DEPLOY_GUIDE.md` steps 6, 7, 8; README; `walkthrough.md` with demo scores before and after
+
+## Dilly motion (requested 15 Oct 2026, plan: `implementation_plan.motion.md`)
+
+- [x] M1 `dilly-motion.js`, tests, served; motion tokens; Three.js loads only on the sign-in screen
+- [x] M2 Paper plane on Send DDQ and staff invites
+- [x] `npm test` after M1 and M2
+- [x] M3 Rubber stamp on Approve, Reject, Request more info
+- [x] M4 "Why <score>?" count-up; route pose pop
+- [x] `npm test` after M3 and M4
+- [x] M5 Pond-Guard ducklings in a row
+- [x] M6 DDQ portal duckling hop and mommy duck waddle
+- [x] `npm test` after M5 and M6; browser check
+
+## Big report popups (requested 15 Oct 2026, plan: `implementation_plan.popups.md`)
+
+- [x] P1 Popup shell (dimmed page, Minimise, Esc, focus kept inside); Pond-Guard laid out left to right
+- [x] P2 Pond-Guard animation from the real events (packets, spinner rings, badges, score ring counts to the real score)
+- [x] `npm test` after P1 and P2
+- [x] P3 BigQuery ML: Train (stages, reading Dilly), Refresh predictions (new button, popup), a case's prediction (popup)
+- [x] P4 Browser check; docs
+- [x] `npm test` after P3 and P4

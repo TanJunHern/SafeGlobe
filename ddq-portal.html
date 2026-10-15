@@ -191,6 +191,7 @@ details.more summary{cursor:pointer;font-weight:500;color:var(--accent)}
 
 <script src="/portal-shared.js"></script>
 <script src="/ddq-section-status.js"></script>
+<script src="/dilly-motion.js"></script>
 <script src="/duck-tour.js"></script>
 <script>
 (function(){
@@ -317,6 +318,7 @@ const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const plainDuck = s => `${DUCK}${s === 'needs_attention' ? 'ugly_duckling_plain' : 'duckling_plain'}.svg`;
 let submittedNow = false;
 let lastDucks = '';
+let prevDuckStatus = null; // section statuses at the last duck render, to spot a section that just finished
 let lastAttn = null;
 // Checked against the English template so question ids and table column keys always match the saved answers
 const ddqState = () => DDQStatus.evaluate(BASE, R);
@@ -332,6 +334,8 @@ function renderDucks() {
   if (readOnly && (submittedNow || META.submitted_at)) {
     row.className = 'duck-row sent';
     row.innerHTML = `<img src="${DUCK}mommy_duck_envelope.svg" width="96" height="96" alt=""><b>${esc(t('sentTo').replace('{company}', META.issuing_company || 'DueDilly'))}</b>`;
+    // Only right after submitting: mommy duck waddles in with the envelope, the questionnaire is on its way
+    if (submittedNow && window.DillyMotion) DillyMotion.waddle(row.querySelector('img'), 'ddq-sent');
     return;
   }
   const ev = ddqState();
@@ -347,6 +351,12 @@ function renderDucks() {
         <img class="mommy" src="${DUCK}mommy_duck.svg" width="64" height="64" alt="">
       </div>
       <div class="duck-count">${ev.done} ${esc(t('of'))} ${ev.total} ${esc(t('sectionsComplete'))}</div>`;
+    // A section that has just turned done: its duckling hops into the row
+    if (prevDuckStatus && window.DillyMotion) {
+      const imgs = row.querySelectorAll('.duckling img');
+      ev.sections.forEach((s, i) => { if (s.status === 'done' && prevDuckStatus[i] && prevDuckStatus[i] !== 'done') DillyMotion.hop(imgs[i]); });
+    }
+    prevDuckStatus = ev.sections.map(s => s.status);
   }
   if (cur < 0) return;
   // Live parts of the open section: its small duckling and the list of answers that need another look

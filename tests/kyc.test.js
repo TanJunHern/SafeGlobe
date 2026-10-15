@@ -84,6 +84,20 @@ test('KYC Employee Portal Tests', async (t) => {
     assert.ok(Array.isArray(body.extracted_fields));
   });
 
+  await t.test('POST /api/kyc/extract-document offline never invents a company the document does not name', async () => {
+    const res = await fetch(`${BASE_URL}/api/kyc/extract-document`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: 'pelican-quay-intake.pdf', fileContent: 'Registered name: Pelican Quay Marine Supplies Pte Ltd' })
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ai_suggested, false);
+    assert.ok(!body.data.counterparty_name, 'no counterparty name is made up');
+    assert.deepEqual(body.extracted_fields, []);
+    assert.match(body.message, /Fill in the form yourself/);
+  });
+
   await t.test('POST /api/kyc should create new request and trigger DDQ for contract > 100k (Policy §2.1)', async () => {
     const res = await fetch(`${BASE_URL}/api/kyc`, {
       method: 'POST',

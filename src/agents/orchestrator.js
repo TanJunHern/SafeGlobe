@@ -278,7 +278,7 @@ class Orchestrator {
     const verdict = isSafe ? 'SAFE' : 'NOT SAFE';
     const statusLabel = isSafe ? 'Clear / Low Risk' : 'Sanctions Alert / High Risk';
     const recommendedAction = isSafe ? 'Auto-Clear & Routine Monitoring' : 'Mandatory Block & Escalation to Compliance Reviewer';
-    const policyClause = 'Policy §4.1 (International Sanctions & Prohibited Jurisdictions)';
+    const policyClause = 'Policy §4.1 (High-Risk and Prohibited Jurisdictions)';
 
     // 5. LLM Synthesis: "What the LLM thinks: why safe, or why not safe"
     let llmWhy = '';
@@ -288,7 +288,8 @@ class Orchestrator {
     if (useModel && gemini.backend() !== 'disabled') {
       try {
         const prompt = `You are the SafeGlobe Compliance Orchestrator AI.
-Evaluate whether this counterparty KYC submission is SAFE or NOT SAFE based on the Orchestrator's Sanctions Agent analysis extracted from regulatory PDF directives.
+Evaluate whether this counterparty KYC submission has sanctions exposure (SAFE or NOT SAFE on sanctions) based on the Orchestrator's Sanctions Agent analysis extracted from regulatory PDF directives.
+Judge sanctions exposure only. Do not call the counterparty safe or low risk overall, and do not recommend clearing it: country risk, ownership, adverse media and vessel behaviour are scored separately by a points table, which sets the overall risk and route.
 
 Counterparty KYC Submission:
 - Legal Entity / Individual: ${name}
@@ -310,7 +311,7 @@ Respond with strict JSON containing:
   "is_safe": ${isSafe},
   "verdict": "${verdict}",
   "executive_summary": "1-2 sentence executive briefing",
-  "why": "Detailed paragraph explaining WHY it is safe or WHY it is not safe. Directly cite the counterparty's KYC form attributes (jurisdiction, controllers, contract) against the Orchestrator's PDF sanctions findings and regulatory regimes (OFAC, EU, UN).",
+  "why": "Detailed paragraph explaining WHY it has or does not have sanctions exposure. Directly cite the counterparty's KYC form attributes (jurisdiction, controllers, contract) against the Orchestrator's PDF sanctions findings and regulatory regimes (OFAC, EU, UN).",
   "actionable_recommendation": "${recommendedAction}"
 }`;
         const llmResult = await gemini.generateJsonDetailed([{ text: prompt }], { timeoutMs: 15000 });
@@ -329,8 +330,9 @@ Respond with strict JSON containing:
       if (isSafe) {
         const cpiRow = db.getCpiByCode ? db.getCpiByCode(country) : null;
         const cpiText = cpiRow ? `CPI 2025 score of ${cpiRow.score}/100 (${cpiRow.name})` : `jurisdiction code ${country}`;
-        llmWhy = `This counterparty is SAFE. ${name} is incorporated in ${country} (${cpiText}) with no direct operations, state-linked controllers, or transaction routing in the sanctioned jurisdictions (${sanctionsFindings.map(s => s.country).slice(0, 5).join(', ') || 'OFAC/EU restricted territories'}) identified in the regulatory PDF directive (${docFilename}). Beneficial ownership (${directorsUbo || 'declared private owners'}) shows no designated political or military ties. All parameters fully comply with ${policyClause}.`;
-        llmExecutiveSummary = `Safe: No sanctions or embargo exposures detected against regulatory PDF directives for ${name} (${country}).`;
+        // This check covers sanctions only, so the text must not read as an overall "safe" verdict on the case
+        llmWhy = `No sanctions exposure: SAFE on sanctions. ${name} is registered in ${country} (${cpiText}). The KYC form shows no operations, state-linked controllers or transaction routing in the sanctioned jurisdictions (${sanctionsFindings.map(s => s.country).slice(0, 5).join(', ') || 'OFAC/EU restricted territories'}) named in the regulatory PDF directive (${docFilename}), and the declared owners (${directorsUbo || 'declared private owners'}) have no designated political or military ties. This check covers sanctions only: country risk, ownership, adverse media and vessel behaviour are scored separately by the points table, which sets the overall risk and route.`;
+        llmExecutiveSummary = `Sanctions check clear: no sanctions or embargo exposure found for ${name} (${country}) in the regulatory PDF directive. Other risks are scored separately.`;
       } else {
         const hitDetails = exposures.map(e => `${e.type}: ${e.field} references ${e.country} (${e.iso3}) under ${e.regimes.join('/')} sanctions`).join('; ');
         llmWhy = `This counterparty is NOT SAFE (Sanctions Alert). Screening the KYC form against the Orchestrator's regulatory PDF directive (${docFilename}) reveals direct sanctions exposure: ${hitDetails}. Beneficial controllers and corporate registration correlate with prohibited regimes (${[...new Set(exposures.flatMap(e => e.regimes))].join(', ')}). In accordance with ${policyClause}, ongoing onboarding must be halted immediately with mandatory escalation to the Compliance Officer.`;
