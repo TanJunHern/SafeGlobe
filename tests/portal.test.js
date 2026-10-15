@@ -50,7 +50,7 @@ test('Tri-Party Portal Tests', async (t) => {
       const res = await fetch(`${BASE_URL}${url}`);
       assert.notEqual(res.status, 200, `${url} must not be served`);
     }
-    for (const url of ['/portal-shared.css', '/portal-shared.js', '/safe-globe.html']) {
+    for (const url of ['/portal-shared.css', '/portal-shared.js', '/dilly-motion.js', '/safe-globe.html']) {
       assert.equal((await fetch(`${BASE_URL}${url}`)).status, 200, `${url} should still be served`);
     }
   });

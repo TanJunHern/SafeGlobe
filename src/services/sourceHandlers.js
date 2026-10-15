@@ -592,8 +592,8 @@ function generateSimulatedApiData(label, url) {
     {
       name: 'Aurora Venture',
       kind: 'vessel',
-      country: 'LBR',
-      reg_no: 'IMO 9412345',
+      country: 'CMR',
+      reg_no: 'IMO 9304124',
       risk: 85,
       risk_level: 'High',
       summary: 'Maritime intelligence API match: 31 hr AIS dark period in Arabian Sea followed by STS transfer.'
