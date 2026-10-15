@@ -8,7 +8,6 @@ npm-debug.log
 tests
 *.md
 !README.md
-!DEPLOYMENT.md
 .DS_Store
 Thumbs.db
 # Local data: the database, uploaded counterparty documents and backups stay on this machine

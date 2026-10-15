@@ -1,8 +1,0 @@
-{
-  "_disabled": "Not in use. DueDilly deploys to Cloud Run with scripts/deploy.sh (see DEPLOY_GUIDE.md). JSON has no comments, so the old Firebase Hosting settings are kept under _was and are ignored. They pointed at the retired service safe-globe-app.",
-  "_was": {
-    "projects": {
-      "default": "safe-globe-compliance"
-    }
-  }
-}

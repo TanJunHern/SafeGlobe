@@ -1,5 +1,0 @@
-node_modules/
-.data/
-# Finished videos and clips are large: keep them out of git
-clips/*.webm
-*.webm

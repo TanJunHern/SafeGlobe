@@ -21,3 +21,7 @@ Thumbs.db
 # Python bytecode (agents service)
 __pycache__/
 *.pyc
+
+# Demo recordings and scratch files stay local
+demovideo/
+.scratch/
