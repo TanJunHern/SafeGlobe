@@ -44,7 +44,7 @@ case "$AGENTS_URL" in
 esac
 
 UAT_PORT="${PORT:-8081}"
-echo "[uat] Starting on http://localhost:${UAT_PORT}"
+echo "[uat] Starting on http://localhost:${UAT_PORT}  (a local copy; the deployed live demo opens with: npm run live)"
 # Remove any existing container with the same name before starting
 docker rm -f duedilly-uat >/dev/null 2>&1 || true
 
