@@ -25,6 +25,9 @@
   --f-body:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --r:14px; --r-sm:9px;
+  /* Motion (Material 3 easing and duration tokens; spring is Dilly's cartoon overshoot) */
+  --ease-emph:cubic-bezier(.2,0,0,1); --ease-decel:cubic-bezier(.05,.7,.1,1); --ease-accel:cubic-bezier(.3,0,.8,.15); --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --dur-s:150ms; --dur-m:300ms; --dur-l:500ms;
 }
 /* Night pond (dark): only through the theme toggle, Pond is the default */
 :root[data-theme="dark"]{
@@ -340,7 +343,9 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px
 .ticker-item time{font-family:var(--f-mono);font-size:11px;color:var(--fg-3)}
 
 /* drawer */
-.drawer{position:absolute;z-index:8;top:14px;right:14px;bottom:14px;width:440px;display:flex;flex-direction:column;overflow:hidden;transform:translateX(calc(100% + 30px));transition:transform .45s cubic-bezier(.2,.8,.2,1);background:var(--surface)}
+.drawer{position:absolute;z-index:8;top:14px;right:14px;bottom:14px;width:440px;display:flex;flex-direction:column;overflow:hidden;transform:translateX(calc(100% + 30px));transition:transform var(--dur-l) var(--ease-decel);background:var(--surface)}
+/* Drawer: slows as it settles in, leaves faster */
+.drawer:not(.open){transition-duration:250ms;transition-timing-function:var(--ease-accel)}
 .drawer.open{transform:none}
 .dr-head{padding:16px 18px 0;display:flex;flex-direction:column;gap:10px}
 .dr-top{display:flex;align-items:flex-start;gap:12px}
@@ -523,6 +528,8 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:1px 5px;border-radius:5px
 .alert-item time{font-family:var(--f-mono);font-size:10.5px;color:var(--fg-3);white-space:nowrap}
 .toast{position:fixed;z-index:60;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;padding:10px 16px;border-radius:12px;background:var(--fg);color:var(--bg);font-size:13px;box-shadow:var(--shadow-lg);transition:opacity .25s,transform .25s;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 32px)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+/* The toast springs up and fades out quickly */
+.toast{transition:opacity var(--dur-s) var(--ease-decel),transform var(--dur-l) var(--ease-spring)}
 
 /* ---------- page views ---------- */
 .page{position:absolute;inset:0;overflow:auto;padding:28px 32px 40px}
@@ -563,6 +570,8 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 .calib{display:flex;flex-direction:column;gap:12px}
 .ml-cell{display:flex;flex-direction:column;gap:4px;min-width:150px}
 .ml-pred{font-size:11.5px;color:var(--fg-2)}
+button.ml-pred{text-align:left;text-decoration:underline dotted;text-underline-offset:3px}
+button.ml-pred:hover{color:var(--accent)}
 .ml-flag{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 7px;border-radius:9px;font-size:10.5px;font-weight:600;width:max-content}
 .ml-flag.miss{background:var(--high);color:#fff}.ml-flag.alarm{background:var(--surface-2);color:var(--fg-2);border:1px dashed var(--line-2)}
 .ml-btns{display:flex;gap:4px}
@@ -616,6 +625,119 @@ table.cases{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px
 .pg{gap:8px}
 .pg-agent{padding:8px 10px;border-radius:10px;border:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
 .pg-agent.waiting{opacity:.55}
+/* Ducks in a row: one duckling per agent, sitting on the pond line. Faded while waiting, bobbing while
+   reading, hops into line when it has an answer (dilly-motion.js) */
+.pg-ducks{display:flex;gap:6px;align-items:flex-end;padding:0 4px 2px;border-bottom:2px solid color-mix(in srgb,var(--accent) 35%,transparent);align-self:flex-start}
+.pg-duck{display:block}
+.pg-duck.waiting,.pg-duck.no{opacity:.4;filter:grayscale(1)}
+/* Big report popup: Pond-Guard and BigQuery ML open large over a dimmed page so they can be read.
+   Minimise (button, Esc, or a click on the dim) hides it; the run keeps going in the drawer or card */
+.modal.bigview{z-index:55;place-items:center;padding:3vh 16px}
+.bv-sheet{width:min(1320px,96vw);height:min(90vh,900px);background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;overflow:hidden;outline:none;animation:rise var(--dur-m) var(--ease-decel)}
+.bv-head{display:flex;align-items:center;gap:14px;padding:18px 24px 14px;border-bottom:1px solid var(--line)}
+.bv-t{flex:1;min-width:0}
+.bv-head h2{margin:2px 0 0;font:600 26px/1.15 var(--f-display)}
+.bv-head p{margin:4px 0 0;font-size:13px;color:var(--fg-2)}
+.bv-body{flex:1;overflow:auto;padding:22px 24px 28px;font-size:14px}
+.bv-h{margin:0 0 10px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);font-weight:500}
+/* Pond-Guard: a top band (Dilly, the sources read, the result), then the agents side by side, full width */
+.pgb-band{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:28px;align-items:center;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+.pgb-dilly{display:flex;align-items:center;gap:12px}
+.pgb-dilly img{width:96px;height:96px;flex:none}
+.pgb-dilly b{font:600 19px var(--f-display)}
+.pgb-dilly small{font-size:12.5px;color:var(--fg-2)}
+.pgb-src ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.pgb-src li{font-size:12.5px;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);overflow-wrap:anywhere}
+.pgb-src li small{margin-left:6px;color:var(--fg-3);font-size:11.5px}
+.pgb-src a{color:var(--accent)}
+.pgb-res-in{display:flex;align-items:center;gap:14px}
+.pgb-res-txt{display:flex;flex-direction:column;align-items:flex-start;gap:4px;max-width:230px}
+.pgb-res-txt p{margin:0;font-size:12.5px;color:var(--fg-2)}
+.pgb-route{font:600 18px var(--f-display)}
+.pgb-pose{width:64px;height:64px;flex:none}
+.pgb-ring{position:relative;width:120px;height:120px;flex:none}
+.pgb-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.pgb-ring b{position:absolute;inset:0;display:grid;place-items:center;font:600 38px var(--f-display)}
+.pgb-ring small{position:absolute;left:0;right:0;bottom:24px;text-align:center;font-size:11.5px;color:var(--fg-3)}
+.pgb-agents{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:12px}
+.pgb-col{border:1px solid var(--line);border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface);min-width:0;transition:opacity var(--dur-m)}
+.pgb-col.waiting{opacity:.5}
+.pgb-ic{position:relative;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;align-self:center;background:var(--surface-2);border:2px solid var(--line);color:var(--accent)}
+.pgb-ic>.ic{width:26px;height:26px}
+.pgb-col.running .pgb-ic::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:3px solid transparent;border-top-color:var(--accent);border-right-color:var(--accent);animation:spin .9s linear infinite}
+.pgb-badge{position:absolute;right:-7px;top:-7px;min-width:24px;height:24px;padding:0 6px;border-radius:12px;display:grid;place-items:center;color:#fff;font:600 12px var(--f-body);border:2px solid var(--surface)}
+.pgb-badge .ic{width:14px;height:14px;stroke:#fff;stroke-width:2.4}
+.pgb-badge.ok{background:var(--low)}.pgb-badge.hit{background:var(--mid)}.pgb-badge.high{background:var(--high)}.pgb-badge.no{background:var(--slate)}
+.pgb-col h4{margin:0;text-align:center;font:600 15px/1.2 var(--f-display)}
+.pgb-st{text-align:center;font-size:12px;color:var(--fg-2)}
+.pgb-f{border-radius:10px;background:var(--surface-2);padding:9px 10px;font-size:12.5px;display:flex;flex-direction:column;gap:5px;overflow-wrap:anywhere}
+.pgb-f.no{opacity:.6}
+.pgb-f>b{display:flex;justify-content:space-between;gap:6px;font-size:13px}
+.pgb-f .pts{font-family:var(--f-mono);color:var(--high-ink);white-space:nowrap}
+.pgb-f blockquote{margin:0;padding:4px 8px;border-left:3px solid var(--line-2);color:var(--fg-2);font-size:12px}
+.pgb-f small{color:var(--fg-3);font-size:11.5px}
+.pgb-f a{color:var(--accent)}
+.pgb-sum{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+.pgb-sum .card-ish{padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2)}
+.pgb-sum h3{margin:0 0 6px;font:600 17px var(--f-display)}
+.pgb-sum p{margin:0;line-height:1.55}
+.pgb-sum ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.mlb-bars{display:flex;align-items:flex-end;gap:5px;height:64px;margin-top:4px}
+.mlb-bars i{flex:1;border-radius:4px 4px 0 0;background:color-mix(in srgb,var(--accent) 30%,transparent);transform-origin:bottom}
+.mlb-bars i.best{background:var(--accent)}
+.mlb-counts{display:flex;gap:28px;justify-content:center}
+.mlb-counts div{display:flex;flex-direction:column;align-items:center}
+.mlb-counts b{font:600 34px/1 var(--f-display)}
+.mlb-counts small{font-size:12px;color:var(--fg-3)}
+.mlb-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.mlb-card{text-align:left;border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--surface);font-size:13px}
+.mlb-card:hover{border-color:var(--accent)}
+.mlb-card>b{font:600 15px var(--f-display)}
+.mlb-meter{display:block;height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden}
+.mlb-meter i{display:block;height:100%;background:var(--accent);transform-origin:left}
+.mlb-chip{align-self:flex-start;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px}
+.mlb-chip.miss{color:var(--mid-ink);background:color-mix(in srgb,var(--mid) 18%,transparent)}
+.mlb-chip.alarm{color:var(--slate);background:var(--slate-soft)}
+.mlb-chip.agrees{color:var(--low-ink);background:color-mix(in srgb,var(--low) 15%,transparent)}
+.mlb-case{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.mlb-box{border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.mlb-box p{margin:0}
+.mlb-big{font:600 44px/1 var(--f-display)}
+.mlb-why{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.mlb-why li{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:10px;align-items:center;font-size:13px}
+.mlb-dir{position:relative;height:8px;border-radius:4px;background:var(--surface-3)}
+.mlb-dir::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-2)}
+.mlb-dir i{position:absolute;top:0;bottom:0;border-radius:4px}
+.mlb-dir i.up{left:50%;background:var(--high);transform-origin:left}
+.mlb-dir i.down{right:50%;background:var(--low);transform-origin:right}
+@media (max-width:1100px){
+  .mlb-case{grid-template-columns:minmax(0,1fr)}
+  .mlb-counts{justify-content:flex-start}
+}
+/* Phones: the popup takes the whole screen; the header wraps so the title gets the full width */
+@media (max-width:640px){
+  .modal.bigview{padding:0}
+  .bv-sheet{width:100vw;height:100vh;height:100dvh;border-radius:0;border:0}
+  .bv-head{flex-wrap:wrap;gap:8px 10px;padding:14px 16px 12px}
+  .bv-t{flex:1 0 100%}
+  .bv-head h2{font-size:22px}
+  .bv-head p{font-size:12.5px}
+  #bv-min{margin-left:auto}
+  .bv-body{padding:16px 16px 24px}
+  .pgb-dilly img{width:72px;height:72px}
+  .pgb-ring{width:96px;height:96px}
+  .pgb-ring b{font-size:30px}
+  .pgb-ring small{bottom:17px}
+  .pgb-res-in{flex-wrap:wrap}
+  .mlb-counts{gap:18px}
+  .mlb-counts b{font-size:28px}
+  .mlb-big{font-size:36px}
+  .mlb-why li{grid-template-columns:minmax(0,1fr) 80px}
+}
+@media (max-width:1100px){
+  .pgb-band{grid-template-columns:minmax(0,1fr);gap:16px}
+  .pgb-agents{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+}
 .pg-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px}
 .pg-st{font-size:11px;padding:1px 7px;border-radius:9px;background:var(--surface-2);color:var(--fg-2)}
 .pg-st.run{background:var(--accent-soft);color:var(--accent);animation:pgpulse 1.2s ease-in-out infinite}
@@ -2133,6 +2255,16 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
 </div>
 
 <!-- SafeGlobe KYC: Audit & Traceability Drawer Modal -->
+<div class="modal bigview" id="bigview" hidden>
+  <div class="bv-sheet" role="dialog" aria-modal="true" aria-labelledby="bv-title" tabindex="-1">
+    <div class="bv-head">
+      <div class="bv-t"><span class="eyebrow" id="bv-eyebrow"></span><h2 id="bv-title"></h2><p id="bv-sub"></p></div>
+      <span id="bv-mode"></span>
+      <button class="btn" id="bv-min" type="button" title="Minimise (Esc). The run keeps going."><svg class="ic sm"><use href="#i-minus"/></svg>Minimise</button>
+    </div>
+    <div class="bv-body" id="bv-body"></div>
+  </div>
+</div>
 <div class="modal" id="kyc-audit-modal" hidden>
   <div class="sheet" style="max-width:760px;max-height:90vh;display:flex;flex-direction:column" role="dialog" aria-modal="true" aria-label="KYC Request Audit Detail">
     <div class="sheet-head">
@@ -2483,9 +2615,9 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="/duck-tour.js"></script>
 <script src="/dilly-loader.js"></script>
+<script src="/dilly-motion.js"></script>
 <script src="/monitoring-ui.js"></script>
 <script src="/country-risk-views.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -3353,9 +3485,20 @@ function renderDrawer(){
   else{const e=ENT.get(D.id);r=e.kind==='org'?orgDrawer(e):e.kind==='vessel'?vesselDrawer(e):personDrawer(e);}
   h.innerHTML=headHTML(r.head);b.innerHTML=r.body;f.innerHTML=r.foot||'';f.hidden=!r.foot;
   requestAnimationFrame(()=>$$('.bar i[data-w]',b).forEach(i=>i.style.width=i.dataset.w+'%'));
+  if(window.DillyMotion&&D.kind!=='country')motionDrawer(b);
+}
+/* Drawer motion. Each plays once per entity and result, never on a plain re-render:
+   the score counts up as its rows land, Dilly's route pose arrives, a finished Pond-Guard duckling hops */
+function motionDrawer(root){
+  const why=$('.why',root),cnt=why&&$('[data-count]',why);
+  if(cnt)DillyMotion.tally(why,`why:${D.id}:${cnt.dataset.count}`);
+  $$('.route-card .dilly-pose',root).forEach((img,i)=>{const src=img.getAttribute('src')||'';DillyMotion.pop(img,`pose:${D.id}:${src}:${i}`,src.includes('dilly_sanctions'));});
+  $$('[data-hop]',root).forEach(el=>DillyMotion.hop(el,el.dataset.hop));
 }
 drawer.addEventListener('click',ev=>{
-  if(ev.target.closest('[data-pg="screen"]')){runPondGuard(D.id);return;}
+  const pg=ev.target.closest('[data-pg]');
+  if(pg&&pg.dataset.pg==='screen'){const id=D.id;runPondGuard(id);openPgBig(id,pg);return;}
+  if(pg&&pg.dataset.pg==='big'){openPgBig(D.id,pg);return;}
   const tab=ev.target.closest('[data-tab]');if(tab){D.tab=tab.dataset.tab;renderDrawer();$('#dr-body').scrollTop=0;return;}
   const op=ev.target.closest('[data-open]');if(op){const id=op.dataset.open;if(op.dataset.kind==='country'){const f=COUNTRY.get(id);if(f)selectCountry(f);}else select(id);return;}
   const act=ev.target.closest('[data-act]');if(!act)return;
@@ -3367,7 +3510,7 @@ drawer.addEventListener('click',ev=>{
   else if(a==='answer-ddq')openAnswerDDQModal(e);
   else if(a==='decision'){D.tab='decision';renderDrawer();}
   else if(a==='escalate')toast(`Escalated to Grace Teo with the evidence pack (${e.conf}% confidence)`);
-  else if(a==='approve'){toast(`Decision signed. Confidence ${e.conf}% and ${sourcesFor(e).length} sources saved to the audit trail`);act.disabled=true;act.textContent='Signed';}
+  else if(a==='approve'){if(window.DillyMotion)DillyMotion.stamp(act.closest('.memo,.sec')||act,'signed');toast(`Decision signed. Confidence ${e.conf}% and ${sourcesFor(e).length} sources saved to the audit trail`);act.disabled=true;act.textContent='Signed';}
   else if(a==='changes')toast('Sent back to '+e.owner+' with your comments');
   else if(a==='rescreen')toast(`Re-screened ${e.short||e.name} against 41 lists and 4 custom sources. No change`);
   else if(a==='invite')toast('Claim invitation sent to the registered email on file');
@@ -4125,7 +4268,7 @@ function renderCalib(){
   $('#calib').innerHTML=`<p class="muted" style="margin:0;font-size:12.5px">Share of AI ratings that reviewers upheld, last 90 days. High confidence must stay above 95% before auto-clearing stays on.</p>`+rows.map(r=>`<div class="calib-row"><div><b>${r[0]}</b><div class="faint mono" style="font-size:10.5px">${r[1]}</div></div><div class="bar"><i data-w="${r[2]}" style="width:${r[2]}%;background:${r[4]?'var(--low)':'var(--fg-3)'}"></i>${r[4]?'<em style="left:95%" title="Target 95%"></em>':''}</div><div class="mono" style="text-align:right">${r[2]}%</div></div>`).join('')+`<div class="faint" style="font-size:11.5px;display:flex;justify-content:space-between"><span>Sample checks this week: 146 auto-clears</span><span class="mono">0 overturned</span></div>`;
 }
 $('#rev-seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.rev=b.dataset.f;$$('#rev-seg button').forEach(x=>x.classList.toggle('on',x===b));renderReviews();});
-$('#cases').addEventListener('click',e=>{const lb=e.target.closest('[data-ml-label]');if(lb){e.stopPropagation();labelCase(lb.dataset.mlId,lb.dataset.mlLabel);return;}const tr=e.target.closest('tr[data-id]');if(tr)select(tr.dataset.id);});
+$('#cases').addEventListener('click',e=>{const mo=e.target.closest('[data-ml-open]');if(mo){e.stopPropagation();openMl('ml-case',mo,()=>$(`#cases [data-ml-open="${CSS.escape(mo.dataset.mlOpen)}"]`),mo.dataset.mlOpen);return;}const lb=e.target.closest('[data-ml-label]');if(lb){e.stopPropagation();labelCase(lb.dataset.mlId,lb.dataset.mlLabel);return;}const tr=e.target.closest('tr[data-id]');if(tr)select(tr.dataset.id);});
 $('#cases').addEventListener('pointerover',e=>{const tr=e.target.closest('tr[data-id]');$$('.mx-dot').forEach(d=>d.classList.toggle('hl',!!tr&&d.dataset.id===tr.dataset.id));});
 $('#matrix').addEventListener('click',e=>{const d=e.target.closest('.mx-dot');if(d)select(d.dataset.id);});
 $('#matrix').addEventListener('pointerover',e=>{const d=e.target.closest('.mx-dot');$$('#cases tr[data-id]').forEach(r=>r.classList.toggle('hl',!!d&&r.dataset.id===d.dataset.id));});
@@ -6330,6 +6473,7 @@ function openKycAuditModal(r) {
         body: JSON.stringify({ status: 'Approved' })
       });
       if (res.ok) {
+        if (window.DillyMotion) DillyMotion.stamp(modal.querySelector('.sheet'), 'Approved');
         toast(`KYC Request ${r.id} approved`);
         modal.hidden = true;
         renderEmployeeWorkspace();
@@ -6345,6 +6489,7 @@ function openKycAuditModal(r) {
         body: JSON.stringify({ status: 'Rejected' })
       });
       if (res.ok) {
+        if (window.DillyMotion) DillyMotion.stamp(modal.querySelector('.sheet'), 'Rejected');
         toast(`KYC Request ${r.id} rejected`);
         modal.hidden = true;
         renderEmployeeWorkspace();
@@ -6619,7 +6764,7 @@ async function handleKycDocumentUpload(file) {
 
     if (d.remarks) fillAndHighlight('#kyc-remarks', d.remarks);
 
-    toast(`Point A: Gemini multimodal extraction completed (${result.extracted_fields?.length || 4} fields auto-filled)`);
+    toast(d.counterparty_name ? `Dilly filled in ${result.extracted_fields?.length || 0} fields from the document. Check them before you submit.` : (result.message || 'Dilly could not read this document. Fill in the form yourself.'));
   } catch (err) {
     console.error('Error extracting KYC document:', err);
     toast('Document extraction completed using fallback heuristics');
@@ -6837,7 +6982,9 @@ async function renderSettings() {
     ? `<thead><tr><th>When</th><th>Who</th><th>What</th><th>About</th><th>Details</th></tr></thead><tbody>${d.log.map(l => `<tr><td>${esc(fmtWhen(l.at))}</td><td>${esc(l.actorName || l.actorEmail)}</td><td><b>${esc(l.action)}</b></td><td>${esc(l.targetName || l.targetEmail)}${l.targetName && l.targetEmail ? `<br><small class="faint">${esc(l.targetEmail)}</small>` : ''}</td><td>${esc(l.detail)}</td></tr>`).join('')}</tbody>`
     : `<tbody><tr><td><div class="empty-state"><b>No account changes yet</b><p>Invitations, role changes and deletions will be listed here with who made them and when. Invite your first employee above.</p></div></td></tr></tbody>`;
 }
-function showInviteResult(out, email) {
+function showInviteResult(out, email, fromBtn) {
+  // Paper plane: flies away when the invitation was emailed, loops back when only the link was made
+  if (fromBtn && window.DillyMotion) DillyMotion.fly(fromBtn, DillyMotion.planeOutcome(out));
   const box = $('#set-invite-result');
   box.innerHTML = `<svg class="ic sm"><use href="#i-${out.delivery.sent ? 'check' : 'link'}"/></svg><p><b>${out.delivery.sent ? `Invitation emailed to ${esc(email)}.` : `${esc(email)} is invited.`}</b> ${out.delivery.sent ? '' : esc(out.delivery.reason)}</p><button class="btn sm" id="set-copy-latest" type="button">Copy invite link</button>`;
   box.hidden = false;
@@ -6851,7 +6998,7 @@ function initSettings() {
     try {
       const out = await settingsCall('POST', '/invites', { email });
       $('#set-invite-email').value = '';
-      showInviteResult(out, out.account.email);
+      showInviteResult(out, out.account.email, $('#set-invite-btn'));
       renderSettings();
     } catch (err) { $('#set-invite-result').hidden = true; $('#set-msg').textContent = err.message; toast(err.message); }
   });
@@ -6870,7 +7017,7 @@ function initSettings() {
         setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = 'Delete account'; } }, 5000);
         return;
       }
-      if (btn.dataset.set === 'resend') showInviteResult(await settingsCall('POST', `/invites/${encodeURIComponent(id)}/resend`), account.email);
+      if (btn.dataset.set === 'resend') showInviteResult(await settingsCall('POST', `/invites/${encodeURIComponent(id)}/resend`), account.email, btn);
       if (btn.dataset.set === 'cancel') { await settingsCall('DELETE', `/invites/${encodeURIComponent(id)}`); toast('Invitation cancelled'); }
       if (btn.dataset.set === 'role') { await settingsCall('PUT', `/accounts/${encodeURIComponent(id)}/role`, { role: btn.dataset.role }); toast(`${account.name || account.email} is now ${ROLE_LABELS[btn.dataset.role]}`); }
       if (btn.dataset.set === 'delete') { await settingsCall('DELETE', `/accounts/${encodeURIComponent(id)}`); toast(`${account.name || account.email} no longer has access`); }
@@ -7208,6 +7355,10 @@ async function bootSession() {
    LOGIN HERO · INTERACTIVE 3D GLOBE (Three.js, 2D canvas fallback)
 ===================================================================== */
 let heroGlobe = null;
+// Three.js is only needed for the sign-in globe, so it loads when that screen shows, not with every page
+const THREE_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+let threeState = window.THREE ? 'ready' : 'idle';
+let heroWanted = false;
 
 function resolveColor(value, fallback) {
   const ctx = document.createElement('canvas').getContext('2d');
@@ -7399,6 +7550,17 @@ function createCanvasHero(canvas) {
 function startHeroGlobe() {
   const canvas = $('#hero-globe-canvas');
   if (!canvas) return;
+  heroWanted = true;
+  if (!heroGlobe && threeState === 'idle') {
+    threeState = 'loading';
+    const s = document.createElement('script');
+    s.src = THREE_SRC;
+    s.onload = () => { threeState = 'ready'; if (heroWanted) startHeroGlobe(); };
+    s.onerror = () => { threeState = 'failed'; if (heroWanted) startHeroGlobe(); };
+    document.head.appendChild(s);
+    return;
+  }
+  if (!heroGlobe && threeState === 'loading') return;
   if (!heroGlobe) {
     try {
       heroGlobe = window.THREE ? createThreeHero(canvas) : createCanvasHero(canvas);
@@ -7413,6 +7575,7 @@ function startHeroGlobe() {
   heroGlobe.tick();
 }
 function stopHeroGlobe() {
+  heroWanted = false;
   if (heroGlobe) heroGlobe.running = false;
 }
 
@@ -7733,6 +7896,12 @@ async function submitTriage(id, action, notes = '') {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || data.error || 'Triage failed');
     const monitored = data.request.request_status === 'Approved' && data.request.ongoing_monitoring;
+    // Rubber stamp: a person signed this decision
+    if (window.DillyMotion) {
+      const modal = $('#comp-triage-modal');
+      const row = [...$$('#comp-table-body tr[data-kyc-id]')].find(tr => tr.dataset.kycId === id);
+      DillyMotion.stamp(!modal.hidden ? modal.querySelector('.sheet') : row, action);
+    }
     toast(`${id}: ${data.request.request_status}${monitored ? ' · now monitored on the globe' : ''}`);
     $('#comp-triage-modal').hidden = true;
     renderComplianceWorkspace();
@@ -8137,6 +8306,8 @@ function renderAuditDdqActions(r) {
       const res = await apiFetch(`/api/kyc/${encodeURIComponent(r.id)}/send-ddq`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error);
+      // Paper plane: flies away when the DDQ went out, loops back when only the link was made
+      if (window.DillyMotion) DillyMotion.fly(sendBtn, DillyMotion.planeOutcome(data));
       toast(data.message);
       renderEmployeeWorkspace();
       openKycAuditModal(data.request);
@@ -8184,7 +8355,8 @@ function orchestratorCardHTML(orch){
   const isSafe = orch.is_safe;
   const badgeClass = isSafe ? 'q-monitor' : 'b-high';
   const badgeIcon = isSafe ? ic('check', 'sm') : ic('alert', 'sm');
-  const badgeText = isSafe ? 'SAFE · Low Risk' : 'NOT SAFE · Sanctions Alert';
+  // This card is the sanctions check only: its badge and action must not read as the case's overall result
+  const badgeText = isSafe ? 'No sanctions exposure' : 'Sanctions exposure found';
   const headerBg = isSafe ? 'color-mix(in srgb, var(--low) 10%, var(--surface))' : 'color-mix(in srgb, var(--high) 12%, var(--surface))';
   const borderCol = isSafe ? 'color-mix(in srgb, var(--low) 32%, transparent)' : 'color-mix(in srgb, var(--high) 45%, transparent)';
 
@@ -8205,7 +8377,7 @@ function orchestratorCardHTML(orch){
 
     <div style="margin:6px 0 10px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--fg-2);margin-bottom:4px;display:flex;align-items:center;gap:4px">
-        ${ic('spark','sm')} What the LLM thinks:
+        ${ic('spark','sm')} ${orch.model_used && orch.model_used !== 'deterministic_rules' ? 'What the AI found on sanctions:' : 'What the sanctions check found (rules, no AI):'}
       </div>
       <p style="margin:0;font-size:12.5px;line-height:1.5;color:var(--fg);background:var(--surface);padding:10px 12px;border-radius:6px;border:1px solid var(--border)">
         ${esc(orch.why || orch.summary)}
@@ -8217,7 +8389,7 @@ function orchestratorCardHTML(orch){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;background:var(--surface-2);padding:8px 10px;border-radius:6px;margin-top:8px;border:1px solid var(--border)">
       <div>
         <span class="faint" style="display:block">KYC Form Checked:</span>
-        <b>${esc(orch.kyc_evaluated ? `${orch.kyc_evaluated.counterparty_name} (${orch.kyc_evaluated.country})` : 'KYC Form')}</b>
+        <b>${esc(orch.kyc_evaluated ? `${orch.kyc_evaluated.counterparty_name} (registered ${orch.kyc_evaluated.country}${orch.kyc_evaluated.vessel_flag ? `, flag ${orch.kyc_evaluated.vessel_flag}` : ''})` : 'KYC Form')}</b>
       </div>
       <div>
         <span class="faint" style="display:block">PDF Directives Ingested:</span>
@@ -8228,10 +8400,11 @@ function orchestratorCardHTML(orch){
         <span>${esc(orch.policy_clause || 'Policy §4.1')}</span>
       </div>
       <div>
-        <span class="faint" style="display:block">Action:</span>
-        <b style="color:${isSafe ? 'var(--low-ink)' : 'var(--high-ink)'}">${esc(orch.recommended_action || (isSafe ? 'Auto-Clear' : 'Mandatory Block'))}</b>
+        <span class="faint" style="display:block">Sanctions check says:</span>
+        <b style="color:${isSafe ? 'var(--low-ink)' : 'var(--high-ink)'}">${isSafe ? 'No block needed on sanctions' : 'Block and escalate'}</b>
       </div>
     </div>
+    <p class="faint" style="margin:8px 0 0;font-size:11.5px">This card covers sanctions only. The overall risk and route come from the points table (see the "Why" panel), and a person decides.</p>
   </div>`;
 }
 
@@ -8249,10 +8422,12 @@ function pondGuardHTML(e){
     ${a.state==='done'&&a.error?`<small class="faint">${esc(a.error)}</small>`:''}${a.note?`<small class="faint">${esc(a.note)}</small>`:''}
     ${(a.findings||[]).map(f=>`<div class="pg-f${f.accepted?'':' no'}"><span>${esc(f.accepted?f.short||'Finding':'Not counted')}</span><p>${esc(f.summary||'')}</p>${f.quote?`<blockquote>“${esc(f.quote)}”</blockquote>`:''}<small>${f.accepted?(f.sourceUrl?`<a href="${esc(f.sourceUrl)}" target="_blank" rel="noopener">${esc(f.sourceName)}</a>`:esc(f.sourceName||'')):esc(f.reason||'')}</small></div>`).join('')}</div>`).join('');
   const note=run.mode==='offline'?`<div class="hint">${ic('alert')}<p style="margin:0"><b>Offline sample.</b> ${esc(run.reason||'The live agents are not connected.')} These are the stored findings; nothing was changed.</p></div>`:run.done?`<p class="faint" style="margin:0;font-size:11.5px">Live run by the Google ADK agents on Gemini${run.modelId?` (${esc(run.modelId)})`:''}. Every finding was checked against its source before it counted.</p>`:'';
-  return `<div class="sec pg"><div class="sec-h"><h3>Pond-Guard agents</h3>${btn}</div>${orchHTML}${run.message?`<p class="faint" style="margin:0;font-size:12px">${esc(run.message)}</p>`:''}${rows}${note}</div>`;
+  const ducks=run.agents.length?`<div class="pg-ducks" aria-hidden="true">${run.agents.map(a=>{const no=a.state==='done'&&a.ok===false;return `<img class="pg-duck ${esc(a.state)}${no?' no':''}${a.state==='running'?' dm-bob':''}" src="/assets/ducklings/duckling_icon_nowater.svg" width="26" height="26" alt=""${a.state==='done'&&!no?` data-hop="pg:${run.t0}:${esc(a.id)}"`:''}>`;}).join('')}</div>`:'';
+  const big=`<button class="btn sm" data-pg="big" type="button" title="Open the full report">${ic('arrow','sm')}Open report</button>`;
+  return `<div class="sec pg"><div class="sec-h"><h3>Pond-Guard agents</h3><div style="display:flex;gap:6px">${big}${btn}</div></div>${ducks}${orchHTML}${run.message?`<p class="faint" style="margin:0;font-size:12px">${esc(run.message)}</p>`:''}${rows}${note}</div>`;
 }
 async function runPondGuard(id){
-  const run={done:false,mode:'',reason:'',agents:[],message:'',orchestrator:null};
+  const run={done:false,mode:'',reason:'',agents:[],message:'',orchestrator:null,t0:Date.now()};
   RISK.pg.set(id,run);
   const redraw=()=>{if(drawerOpen()&&D.id===id)renderDrawer();};
   redraw();
@@ -8262,9 +8437,9 @@ async function runPondGuard(id){
     else if(ev.type==='agent_done'){const a=run.agents.find(x=>x.id===ev.agent);if(a)Object.assign(a,{state:'done',ok:ev.ok,error:ev.error||'',note:ev.note||'',findings:ev.findings||[]});}
     else if(ev.type==='orchestrator_assessment'){run.orchestrator=ev.assessment;}
     else if(ev.type==='dilly'){run.dilly=ev.dilly;}
-    else if(ev.type==='scored'){if(ev.offline){run.mode='offline';run.reason=ev.reason||run.reason;}run.modelId=ev.modelId||'';if(ev.suggestion&&ev.suggestion.orchestrator)run.orchestrator=ev.suggestion.orchestrator;}
+    else if(ev.type==='scored'){if(ev.offline){run.mode='offline';run.reason=ev.reason||run.reason;}run.modelId=ev.modelId||'';if(ev.breakdown)run.breakdown=ev.breakdown;if(ev.suggestion&&ev.suggestion.orchestrator)run.orchestrator=ev.suggestion.orchestrator;}
     else if(ev.type==='error'){run.message=ev.message;}
-    redraw();
+    redraw();pgBigEvent(id,ev);
   };
   try{
     const res=await apiFetch('/api/pond-guard/'+encodeURIComponent(id)+'/screen',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
@@ -8273,11 +8448,191 @@ async function runPondGuard(id){
     for(;;){const {value,done}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});let nl;while((nl=buf.indexOf('\n'))>=0){const line=buf.slice(0,nl).trim();buf=buf.slice(nl+1);if(line)onEvent(JSON.parse(line));}}
   }catch(err){run.message=err.message;run.mode=run.mode||'offline';}
   run.done=true;run.agents.forEach(a=>{if(a.state!=='done'){a.state='done';a.ok=false;}});
+  pgBigEvent(id,{type:'end'});
   RISK.bd.delete(id);
   await loadRisk();
   redraw();
 }
 function whyHTML(e){return pondGuardHTML(e)+whyPanelHTML(e);}
+
+/* ===================== Big report popup (Pond-Guard, BigQuery ML) ===================== */
+// Opens large over a dimmed page because the drawer is too small to read. Minimise (button, Esc, or a click on
+// the dim) only hides it: the run keeps going and its progress stays in the drawer or the "Dilly learns" card.
+const BV={kind:'',id:'',opener:null,back:null};
+const bigviewOpen=()=>!$('#bigview').hidden;
+function openBigview(kind,id,opener,back){
+  BV.kind=kind;BV.id=id;BV.opener=opener||null;BV.back=back||null;
+  $('#bigview').hidden=false;renderBigview();$('#bigview .bv-sheet').focus();
+}
+function minimiseBigview(){
+  if(!bigviewOpen())return;
+  $('#bigview').hidden=true;PGV.queue=[];
+  const to=(BV.back&&BV.back())||(BV.opener&&BV.opener.isConnected?BV.opener:null);
+  if(to)to.focus();
+}
+function renderBigview(){if(BV.kind==='pg')renderPgBig();else if(typeof renderMlBig==='function')renderMlBig();}
+function bvHead(eyebrow,title,sub,mode){$('#bv-eyebrow').textContent=eyebrow;$('#bv-title').textContent=title;$('#bv-sub').textContent=sub;$('#bv-mode').innerHTML=mode||'';}
+$('#bv-min').addEventListener('click',minimiseBigview);
+$('#bigview').addEventListener('click',e=>{if(e.target.id==='bigview')minimiseBigview();});
+// Esc minimises the popup before the page's own Esc handler can close anything else
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&bigviewOpen()){e.stopPropagation();minimiseBigview();}},true);
+// Keyboard focus stays inside the popup while it is open
+$('#bigview').addEventListener('keydown',e=>{
+  if(e.key!=='Tab')return;
+  const f=$$('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])',$('#bigview .bv-sheet'));if(!f.length)return;
+  const first=f[0],last=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+});
+
+/* Pond-Guard in the popup, left to right: sources, Dilly, one column per agent, the result.
+   The popup keeps its own "shown" state and plays the real events through a short queue, so an offline run
+   (all events within a fraction of a second) is still readable. The data and the drawer are not delayed. */
+const PG_ICON={sanctions:'shield',pep:'person',adverse_media:'doc',ownership:'org',country_contract:'globe',vessel_behaviour:'ship'};
+const RING_TONE={high:'var(--high)',medium:'var(--mid)',low:'var(--low)'};
+const PGV={id:'',run:null,agents:new Map(),scored:false,dilly:false,ended:false,queue:[],busy:false};
+function pgViewReset(id){
+  const run=RISK.pg.get(id)||null;
+  Object.assign(PGV,{id,run,queue:[],busy:false,agents:new Map((run?run.agents:[]).map(a=>[a.id,a.state])),scored:!!(run&&run.breakdown),dilly:!!(run&&run.dilly),ended:!!(run&&run.done)});
+}
+const pgShown=a=>Object.assign({},a,{state:PGV.agents.get(a.id)||'waiting'});
+const pgPts=()=>new Map(((PGV.scored&&PGV.run.breakdown&&PGV.run.breakdown.lines)||[]).map(l=>[l.findingId,l]));
+const pgMode=run=>run.mode==='offline'?'<span class="pill plain q-gaps">Offline sample</span>':run.mode==='live'?'<span class="pill plain q-monitor">Live</span>':'';
+function pgBadgeHTML(a){
+  if(a.state!=='done')return '';
+  if(a.ok===false)return '<span class="pgb-badge no" title="No answer">–</span>';
+  const n=(a.findings||[]).filter(f=>f.accepted);
+  if(!n.length)return `<span class="pgb-badge ok" title="Nothing found">${ic('check','sm')}</span>`;
+  return `<span class="pgb-badge ${n.some(f=>/^sanctions/.test(f.category||''))?'high':'hit'}" title="${n.length} finding${n.length===1?'':'s'}">${n.length}</span>`;
+}
+function pgStatus(a){
+  if(a.state==='waiting')return 'Waiting';
+  if(a.state==='running')return 'Reading the sources…';
+  if(a.ok===false)return a.error||'No answer';
+  const n=(a.findings||[]).filter(f=>f.accepted).length;
+  return n?`${n} finding${n===1?'':'s'}`:'Nothing found';
+}
+function pgCardHTML(f,pts){
+  const l=pts.get(f.id);
+  const src=f.accepted?(f.sourceUrl?`<a href="${esc(f.sourceUrl)}" target="_blank" rel="noopener">${esc(f.sourceName)}</a>`:esc(f.sourceName||'')):esc(f.reason||'');
+  return `<div class="pgb-f${f.accepted?'':' no'}" data-fid="${esc(f.id||'')}"><b><span>${esc(f.accepted?f.short||'Finding':'Not counted')}</span>${l?`<span class="pts">${l.setsTotal?'=':'+'}${l.points}</span>`:''}</b>${f.summary?`<span>${esc(f.summary)}</span>`:''}${f.quote?`<blockquote>“${esc(f.quote)}”</blockquote>`:''}${src?`<small>${src}</small>`:''}</div>`;
+}
+function pgColInner(a,pts){
+  const done=a.state==='done';
+  return `<div class="pgb-ic"><svg class="ic" aria-hidden="true"><use href="#i-${PG_ICON[a.id]||'spark'}"/></svg>${pgBadgeHTML(a)}</div><h4>${esc(a.label)}</h4><span class="pgb-st">${esc(pgStatus(a))}</span>${done&&a.note?`<small class="faint">${esc(a.note)}</small>`:''}${done?(a.findings||[]).map(f=>pgCardHTML(f,pts)).join(''):''}`;
+}
+function pgSources(){
+  const run=PGV.run,seen=new Map();
+  for(const a of run.agents)if(PGV.agents.get(a.id)==='done')for(const f of a.findings||[])if(f.accepted&&f.sourceName&&!seen.has(f.sourceName))seen.set(f.sourceName,{name:f.sourceName,url:f.sourceUrl||''});
+  if(PGV.scored)for(const s of (run.breakdown&&run.breakdown.sources)||[])if(s.name&&!seen.has(s.name))seen.set(s.name,s);
+  return [...seen.values()];
+}
+const pgSrcLI=s=>`<li data-src="${esc(s.name)}">${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`:esc(s.name)}${s.readAt&&readWhen(s.readAt)?`<small>read ${esc(readWhen(s.readAt))}</small>`:''}</li>`;
+function pgDillyLine(){
+  const n=PGV.run.agents.length,d=[...PGV.agents.values()].filter(s=>s==='done').length;
+  if(PGV.ended)return 'Done. A person decides.';
+  if(!n)return 'Sending the agents out…';
+  if(d<n)return `Reading the sources · ${d} of ${n} agents done`;
+  return PGV.scored?'Writing the summary…':'Adding up the points…';
+}
+const pgDillyImg=()=>`/assets/mascot/${PGV.ended?'dilly_v3_neutral.svg':'dilly_reading.svg'}`;
+function pgResHTML(){
+  const b=PGV.scored&&PGV.run.breakdown;
+  if(!b)return `<div class="pgb-ring"><svg viewBox="0 0 160 160" aria-hidden="true"><circle cx="80" cy="80" r="64" fill="none" stroke="var(--surface-3)" stroke-width="12"/></svg><b class="faint">–</b></div><div class="pgb-res-txt"><p>${PGV.ended?'No finding has been scored for this counterparty yet, so there is no score.':'The score appears when every agent has answered.'}</p></div>`;
+  const q=Q[b.route]||{};
+  return `<div class="pgb-ring"><svg viewBox="0 0 160 160" aria-hidden="true"><circle cx="80" cy="80" r="64" fill="none" stroke="var(--surface-3)" stroke-width="12"/><circle class="pgb-arc" cx="80" cy="80" r="64" fill="none" stroke="${RING_TONE[b.level.id]||'var(--accent)'}" stroke-width="12" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${100-Math.round(b.risk/b.cap*100)}"/></svg><b data-count="${b.risk}">${b.risk}</b><small>of ${b.cap}</small></div>
+    <div class="pgb-res-txt"><span class="pill plain ${levelCls(b.level.id)}">${esc(b.level.label)} risk</span>
+    <div class="pgb-route" style="color:${q.color||'inherit'}">${esc(b.routeLabel||q.label||'')}</div>
+    <p>${esc(b.routeReason||'')}</p></div>
+    ${b.pose?`<img class="pgb-pose" src="/assets/mascot/${esc(b.pose)}" width="64" height="64" alt="">`:''}`;
+}
+function pgSumHTML(){
+  const run=PGV.run,d=PGV.dilly&&run.dilly,parts=[];
+  if(d&&d.ok!==false&&d.summary)parts.push(`<div class="card-ish"><span class="eyebrow">${esc(d.label||'AI suggestion')}</span><h3>What Dilly makes of it</h3><p>${esc(d.summary)}</p>${(d.nextSteps||[]).length?`<ol>${d.nextSteps.map(s=>`<li>${esc(s.action)}${(s.policyClauses||[]).length?` <span class="faint">(${esc(s.policyClauses.join(', '))})</span>`:''}</li>`).join('')}</ol>`:''}${d.note?`<p class="faint" style="margin-top:8px">${esc(d.note)}</p>`:''}</div>`);
+  else if(d&&d.ok===false)parts.push(`<p class="faint">${esc(d.reason||'')}</p>`);
+  if(run.message)parts.push(`<p class="faint">${esc(run.message)}</p>`);
+  if(run.orchestrator)parts.push(orchestratorCardHTML(run.orchestrator));
+  if(run.mode==='offline')parts.push(`<div class="hint">${ic('alert')}<p style="margin:0"><b>Offline sample.</b> ${esc(run.reason||'The live agents are not connected.')} These are the stored findings; nothing was changed.</p></div>`);
+  else if(PGV.ended)parts.push(`<p class="faint" style="font-size:12.5px">Live run by the Google ADK agents on Gemini${run.modelId?` (${esc(run.modelId)})`:''}. Every finding was checked against its source before it counted.</p>`);
+  parts.push('<p class="faint" style="font-size:12.5px">The AI finds facts; the points table gives the score; a person decides.</p>');
+  return parts.join('');
+}
+function renderPgBig(){
+  const run=PGV.run,e=ENT.get(BV.id);
+  if(!run||!e){minimiseBigview();return;}
+  bvHead('Pond-Guard agents · Google ADK',e.name,'Each agent reads its sources and returns findings with a quote and a link. The points table gives the score.',pgMode(run));
+  const pts=pgPts(),src=pgSources();
+  $('#bv-body').innerHTML=`<div id="pgb"><div class="pgb-band">
+    <div class="pgb-dilly"><img id="pgb-dilly-img" src="${pgDillyImg()}" alt=""><div><b>Dilly</b><br><small id="pgb-line" aria-live="polite">${esc(pgDillyLine())}</small></div></div>
+    <div class="pgb-src"><h3 class="bv-h">Sources read</h3><ul id="pgb-src">${src.length?src.map(pgSrcLI).join(''):'<li class="faint">Listed here as the agents read them.</li>'}</ul></div>
+    <div><h3 class="bv-h">Result</h3><div class="pgb-res-in" id="pgb-res">${pgResHTML()}</div></div>
+  </div>
+  <h3 class="bv-h">Agents</h3><div class="pgb-agents" style="--n:${Math.max(run.agents.length,1)}">${run.agents.map(a=>{const s=pgShown(a);return `<section class="pgb-col ${s.state}" data-agent="${esc(a.id)}">${pgColInner(s,pts)}</section>`;}).join('')}</div>
+  <div class="pgb-sum" id="pgb-sum">${pgSumHTML()}</div></div>`;
+}
+function openPgBig(id,opener){pgViewReset(id);openBigview('pg',id,opener,()=>$('#dr-body [data-pg="big"]'));}
+/* A real Pond-Guard event for the open popup: queued, then shown one at a time */
+function pgBigEvent(id,ev){
+  if(!(BV.kind==='pg'&&BV.id===id&&bigviewOpen()&&PGV.run===RISK.pg.get(id)))return;
+  PGV.queue.push(ev);pgPump();
+}
+function pgPump(){
+  if(PGV.busy)return;
+  const ev=PGV.queue.shift();if(!ev)return;
+  PGV.busy=true;pgApply(ev);
+  const calm=!window.DillyMotion||DillyMotion.reduced();
+  setTimeout(()=>{PGV.busy=false;pgPump();},calm?0:({agent_started:160,agent_done:520,scored:1700}[ev.type]||80));
+}
+function pgApply(ev){
+  if(!(BV.kind==='pg'&&bigviewOpen()&&$('#pgb')))return;
+  const run=PGV.run,M=window.DillyMotion,root=$('#pgb');
+  if(ev.type==='started'){PGV.agents=new Map(run.agents.map(a=>[a.id,'waiting']));PGV.scored=PGV.dilly=PGV.ended=false;renderPgBig();return;}
+  const col=ev.agent&&root.querySelector(`.pgb-col[data-agent="${CSS.escape(ev.agent)}"]`);
+  const a=ev.agent&&run.agents.find(x=>x.id===ev.agent);
+  if(ev.type==='agent_started'&&col&&a){
+    PGV.agents.set(a.id,'running');col.className='pgb-col running';col.innerHTML=pgColInner(pgShown(a),pgPts());
+    if(M)M.packet($('#pgb-dilly-img'),col.querySelector('.pgb-ic'));
+  }else if(ev.type==='agent_done'&&col&&a){
+    PGV.agents.set(a.id,'done');col.className='pgb-col done';col.innerHTML=pgColInner(pgShown(a),pgPts());
+    if(M){const badge=col.querySelector('.pgb-badge');if(badge)M.pop(badge,`pgb:${run.t0}:${a.id}`);M.rise(col.querySelectorAll('.pgb-f'));}
+    pgAddSources();
+  }else if(ev.type==='scored'){
+    PGV.scored=true;
+    const pts=pgPts();
+    root.querySelectorAll('.pgb-col').forEach(c=>{const x=run.agents.find(y=>y.id===c.dataset.agent);if(x)c.innerHTML=pgColInner(pgShown(x),pts);});
+    pgAddSources();
+    $('#bv-mode').innerHTML=pgMode(run);
+    const res=$('#pgb-res');res.innerHTML=pgResHTML();
+    if(M&&!M.reduced()){
+      // Each counted finding travels to the score, then the ring fills and the number counts up to the real total
+      const ring=res.querySelector('.pgb-ring');let n=0;
+      root.querySelectorAll('.pgb-f[data-fid]').forEach(card=>{const l=pts.get(card.dataset.fid);if(l&&n<10)M.packet(card,ring,/^sanctions/.test(l.category||'')?'high':'mid',n++*90);});
+      const delay=n*90+560,arc=res.querySelector('.pgb-arc'),num=res.querySelector('[data-count]');
+      if(arc)arc.animate([{strokeDashoffset:100},{strokeDashoffset:Number(arc.getAttribute('stroke-dashoffset'))}],{duration:800,delay,easing:M.EASE.decel,fill:'backwards'});
+      if(num){num.textContent='0';setTimeout(()=>{if(num.isConnected)M.countUp(num,Number(num.dataset.count),800);},delay);}
+      M.rise([...res.querySelectorAll('.pgb-res-txt>*,.pgb-pose')],90,delay+700);
+    }
+  }else if(ev.type==='dilly'||ev.type==='error'||ev.type==='orchestrator_assessment'){
+    if(ev.type==='dilly')PGV.dilly=true;
+    const sum=$('#pgb-sum');sum.innerHTML=pgSumHTML();
+    if(M&&ev.type==='dilly')M.rise(sum.children);
+  }else if(ev.type==='end'){
+    PGV.ended=true;PGV.dilly=!!run.dilly;
+    run.agents.forEach(x=>{if(PGV.agents.get(x.id)!=='done'){PGV.agents.set(x.id,'done');const c=root.querySelector(`.pgb-col[data-agent="${CSS.escape(x.id)}"]`);if(c){c.className='pgb-col done';c.innerHTML=pgColInner(pgShown(x),pgPts());}}});
+    if(!PGV.scored&&run.breakdown){pgApply({type:'scored'});}
+    else if(!PGV.scored){const res=$('#pgb-res');if(res)res.innerHTML=pgResHTML();}
+    $('#bv-mode').innerHTML=pgMode(run);$('#pgb-dilly-img').src=pgDillyImg();$('#pgb-sum').innerHTML=pgSumHTML();
+  }
+  const line=$('#pgb-line');if(line)line.textContent=pgDillyLine();
+}
+function pgAddSources(){
+  const ul=$('#pgb-src');if(!ul)return;
+  const have=new Set($$('li[data-src]',ul).map(li=>li.dataset.src));
+  const add=pgSources().filter(s=>!have.has(s.name));if(!add.length)return;
+  const ph=ul.querySelector('li:not([data-src])');if(ph)ph.remove();
+  ul.insertAdjacentHTML('beforeend',add.map(pgSrcLI).join(''));
+  if(window.DillyMotion)DillyMotion.rise([...ul.children].slice(-add.length));
+}
 function whyPanelHTML(e){
   const b=getBreakdown(e.id);
   if(b===undefined)return `<div class="sec why"><p class="faint" style="margin:0;font-size:12.5px">Reading how this score was reached…</p></div>`;
@@ -8292,10 +8647,10 @@ function whyPanelHTML(e){
   const total=b.confirmedSanctions?`A confirmed sanctions match sets the score to ${b.cap}.`:b.capped?`Points add up to ${b.sum}, capped at ${b.cap}.`:b.lines.length>1?`${b.lines.map(l=>l.points).join(' + ')} = ${b.risk}.`:'';
   const left=b.notCounted.length+b.rejected.length;
   const audit=left?`<details class="why-audit"><summary>${left} finding${left>1?'s':''} not counted</summary><ul>${b.notCounted.map(n=>`<li>${esc(n.id)}: ${esc(n.reason)}</li>`).join('')}${b.rejected.map(r=>`<li>${esc(r.summary||r.id)}: rejected. ${esc(r.reason)}</li>`).join('')}</ul></details>`:'';
-  return `${strip}<div class="sec why"><div class="sec-h"><h3>Why ${b.risk}?</h3><span class="pill plain ${levelCls(b.level.id)}">${esc(b.level.label)} risk</span></div>
+  return `${strip}<div class="sec why"><div class="sec-h"><h3>Why <span data-count="${b.risk}">${b.risk}</span>?</h3><span class="pill plain ${levelCls(b.level.id)}">${esc(b.level.label)} risk</span></div>
     ${b.demo?'<p class="faint" style="margin:0;font-size:11.5px">Demo data: this counterparty and its findings are fictional.</p>':''}
     ${rows||'<p class="muted" style="margin:0;font-size:12.5px">No finding added risk points.</p>'}
-    <div class="why-total"><b>${b.risk} of ${b.cap} · ${esc(b.level.label)}</b>${total?`<span>${esc(total)}</span>`:''}</div>
+    <div class="why-total"><b><span data-count="${b.risk}">${b.risk}</span> of ${b.cap} · ${esc(b.level.label)}</b>${total?`<span>${esc(total)}</span>`:''}</div>
     <p class="why-route"><b>Route: ${esc(b.routeLabel)}.</b> ${esc(b.routeReason)} A person signs every decision.</p>
     ${reliedOnHTML(b)}
     ${audit}
@@ -8426,7 +8781,7 @@ if (crawlerCardEl) {
 const LEARN={status:null,preds:new Map(),busy:false};
 function mlCellHTML(c){
   const p=LEARN.preds.get(c.id),lab=p&&p.officerLabel;
-  const pred=p&&p.p!=null?`<span class="ml-pred" title="Inference by the ${p.backend==='bigquery'?'BigQuery ML':'offline'} model. ${esc((p.reasons||[]).slice(0,3).map(r=>r.label+' ('+r.direction+')').join('; '))}">${p.percent}% likely real risk</span>${p.flag==='likely_miss'?'<span class="ml-flag miss" title="'+esc(p.flagText)+'">Likely miss</span>':p.flag==='likely_false_alarm'?'<span class="ml-flag alarm" title="'+esc(p.flagText)+'">Likely false alarm</span>':''}`:'<span class="ml-pred faint">No prediction yet</span>';
+  const pred=p&&p.p!=null?`<button class="ml-pred" type="button" data-ml-open="${esc(c.id)}" title="Open the prediction. Inference by the ${p.backend==='bigquery'?'BigQuery ML':'offline'} model. ${esc((p.reasons||[]).slice(0,3).map(r=>r.label+' ('+r.direction+')').join('; '))}">${p.percent}% likely real risk</button>${p.flag==='likely_miss'?'<span class="ml-flag miss" title="'+esc(p.flagText)+'">Likely miss</span>':p.flag==='likely_false_alarm'?'<span class="ml-flag alarm" title="'+esc(p.flagText)+'">Likely false alarm</span>':''}`:'<span class="ml-pred faint">No prediction yet</span>';
   const btn=(k,t)=>`<button class="ml-btn ${k}${lab&&lab.colour===k?' on':''}" data-ml-label="${k}" data-ml-id="${esc(c.id)}" type="button" title="${k==='red'?'Mark as real risk':'Mark as not a risk'}. Your mark is a training example for the model. It does not change the risk score or the route.">${t}</button>`;
   return `<div class="ml-cell">${pred}<span class="ml-btns">${btn('red','Red')}${btn('green','Green')}</span></div>`;
 }
@@ -8438,6 +8793,7 @@ async function loadLearning(){
     LEARN.status=await a.json();const d=await b.json();
     LEARN.preds=new Map((d.predictions||[]).map(p=>[p.entityId,p]));
     renderLearning();renderReviews();
+    if(bigviewOpen()&&BV.kind.startsWith('ml-'))renderMlBig();
     if(LEARN.status.training)setTimeout(loadLearning,15000);
   }catch(err){}
 }
@@ -8469,7 +8825,7 @@ function renderLearning(){
     ${tr?`<p style="font-size:12.5px;margin:0 0 10px"><b>Training now</b> on ${tr.rows} reviews with ${tr.trialsPlanned} tuning trials. This takes a few minutes; the page checks by itself.</p>`:''}
     ${st.lastFailure?`<p style="font-size:12.5px;margin:0 0 10px;color:var(--high-ink)">The last training run failed: ${esc(st.lastFailure.error||'')}</p>`:''}
     ${m?`<dl class="learn-kv"><dt>Model</dt><dd>${esc(m.backendLabel)}</dd><dt>Trained on</dt><dd>${m.rows} reviews (${m.realRows} yours, ${m.syntheticRows} synthetic)</dd><dt>Trained</dt><dd>${esc(new Date(m.trainedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}))}</dd></dl>${m.note?`<p class="faint" style="font-size:11.5px;margin:8px 0 0">${esc(m.note)}</p>`:''}<div style="margin:10px 0">${trials}</div>`:`<p class="muted" style="font-size:12.5px;margin:0 0 10px">No model yet. ${st.canTrain?'':`At least ${st.minRows} labelled reviews are needed.`}</p>`}
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${trainBtn}<span class="faint" style="font-size:11.5px">${st.trainsLeftToday==null?'':st.trainsLeftToday+' training runs left today'}</span></div></div></div>`;
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${trainBtn}${m&&!tr?'<button class="btn" data-learn="refresh" type="button">Refresh predictions</button>':''}<span class="faint" style="font-size:11.5px">${st.trainsLeftToday==null?'':st.trainsLeftToday+' training runs left today'}</span></div></div></div>`;
   const mt=m&&m.metrics;
   const quality=`<div class="card"><div class="card-h"><h2>3. How good is it?</h2><span class="faint" style="font-size:12px">Measured on ${mt?mt.rows:'–'} reviews it never saw</span></div><div class="card-b">
     ${mt?`<dl class="learn-kv"><dt>Risks the rules scored low, that officers marked red</dt><dd>${mt.missed_by_rules}</dd><dt>…of those, the model would have flagged</dt><dd>${mt.missed_caught_by_model} of ${mt.missed_by_rules}</dd><dt>Real risks it finds (recall)</dt><dd>${pct(mt.recall)}</dd><dt>When it says "risk", how often it is right (precision)</dt><dd>${pct(mt.precision)}</dd><dt>Ranking quality (AUC, 0.5 is a coin toss, 1 is perfect)</dt><dd>${mt.roc_auc??'–'}</dd><dt>Real risks it still misses (false negatives)</dt><dd>${mt.false_negatives}</dd></dl>
@@ -8483,17 +8839,138 @@ function renderLearning(){
   const gloss=`<div class="card"><div class="card-h"><h2>The words, in plain terms</h2></div><div class="card-b"><dl class="gloss" style="margin:0">${st.glossary.map(g=>`<dt>${esc(g.term)}</dt><dd>${esc(g.text)}</dd>`).join('')}</dl></div></div>`;
   body.innerHTML=data+train+quality+sugg+gloss;
 }
-async function learnAction(kind){
+async function learnAction(kind,btn){
   if(LEARN.busy)return;LEARN.busy=true;
   try{
     const call=(path,method,body)=>apiFetch(path,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||d.error||'That did not work');return d;});
     if(kind==='synthetic'){toast('Adding synthetic demo reviews…');await call('/api/learning/synthetic','POST',{count:800});toast('800 synthetic demo reviews added');}
     else if(kind==='clear'){const d=await call('/api/learning/synthetic','DELETE');toast(d.removed+' synthetic reviews removed');}
-    else if(kind==='train'){toast('Training the review model…');const d=await call('/api/learning/train','POST',{});toast(d.status==='training'?'Training started on BigQuery ML. It takes a few minutes.':'Model trained. Predictions updated.');}
+    else if(kind==='train'){
+      MLV.running=true;MLV.error='';openMl('ml-train',btn,()=>$('[data-learn="train"]')||$('[data-learn="refresh"]'));
+      toast('Training the review model…');
+      try{const d=await call('/api/learning/train','POST',{});toast(d.status==='training'?'Training started on BigQuery ML. It takes a few minutes.':'Model trained. Predictions updated.');}
+      catch(err){MLV.error=err.message;throw err;}
+      finally{MLV.running=false;}
+    }
+    else if(kind==='refresh'){LEARN.busy=false;await mlRefresh(btn);return;}
   }catch(err){toast(err.message);}
-  LEARN.busy=false;loadLearning();
+  LEARN.busy=false;
+  if(bigviewOpen()&&BV.kind.startsWith('ml-'))renderMlBig();
+  loadLearning();
 }
-document.addEventListener('click',e=>{const b=e.target.closest('[data-learn]');if(b){learnAction(b.dataset.learn);return;}const o=e.target.closest('[data-learn-open]');if(o)select(o.dataset.learnOpen);});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-learn]');if(b){learnAction(b.dataset.learn,b);return;}const o=e.target.closest('[data-learn-open]');if(o)select(o.dataset.learnOpen);});
+
+/* BigQuery ML in the big popup. Train: the stages of a real training run (Dilly reads while it trains).
+   Refresh: every open case through the model, as cards. A case: its prediction next to the rules, with reasons.
+   Everything shown comes from /api/learning; the model never changes a risk score or a route. */
+const MLV={caseId:'',running:false,error:'',played:new Set()};
+const mlOnce=k=>!MLV.played.has(k)&&MLV.played.add(k);
+const ML_FLAG={likely_miss:['miss','2nd look'],likely_false_alarm:['alarm','Likely false alarm'],agrees:['agrees','Agrees with the rules']};
+const mlChip=p=>{const f=ML_FLAG[p.flag];return f?`<span class="mlb-chip ${f[0]}">${f[1]}</span>`:'';};
+const mlMode=st=>st?`<span class="pill plain ${st.mode==='bigquery'?'q-monitor':'q-gaps'}" title="${esc(st.modeReason||'')}">${esc(st.modeLabel||'')}</span>`:'';
+const mlPreds=()=>[...LEARN.preds.values()].filter(p=>p.p!=null).sort((a,b)=>({likely_miss:0,likely_false_alarm:1}[a.flag]??2)-({likely_miss:0,likely_false_alarm:1}[b.flag]??2)||b.p-a.p);
+function openMl(kind,opener,back,caseId){MLV.caseId=caseId||'';openBigview(kind,'',opener,back);}
+function renderMlBig(){
+  const st=LEARN.status;
+  if(!st){bvHead('BigQuery ML · review model','Loading…','',''); $('#bv-body').innerHTML='';return;}
+  if(BV.kind==='ml-train')mlTrainView(st);
+  else if(BV.kind==='ml-refresh')mlRefreshView(st);
+  else if(BV.kind==='ml-case')mlCaseView(st);
+}
+function mlStage(state,icon,title,status,extra){
+  const badge=state==='done'?`<span class="pgb-badge ok">${ic('check','sm')}</span>`:state==='failed'?'<span class="pgb-badge high">!</span>':'';
+  return `<section class="pgb-col ${state==='failed'?'done':state}" data-stage="${esc(title)}"><div class="pgb-ic"><svg class="ic" aria-hidden="true"><use href="#i-${icon}"/></svg>${badge}</div><h4>${esc(title)}</h4><span class="pgb-st">${status}</span>${extra||''}</section>`;
+}
+function mlTrainView(st){
+  const L=st.labels,m=st.model,tr=st.training,M=window.DillyMotion;
+  const phase=MLV.error?'failed':MLV.running?'sending':tr?'training':m?'done':'idle';
+  const syn=L.synthetic.risk+L.synthetic.no_risk,real=L.real.risk+L.real.no_risk;
+  bvHead('BigQuery ML · review model','Training the review model','Boosted decision trees learn from officers\' red and green reviews. Hyperparameter tuning keeps the best version.',mlMode(st));
+  const busy=phase==='sending'||phase==='training';
+  const trials=(m&&m.tuning&&m.tuning.trials)||[];
+  const maxAuc=Math.max(...trials.map(t=>t.roc_auc||0),0.01);
+  const bars=phase==='done'&&trials.length?`<div class="mlb-bars" aria-label="Tuning trials">${trials.map(t=>`<i class="${t.is_optimal?'best':''}" style="height:${Math.max(8,Math.round((t.roc_auc||0)/maxAuc*100))}%" title="Trial ${t.trial_id}: AUC ${t.roc_auc??'–'}${t.is_optimal?' (kept)':''}"></i>`).join('')}</div>`:'';
+  const mt=m&&m.metrics,miss=mlPreds().filter(p=>p.flag==='likely_miss').length;
+  const stages=[
+    mlStage('done','review','Reviews',`${L.total} labelled`,`<small class="faint">${real} yours · ${syn} synthetic demo</small>`),
+    mlStage(phase==='sending'?'running':'done','feed','Training table',esc(st.mode==='bigquery'?'In BigQuery':'In the app (offline model)')),
+    mlStage(phase==='failed'?'failed':busy?'running':phase==='done'?'done':'waiting','layers','Boosted trees and tuning',esc(phase==='failed'?MLV.error:tr?`${tr.rows} reviews · ${tr.trialsPlanned} trials · takes a few minutes`:trials.length?`${trials.length} trials, best kept`:phase==='done'?'Trained':'Waiting'),bars),
+    mlStage(phase==='done'?'done':'waiting','shield','Checked on held-back reviews',esc(mt?`AUC ${mt.roc_auc??'–'} · caught ${mt.missed_caught_by_model} of ${mt.missed_by_rules} misses`:'Waiting')),
+    mlStage(phase==='done'?'done':'waiting','list','Predictions',esc(phase==='done'?`${LEARN.preds.size} cases · ${miss} for a 2nd look`:'Waiting'),phase==='done'?'<button class="btn sm primary" data-bv-ml="refresh-view" type="button">See the predictions</button>':'')
+  ].join('');
+  const line=phase==='failed'?'Training did not finish.':phase==='sending'?'Sending the reviews to BigQuery…':phase==='training'?'Training on BigQuery ML. I check every 15 seconds.':phase==='done'?'Trained. A person still decides every case.':'Ready to train.';
+  $('#bv-body').innerHTML=`<div class="pgb-band"><div class="pgb-dilly"><img id="mlb-dilly" src="/assets/mascot/${busy?'dilly_reading.svg':'dilly_v3_neutral.svg'}" alt=""><div><b>Dilly</b><br><small aria-live="polite">${esc(line)}</small></div></div>
+    <p class="faint" style="margin:0;font-size:12.5px">${syn?`${L.syntheticShare}% of the reviews are <b>synthetic demo data</b>, so the numbers describe that data, not accuracy on real cases. `:''}${esc(st.guardrail||'')}</p><div></div></div>
+    <div class="pgb-agents" style="--n:5">${stages}</div>`;
+  if(M&&!M.reduced()){
+    const key=`train:${phase}:${m?m.trainedAt:''}`;
+    if(mlOnce(key)){
+      const cols=$$('#bv-body .pgb-col');
+      if(busy){const i=phase==='sending'?1:2;M.packet($('#mlb-dilly'),cols[i]&&cols[i].querySelector('.pgb-ic'));}
+      if(phase==='done'){[1,2,3].forEach(i=>M.packet(cols[i].querySelector('.pgb-ic'),cols[i+1].querySelector('.pgb-ic'),'',i*220));
+        $$('#bv-body .mlb-bars i').forEach((b,i)=>b.animate([{transform:'scaleY(0)'},{transform:'none'}],{duration:350,delay:i*70,easing:M.EASE.spring,fill:'backwards'}));
+        $$('#bv-body .pgb-badge').forEach((b,i)=>M.pop(b,`${key}:b${i}`));}
+    }
+  }
+}
+function mlCardHTML(p){
+  return `<button class="mlb-card" type="button" data-ml-case="${esc(p.entityId)}"><b>${esc(p.name||p.entityId)}</b><small class="faint">Rules: ${esc(String(p.ruleRisk??'–'))} points · ${esc(p.ruleRoute||'')}</small><span class="mlb-meter"><i style="transform:scaleX(${p.p})"></i></span><span><b class="mono">${p.percent}%</b> likely real risk</span>${mlChip(p)}</button>`;
+}
+function mlRefreshView(st){
+  const preds=mlPreds(),M=window.DillyMotion;
+  const miss=preds.filter(p=>p.flag==='likely_miss').length,alarm=preds.filter(p=>p.flag==='likely_false_alarm').length;
+  bvHead('BigQuery ML · predictions','Every open case through the model','The prediction is how likely an officer would mark the case as real risk. Where it disagrees with the rules, it suggests a 2nd look.',mlMode(st));
+  const line=MLV.error?MLV.error:MLV.running?'Running every open case through the model…':st.model?`Done. ${preds.length} cases predicted.`:'No model yet. Train it first.';
+  $('#bv-body').innerHTML=`<div class="pgb-band"><div class="pgb-dilly"><img src="/assets/mascot/${MLV.running?'dilly_reading.svg':'dilly_v3_neutral.svg'}" alt=""><div><b>Dilly</b><br><small aria-live="polite">${esc(line)}</small></div></div>
+    <div class="mlb-counts">${MLV.running?'':`<div><b data-count="${preds.length}">${preds.length}</b><small>cases</small></div><div><b data-count="${miss}" style="color:var(--mid-ink)">${miss}</b><small>2nd look</small></div><div><b data-count="${alarm}">${alarm}</b><small>likely false alarm</small></div>`}</div>
+    <div>${st.model?`<small class="faint">${esc(st.model.backendLabel||'')}</small>`:''}</div></div>
+    ${MLV.running?'':`<div class="mlb-cards">${preds.map(mlCardHTML).join('')||'<p class="faint">No predictions yet.</p>'}</div>`}
+    <p class="faint" style="margin-top:16px;font-size:12.5px">${esc(st.guardrail||'')}</p>`;
+  if(M&&!M.reduced()&&!MLV.running&&mlOnce(`refresh:${st.model?st.model.trainedAt:''}:${preds.length}:${MLV.refreshedAt||0}`)){
+    const cards=$$('#bv-body .mlb-card');M.rise(cards,50);
+    cards.forEach((c,i)=>{const bar=c.querySelector('.mlb-meter i');if(bar)bar.animate([{transform:'scaleX(0)'},{transform:bar.style.transform}],{duration:600,delay:200+i*50,easing:M.EASE.decel,fill:'backwards'});});
+    $$('#bv-body .mlb-counts [data-count]').forEach(n=>M.countUp(n,Number(n.dataset.count),700));
+  }
+}
+function mlCaseView(st){
+  const p=LEARN.preds.get(MLV.caseId),M=window.DillyMotion;
+  if(!p||p.p==null){bvHead('BigQuery ML · one case','No prediction','This case has no prediction yet.',mlMode(st));$('#bv-body').innerHTML='';return;}
+  bvHead('BigQuery ML · one case',p.name||p.entityId,'The model\'s prediction next to what the rules said. The model never changes the risk score or the route.',mlMode(st));
+  const max=Math.max(...(p.reasons||[]).map(r=>Math.abs(r.attribution)||0),0.001);
+  const why=(p.reasons||[]).slice(0,6).map(r=>{const w=Math.round(Math.abs(r.attribution)/max*50),up=r.attribution>0;return `<li><span>${esc(r.label||r.feature)}<small class="faint"> · ${esc(r.direction||'')}</small></span><span class="mlb-dir"><i class="${up?'up':'down'}" style="width:${w}%"></i></span></li>`;}).join('');
+  const lab=p.officerLabel;
+  $('#bv-body').innerHTML=`<div class="mlb-case">
+    <div class="mlb-box"><h3 class="bv-h">The rules (they set the score)</h3><div class="mlb-big">${esc(String(p.ruleRisk??'–'))}<small class="faint" style="font-size:16px"> points</small></div><p>${esc(p.ruleRoute||'')}${p.ruleConfidence!=null?` · ${p.ruleConfidence}% confidence`:''}</p></div>
+    <div class="mlb-box"><h3 class="bv-h">The model (a suggestion)</h3><div class="mlb-big" data-count="${p.percent}">${p.percent}%</div><span class="mlb-meter"><i style="transform:scaleX(${p.p})"></i></span><p>likely to be marked real risk</p>${mlChip(p)}<p class="faint" style="margin-top:8px">${esc(p.flagText||'')}</p></div>
+    <div class="mlb-box"><h3 class="bv-h">Why the model says so</h3>${why?`<ul class="mlb-why">${why}</ul>`:'<p class="faint">No reasons returned.</p>'}</div>
+  </div>
+  ${lab?`<p style="margin-top:14px">Officer's mark: <b>${esc(lab.text||lab.label)}</b>${lab.by?` by ${esc(lab.by)}`:''}.</p>`:''}
+  <div style="display:flex;gap:8px;margin-top:16px"><button class="btn" data-learn-open="${esc(p.entityId)}" type="button">${ic('arrow','sm')}Open the case</button></div>
+  <p class="faint" style="margin-top:12px;font-size:12.5px">${esc(st.guardrail||'')}</p>`;
+  if(M&&!M.reduced()&&mlOnce(`case:${p.entityId}:${p.p}`)){
+    M.rise($$('#bv-body .mlb-box'),120);
+    const big=$('#bv-body .mlb-box [data-count]');if(big){big.textContent='0%';setTimeout(()=>{if(big.isConnected){M.countUp(big,p.percent,700);setTimeout(()=>{if(big.isConnected)big.textContent=p.percent+'%';},760);}},250);}
+    $$('#bv-body .mlb-why i').forEach((b,i)=>b.animate([{transform:'scaleX(0)'},{transform:'none'}],{duration:450,delay:400+i*80,easing:M.EASE.decel,fill:'backwards'}));
+  }
+}
+async function mlRefresh(btn){
+  MLV.running=true;MLV.error='';openMl('ml-refresh',btn,()=>$('[data-learn="refresh"]'));
+  const t0=Date.now(),calm=!window.DillyMotion||DillyMotion.reduced();
+  try{
+    const res=await apiFetch('/api/learning/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await res.json().catch(()=>({}));if(!res.ok)throw new Error(d.message||d.error||'The predictions could not be refreshed');
+    LEARN.status=d.learning;LEARN.preds=new Map((d.predictions||[]).map(p=>[p.entityId,p]));MLV.refreshedAt=Date.now();
+  }catch(err){MLV.error=err.message;}
+  // A local refresh takes a few milliseconds: keep Dilly's reading pose up long enough to be seen
+  if(!calm)await new Promise(r=>setTimeout(r,Math.max(0,700-(Date.now()-t0))));
+  MLV.running=false;renderLearning();renderReviews();
+  if(bigviewOpen()&&BV.kind==='ml-refresh')renderMlBig();
+}
+$('#bigview').addEventListener('click',e=>{
+  const v=e.target.closest('[data-bv-ml="refresh-view"]');if(v){MLV.error='';BV.kind='ml-refresh';renderMlBig();return;}
+  const c=e.target.closest('[data-ml-case]');if(c){MLV.caseId=c.dataset.mlCase;BV.kind='ml-case';renderMlBig();$('#bv-body').scrollTop=0;return;}
+  if(e.target.closest('[data-learn-open]'))minimiseBigview();
+});
 
 
 /* ===================== Reviewer copilot (AI draft) and DDQ answer verification, in the review dialog ===================== */

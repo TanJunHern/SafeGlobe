@@ -731,3 +731,115 @@ Plan: `implementation_plan.md`. Answers and readings: `decisions.md`, "Country r
 - Not built: Basel, TRACE, FSI, CTHI; following links one level deep; PDF statements; an upload block in the
   Sources tab; the "How Dilly works" page (its line is in the Layers panel and in `GET /api/country-risk/views`).
 - Not deployed. `scripts/deploy.sh` passes the two new settings; you run it.
+
+## Dilly motion (15 Oct 2026)
+
+Plan: `implementation_plan.motion.md`. Frontend only: no new dependency, API route, data field or cloud resource.
+
+**What changed**
+- New `dilly-motion.js` (13 KB raw, about 5 KB gzipped), served through `PUBLIC_ASSETS` and copied in the Dockerfile.
+  It uses the browser's Web Animations API and inline SVG. Every helper is skipped under reduced motion and
+  catches its own errors, so a motion problem never breaks the action it decorates.
+- Material 3 motion tokens (`--ease-emph`, `--ease-decel`, `--ease-accel`, `--ease-spring`, `--dur-s/m/l`) in
+  `safe-globe.html`, `employee-portal.html` and `portal-shared.css`. The toast springs up; the drawer slows as it
+  settles in and leaves faster.
+- Three.js (about 150 KB gzipped) no longer loads with every page. It loads only when the sign-in screen shows.
+  If the CDN fails, the existing 2D canvas globe is used.
+
+**How to see each one**
+| Moment | Where | What you see |
+| --- | --- | --- |
+| Send DDQ, invite, resend invite | DDQ actions in the audit drawer (both portals); Settings | A paper plane flies off with a dotted trail. If the server reports `delivery.sent === false`, it loops back to the button instead |
+| Approve, Reject, Request more info | Compliance triage sheet, one-click queue buttons, audit modal | A rubber stamp drops on the sheet or row: APPROVED (green), REJECTED (red), MORE INFO (amber) |
+| Approve and sign | Entity drawer, Decision tab | A SIGNED stamp on the memo |
+| Why <score>? | Entity drawer, Overview or Live tab | Rows drop in one by one, and the score counts up to the total. Plays once per entity and score |
+| Route | Entity drawer route card | Dilly's pose pops in; one short shake for an escalation caused by a sanctions match |
+| Pond-Guard | Entity drawer, "Screen with Pond-Guard" | One duckling per agent on a pond line: faded while waiting, bobbing while reading, hops when it has an answer |
+| DDQ portal | Counterparty portal | A section's duckling hops when it turns done; after submitting, mommy duck waddles in with the envelope |
+
+**How it was tested**
+- `npm test`: 267 pass, 0 fail, after M2, M4 and M6 (baseline 259; 8 new tests in `tests/dilly-motion.test.js`).
+- Every inline script block checked with `node --check`.
+- Browser check on a local offline server with a scratch database: sign-in globe loads Three.js on demand;
+  stamp and both plane paths frozen mid-flight and inspected; Aurora Venture "Why" counted up and landed on 85;
+  Pond-Guard ducklings rendered; DDQ portal loads `dilly-motion.js` with no console errors.
+- Not tested end to end in the browser: the DDQ portal section-done hop and the post-submit waddle, which need a
+  full questionnaire run. Their helpers were run directly on the portal's own duckling elements.
+
+## Big report popups (15 Oct 2026)
+
+Plan: `implementation_plan.popups.md`. Frontend only. The explainer clips (`01_pond_guard.html`,
+`02_document_ai.html`, `03_bigquery_ml.html`) were the visual reference; they are not served or changed.
+
+**Why:** the Pond-Guard report in the drawer was too small to read.
+
+**What changed** (`safe-globe.html`, `dilly-motion.js`)
+- One popup (`#bigview`) that opens large over a dimmed page. **Minimise** (the button, Esc, or a click on the dim)
+  only hides it: the run keeps going and its progress stays in the drawer or the "Dilly learns" card. Keyboard
+  focus stays inside while it is open and goes back to where it came from.
+- **Pond-Guard** ("Screen with Pond-Guard", "Screen again", and a new "Open report" button in the drawer): a top band
+  with Dilly, the sources read and the result, then one column per agent, side by side. It follows the real
+  events: a packet goes from Dilly to each agent as it starts, a ring spins while it reads, a badge pops when it
+  answers (green tick: nothing found; amber: findings; red: sanctions; grey: no answer), and its finding cards
+  drop in. When the score arrives, each counted finding travels to the score ring, the ring fills and the number
+  counts up to the real score, then the route and Dilly's pose appear, then Dilly's summary.
+  The popup shows the events through a short queue (about 0.2 to 0.5 s apart) so an offline run, which sends every
+  event within a fraction of a second, can be followed. The data and the drawer are not delayed.
+- **BigQuery ML** (Reviews > Dilly learns):
+  - **Train / Retrain** opens the popup with the real stages: reviews, training table, boosted trees and tuning
+    (tuning trials as bars, the kept one highlighted), checked on held-back reviews, predictions. Dilly reads while
+    it trains. While BigQuery trains (minutes), the page still checks every 15 s and the popup follows.
+  - **Refresh predictions** is a new button (it calls the existing `POST /api/learning/refresh`). The popup shows
+    every case as a card with its prediction bar and a "2nd look" flag where the model disagrees with the rules.
+  - **A case's prediction** in the Reviews table is now a link that opens that case: the rules' score next to the
+    model's prediction, and the model's reasons with their direction. It says the model never changes the score.
+- `dilly-motion.js`: two new helpers, `packet` and `rise`, and `arcPoints` (tested).
+
+**How it was tested**
+- `npm test`: 268 pass, 0 fail, after P2 and after P4.
+- Browser, local offline server, scratch database: Aurora Venture screened in the popup, every agent column went
+  waiting, running, done; the score ring landed on 85, High, Escalate; Minimise, Esc and "Open report" work and the
+  drawer keeps the result. BigQuery ML: synthetic reviews added, Train showed all five stages with 6 tuning trials
+  (offline model, labelled); Refresh showed 7 cases; a case opened from a card and from the Reviews table. No
+  console errors.
+- Phone width (390 px, in a same-origin iframe because the window could not be resized): the popup is full
+  screen, the header wraps, nothing scrolls sideways, and Aurora Venture lands on 85, Escalate.
+- Not checked in the browser: reduced motion (handled by the global CSS rule and `DillyMotion.reduced()`).
+- A live BigQuery training run: left to the user.
+
+### Aurora Venture made consistent (15 Oct 2026, asked by the user)
+
+A judge could have caught these contradictions. Each one is fixed at its source, and the scoring is unchanged
+(85, High, Escalate):
+| Was | Now | Where |
+| --- | --- | --- |
+| Orchestrator card: "SAFE · Low Risk", "Action: Auto-Clear", text "This counterparty is SAFE… fully comply with §4.1" next to a score of 85, Escalate | The card speaks for the sanctions check only: "No sanctions exposure", "No block needed on sanctions", and a line saying the overall risk and route come from the points table. The offline text says it covers sanctions only; the live Gemini prompt is told not to give an overall verdict | `safe-globe.html` `orchestratorCardHTML`, `src/agents/orchestrator.js` |
+| §4.1 labelled "International Sanctions & Prohibited Jurisdictions", while the policy and the points table use §4.1 for CPI below 40 | "Policy §4.1 (High-Risk and Prohibited Jurisdictions)", matching the policy's own title | `src/agents/orchestrator.js` |
+| KYC request KYC-2026-0002: IMO 9412345 (fails the IMO check digit; the app already flagged it as invalid), Liberia flag, operator Varnell Maritime Ltd (a designated company in the demo lists), Monrovia pin | IMO 9304124, Cameroon flag, registered CMR, owner a single-ship company behind nominees (as its finding says), operator Halcyon Marine Services (the ship manager in the demo story), Johor anchorage pin | `src/db/sqlite.js` seed, plus a one-off update for existing databases (tested on a copy of `data/safe_globe.db`) |
+| Mock maritime API record: LBR, IMO 9412345 | CMR, IMO 9304124 | `src/services/sourceHandlers.js` |
+
+The fields the tests pin (`is_safe`, `verdict`, `status_label`, `recommended_action`) are unchanged.
+
+## Pitch deck and demo GIFs (15 Oct 2026)
+
+Plan and answers: `docs/pitch/deck-plan.md`. Deck: a Claude Slides artifact (29 slides), private until shared.
+
+**Recording.** `demovideo/record-gifs.js` films ten scenes against a local copy of the app with the UAT settings
+(Gemini on Vertex AI and the ADK agents live; BigQuery, Pub/Sub, Cloud Storage, Agent Search and Document AI on
+their fallbacks), on ports 8192 and 8197 so it never touches a running `npm start` or the test ports.
+`demovideo/make-gifs.js` turns the clips into `docs/pitch/gifs/gif-01.gif` … `gif-10.gif` with the ffmpeg that
+ships with Playwright and `gifenc` (dev dependencies of `demovideo/` only). Nothing is replayed or injected. Scene 7
+retakes a live Pond-Guard run (at most three times) until one comes back with every agent; the kept take scored
+85 with confidence 78% (the PEP agent did not answer in time), so its route was Investigate, and the deck says so.
+The new fictional supplier is Pelican Quay Marine Supplies Pte Ltd: `docs/test-docs/pelican-quay-intake.*` and
+`pelican-quay-ddq.*`.
+
+**Bugs found while recording, fixed**
+- `extractDocumentData` (employee "Let Dilly fill this in") only called Gemini with an AI Studio key, so on
+  Vertex (UAT) it never read the document. Its offline guesser then returned "Apex Commodities Pte Ltd" for any
+  company document that named none of the demo records, marked "AI Suggested". Now Gemini is used whenever the
+  shared client has a backend, and offline nothing is invented: the form says to fill it in by hand. Test added.
+- The auto-fill toast said "Point A: Gemini multimodal extraction completed"; it now says how many fields Dilly
+  filled, or that it could not read the document.
+
+`npm test`: 270 pass, 0 fail.

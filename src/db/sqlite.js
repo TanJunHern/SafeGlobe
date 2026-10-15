@@ -4,6 +4,18 @@ const { DatabaseSync } = require('node:sqlite');
 const config = require('../config');
 const seed = require('./seed-data');
 
+// Aurora Venture's KYC request, matched to its vessel record (IMO 9304124, Cameroon flag, managed by Halcyon Marine)
+const AURORA_KYC = {
+  attributes: {
+    imo: 'IMO 9304124',
+    flag: 'Cameroon',
+    vessel_type: 'Crude Oil Tanker',
+    owner: 'Single-ship company (nominee shareholders; beneficial owner not disclosed)',
+    operator: 'Halcyon Marine Services Pte. Ltd.'
+  },
+  location: { address: 'Johor anchorage (STS area) / AIS coordinates', lat: 1.3521, lng: 104.2853 }
+};
+
 class SqliteDatabase {
   constructor(dbPath = config.dbPath, { empty = false } = {}) {
     this.dbPath = dbPath;
@@ -31,6 +43,9 @@ class SqliteDatabase {
     // The Vendor X record for Aurora Venture carried a different IMO and flag from the vessel record
     this.db.prepare(`UPDATE source_records SET jurisdiction = 'CMR', reg_no = 'IMO 9304124', details_json = ?, raw_content = ? WHERE id = 'sr_s2_2' AND reg_no = 'IMO 9412345'`)
       .run(JSON.stringify({ imo: '9304124', flag: 'CMR', ais_gap_hours: 31, sts_transfer: true }), '{"vessel":"Aurora Venture","imo":"9304124","flag":"CMR","dark_gap_h":31}');
+    // Aurora Venture's KYC request carried the same old IMO, a Liberia flag and a different operator
+    this.db.prepare(`UPDATE kyc_requests SET country = 'CMR', attributes_json = ?, location_json = ? WHERE id = 'KYC-2026-0002' AND attributes_json LIKE '%9412345%'`)
+      .run(JSON.stringify(AURORA_KYC.attributes), JSON.stringify(AURORA_KYC.location));
   }
 
   initSchema() {
@@ -1736,7 +1751,7 @@ class SqliteDatabase {
           submission_date: '2026-10-06 09:15',
           counterparty_name: 'Aurora Venture',
           entity_type: 'Vessel',
-          country: 'LBR',
+          country: 'CMR',
           relationship_type: 'Vendor/Supplier',
           contract_value: 420000,
           ongoing_monitoring: 1,
@@ -1750,18 +1765,8 @@ class SqliteDatabase {
           ddq_status: 'Sent to Counterparty',
           ddq_clause: 'Policy §5.4 (Vessel AIS dark period gap) & §2.1 (Contract > SGD 100k)',
           remarks: 'Time charter proposed for bunker bunkering and clean petroleum products.',
-          attributes_json: JSON.stringify({
-            imo: 'IMO 9412345',
-            flag: 'Liberia',
-            vessel_type: 'Crude Oil Tanker',
-            owner: 'Meridian Maritime Holdings',
-            operator: 'Varnell Maritime Ltd'
-          }),
-          location_json: JSON.stringify({
-            address: 'Port of Monrovia, Liberia / AIS Coordinates',
-            lat: 6.3156,
-            lng: -10.8074
-          }),
+          attributes_json: JSON.stringify(AURORA_KYC.attributes),
+          location_json: JSON.stringify(AURORA_KYC.location),
           attachments_json: JSON.stringify(['aurora_q88_charter.pdf']),
           created_by_user_id: 'EMP-2089',
           created_by_email: 'marcus.lee@duedilly.internal',

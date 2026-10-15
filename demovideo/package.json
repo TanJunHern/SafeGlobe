@@ -6,6 +6,8 @@
     "record": "node record.js"
   },
   "devDependencies": {
-    "playwright": "^1.64.0"
+    "gifenc": "^1.0.3",
+    "playwright": "^1.64.0",
+    "pngjs": "^7.0.0"
   }
 }

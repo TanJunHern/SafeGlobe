@@ -467,6 +467,11 @@ AGENTS_INTERNAL_TOKEN=<long random text, the same one the agents use>
    - `npm run agents` starts the agents on `http://localhost:8090` (settings from `.env.dev`; use
      `APP_ENV=uat npm run agents` for `.env.uat`).
    - `npm run dev` with `AGENTS_SERVICE_URL=http://localhost:8090` and `AGENTS_INTERNAL_TOKEN` set in `.env.dev`.
+   - `npm start` (no `APP_ENV`) reads **only `.env`**, so it needs its own `AGENTS_SERVICE_URL` and
+     `AGENTS_INTERNAL_TOKEN` lines there. The token must equal the one the running agents service was started
+     with: `npm run agents` reads `.env.dev`, `APP_ENV=uat npm run agents` reads `.env.uat`. Without both lines the
+     app never calls the agents and shows the offline sample. `/health` on port 8090 shows which backend the
+     agents use (`aistudio` = your API key, `vertex` = your gcloud sign-in).
    - `npm run uat` builds the production image and runs it on `http://localhost:8081`. From inside that container
      the agents on your computer are at `AGENTS_SERVICE_URL=http://host.docker.internal:8090`.
 3. Deploy, in this order (each one prints what to do next):
