@@ -526,6 +526,7 @@ container on your computer.
 
 - [ ] `MIN_INSTANCES=1 bash scripts/deploy.sh uat`, so the first visitor does not wait and demo data does not reset
       mid-demo
+- [ ] `npm run live`: finds the live link (gcloud, else `.env.uat`), checks `/api/health` and opens it
 - [ ] One warm-up run of the demo story (Aurora Venture) on the live link (this also wakes the agents service)
 - [ ] Budget alert set (step 0)
 - [ ] All demo data is fictional, and the "Demo" label is showing
