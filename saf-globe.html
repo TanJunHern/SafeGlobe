@@ -1313,11 +1313,20 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
           </div>
         </div>
         <div class="pol-grid">
-          <div class="card doc-card">
-            <div class="doc-thumb" aria-hidden="true"><b>Third-Party Risk Policy</b><span class="faint" style="font-size:11px"><span data-ws-name>Meridian Commodities</span> · v4.2</span><i style="width:90%"></i><i style="width:76%"></i><i class="hl" style="width:84%"></i><i style="width:60%"></i><i style="width:88%"></i><i class="hl" style="width:70%"></i><i style="width:80%"></i><i style="width:52%"></i><i style="width:86%"></i><i class="hl" style="width:64%"></i><i style="width:74%"></i></div>
-            <dl class="kv"><dt>File</dt><dd>third-party-risk-policy-v4.2.pdf</dd><dt>Pages</dt><dd>23</dd><dt>Compiled</dt><dd>29 Sep 2026, 16:20</dd><dt>Rules</dt><dd id="pol-count">14</dd><dt>Owner</dt><dd>Grace Teo</dd></dl>
-            <div class="callout gap"><svg class="ic"><use href="#i-alert"/></svg><b>Gap</b><p>No rule covers minority stakes below 50% held by state-owned or state-linked companies. Severny Agro Export LLC is 51% state-owned and triggers R2.</p></div>
-            <div class="callout conflict" id="conflict-callout"><svg class="ic"><use href="#i-alert"/></svg><b>Conflict</b><p></p></div>
+          <div class="pol-sidebar" style="display:flex;flex-direction:column;gap:16px">
+            <div class="card doc-card">
+              <div class="doc-thumb" aria-hidden="true"><b>Third-Party Risk Policy</b><span class="faint" style="font-size:11px"><span data-ws-name>Meridian Commodities</span> · v4.2</span><i style="width:90%"></i><i style="width:76%"></i><i class="hl" style="width:84%"></i><i style="width:60%"></i><i style="width:88%"></i><i class="hl" style="width:70%"></i><i style="width:80%"></i><i style="width:52%"></i><i style="width:86%"></i><i class="hl" style="width:64%"></i><i style="width:74%"></i></div>
+              <dl class="kv"><dt>File</dt><dd>third-party-risk-policy-v4.2.pdf</dd><dt>Pages</dt><dd>23</dd><dt>Compiled</dt><dd>29 Sep 2026, 16:20</dd><dt>Rules</dt><dd id="pol-count">14</dd><dt>Owner</dt><dd>Grace Teo</dd></dl>
+              <div class="callout gap"><svg class="ic"><use href="#i-alert"/></svg><b>Gap</b><p>No rule covers minority stakes below 50% held by state-owned or state-linked companies. Severny Agro Export LLC is 51% state-owned and triggers R2.</p></div>
+              <div class="callout conflict" id="conflict-callout"><svg class="ic"><use href="#i-alert"/></svg><b>Conflict</b><p></p></div>
+            </div>
+            <div class="card" id="uploaded-docs-card" style="padding:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <h3 style="margin:0;font-size:14px">Uploaded Policy & Source Files</h3>
+                <span class="pill plain sm" id="uploaded-docs-count">Loading…</span>
+              </div>
+              <div id="uploaded-docs-list" style="display:flex;flex-direction:column;gap:8px"></div>
+            </div>
           </div>
           <div class="card">
             <div class="card-h"><h2>Compiled rules</h2><span class="faint" style="font-size:12px">Checked against every counterparty on each re-screen</span></div>
@@ -1729,8 +1738,9 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
       </div>
       <pre id="json-modal-code" style="flex:1;overflow:auto;margin:0;background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:14px;font-family:var(--f-mono);font-size:12px;line-height:1.45;color:var(--fg)"></pre>
     </div>
-    <div class="sheet-foot">
+    <div class="sheet-foot" style="display:flex;justify-content:space-between;align-items:center">
       <button class="btn ghost" data-close-json type="button">Close</button>
+      <a class="btn primary sm" id="json-modal-dl-btn" href="#" target="_blank" download style="display:none;align-items:center;gap:4px;text-decoration:none"><svg class="ic sm"><use href="#i-doc"/></svg>Download Original File</a>
     </div>
   </div>
 </div>
@@ -4121,12 +4131,46 @@ $('#matrix').addEventListener('click',e=>{const d=e.target.closest('.mx-dot');if
 $('#matrix').addEventListener('pointerover',e=>{const d=e.target.closest('.mx-dot');$$('#cases tr[data-id]').forEach(r=>r.classList.toggle('hl',!!d&&r.dataset.id===d.dataset.id));});
 $('#thr').addEventListener('input',e=>{S.thr=+e.target.value;$('#thr-v').textContent=S.thr+'%';renderReviews();refreshStatus();renderWatch();if(drawerOpen())renderDrawer();});
 
+async function downloadUploadedFile(fileId, filename, evt) {
+  if (evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+  }
+  toast(`Downloading ${filename || 'document.pdf'}…`);
+  try {
+    const res = await apiFetch(`/api/uploads/${encodeURIComponent(fileId)}/download`);
+    if (!res.ok) {
+      let msg = `Download failed (${res.status})`;
+      try {
+        const err = await res.json();
+        if (err.error || err.message) msg = err.message || err.error;
+      } catch (e) {}
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename || 'document.pdf';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+    toast(`Downloaded ${filename || 'document.pdf'}`);
+  } catch (err) {
+    console.error('Download error:', err);
+    toast(`Failed to download: ${err.message}`);
+  }
+}
+window.downloadUploadedFile = downloadUploadedFile;
+
 /* ===================== Sources view ===================== */
 const typeIcon={'API':'api','Data feed':'feed','Web':'web','PDF document':'doc','PDF':'doc'};
 function srcCard(s){
   const icon = typeIcon[s.type] || 'doc';
   const locked = !!(s.config && s.config.locked);
-  return `<div class="card src${s.health==='stale'?' warn':''}"><div class="src-top"><div class="dr-ico" style="width:36px;height:36px">${ic(icon)}</div><div style="min-width:0"><h3>${esc(s.label)}</h3><p>${esc(s.type)} · ${esc(s.how)}</p></div><span class="src-health pill ${s.health==='ok'?'q-monitor':'q-investigate'}">${s.health==='ok'?'Healthy':s.health==='new'?'Live':'Stale'}</span></div><dl class="kv">${locked?`<dt>Status</dt><dd><span class="chip" style="color:var(--accent)">${ic('lock','sm')}Built in · default for ${esc(s.config.default_for||'screening')} · locked</span></dd>`:''}<dt>Covers</dt><dd>${esc(s.cover)}</dd><dt>Trust level</dt><dd>${esc(s.trust)}</dd>${(s.kv||[]).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl><div class="src-actions">${s.health==='stale'?`<button class="btn sm primary" data-src="retry" data-id="${s.id}" type="button">${ic('refresh','sm')}Retry now</button>`:''}<button class="btn sm" data-src="test" data-id="${s.id}" type="button">Test</button><button class="btn sm primary" data-src="view-records" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-doc"/></svg>Readable data</button>${locked?'':`<button class="btn sm ghost" data-src="reconvert" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-refresh"/></svg>Re-parse</button>`}</div></div>`;
+  const pdfBtn = (s.config && s.config.fileId) ? `<a class="btn sm" href="/api/uploads/${encodeURIComponent(s.config.fileId)}/download" onclick="downloadUploadedFile('${esc(s.config.fileId)}', '${esc(s.config.filename||'document.pdf')}', event)" target="_blank" download="${esc(s.config.filename||'document.pdf')}" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px">${ic('doc','sm')}Download PDF</a>` : '';
+  return `<div class="card src${s.health==='stale'?' warn':''}"><div class="src-top"><div class="dr-ico" style="width:36px;height:36px">${ic(icon)}</div><div style="min-width:0"><h3>${esc(s.label)}</h3><p>${esc(s.type)} · ${esc(s.how)}</p></div><span class="src-health pill ${s.health==='ok'?'q-monitor':'q-investigate'}">${s.health==='ok'?'Healthy':s.health==='new'?'Live':'Stale'}</span></div><dl class="kv">${locked?`<dt>Status</dt><dd><span class="chip" style="color:var(--accent)">${ic('lock','sm')}Built in · default for ${esc(s.config.default_for||'screening')} · locked</span></dd>`:''}<dt>Covers</dt><dd>${esc(s.cover)}</dd><dt>Trust level</dt><dd>${esc(s.trust)}</dd>${(s.kv||[]).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl><div class="src-actions">${s.health==='stale'?`<button class="btn sm primary" data-src="retry" data-id="${s.id}" type="button">${ic('refresh','sm')}Retry now</button>`:''}<button class="btn sm" data-src="test" data-id="${s.id}" type="button">Test</button>${pdfBtn}<button class="btn sm primary" data-src="view-records" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-doc"/></svg>Readable data</button>${locked?'':`<button class="btn sm ghost" data-src="reconvert" data-id="${s.id}" type="button"><svg class="ic sm"><use href="#i-refresh"/></svg>Re-parse</button>`}</div></div>`;
 }
 
 function renderSources(){
@@ -4204,13 +4248,26 @@ function renderKbRecords() {
 }
 
 // JSON Inspector Modal Helpers
-function openJsonModal(title, data, sub = 'Machine-readable output') {
+function openJsonModal(title, data, sub = 'Machine-readable output', downloadUrl = null, fileId = null, filename = null) {
   const m = $('#json-modal');
   if (!m) return;
   $('#json-modal-title').textContent = title || 'Structured JSON Data';
   $('#json-modal-sub').textContent = sub;
   const jsonStr = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   $('#json-modal-code').textContent = jsonStr;
+  const dlBtn = $('#json-modal-dl-btn');
+  if (dlBtn) {
+    if (downloadUrl) {
+      dlBtn.href = downloadUrl;
+      dlBtn.dataset.fileId = fileId || '';
+      dlBtn.dataset.filename = filename || 'document.pdf';
+      dlBtn.style.display = 'inline-flex';
+    } else {
+      dlBtn.style.display = 'none';
+      dlBtn.removeAttribute('data-file-id');
+      dlBtn.removeAttribute('data-filename');
+    }
+  }
   m.hidden = false;
 }
 function closeJsonModal() {
@@ -4227,6 +4284,10 @@ document.addEventListener('click', e => {
     } else {
       toast('JSON copied');
     }
+  }
+  const dlBtn = e.target.closest('#json-modal-dl-btn');
+  if (dlBtn && dlBtn.dataset.fileId) {
+    downloadUploadedFile(dlBtn.dataset.fileId, dlBtn.dataset.filename, e);
   }
   const kbJsonBtn = e.target.closest('[data-kb-json]');
   if (kbJsonBtn) {
@@ -4295,11 +4356,14 @@ $('#src-grid').addEventListener('click', e => {
   } else if (b.dataset.src === 'test') {
     toast(`${s.label}: test passed, connection healthy`);
   } else if (b.dataset.src === 'view-records') {
+    const fileId = (s.config && s.config.fileId) || null;
+    const filename = (s.config && s.config.filename) || `${s.label || 'source'}.pdf`;
+    const fileDl = fileId ? `/api/uploads/${encodeURIComponent(fileId)}/download` : null;
     apiFetch('/api/sources/' + s.id + '/records')
       .then(r => r.json())
       .then(data => {
         if (data && data.records) {
-          openJsonModal(`Records: ${s.label}`, data.records, `${data.total} readable converted records for this source`);
+          openJsonModal(`Records: ${s.label}`, data.records, `${data.total} readable converted records for this source`, fileDl, fileId, filename);
         }
       });
   } else if (b.dataset.src === 'reconvert') {
@@ -4494,8 +4558,41 @@ $('#src-modal').addEventListener('click',e=>{
 });
 
 /* ===================== Policies view ===================== */
+async function fetchUploadedPolicies() {
+  const list = $('#uploaded-docs-list');
+  const count = $('#uploaded-docs-count');
+  if (!list || !count) return;
+  try {
+    const res = await apiFetch('/api/uploads');
+    const data = await res.json();
+    const uploads = (data && data.uploads) || [];
+    count.textContent = uploads.length ? `${uploads.length} file${uploads.length===1?'':'s'}` : '0 files';
+    if (!uploads.length) {
+      list.innerHTML = `<p class="faint" style="font-size:12px;margin:0">No files uploaded yet.</p>`;
+      return;
+    }
+    list.innerHTML = uploads.map(f => {
+      const sizeKb = Math.round((f.file_size || 0) / 1024);
+      return `<div style="background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:6px;min-width:0">
+          <svg class="ic sm" style="flex-shrink:0"><use href="#i-doc"/></svg>
+          <span style="font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(f.filename)}">${esc(f.filename)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="faint" style="font-size:11px">${sizeKb} KB · ${esc(f.created_at || '')}</span>
+          <a class="btn sm primary" href="/api/uploads/${encodeURIComponent(f.id)}/download" onclick="downloadUploadedFile('${esc(f.id)}', '${esc(f.filename)}', event)" target="_blank" download="${esc(f.filename)}" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;font-size:11px">
+            <svg class="ic sm"><use href="#i-doc"/></svg>Download PDF
+          </a>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load uploads:', err);
+  }
+}
 const CUSTOM_RULES = [];
 function renderPolicies(){
+  fetchUploadedPolicies();
   const cpiLow=ORGS.filter(o=>!o.linked&&cpiOf(o.a3)!=null&&cpiOf(o.a3)<40);
   const defaultRules=[
     {id:'R1',sec:'§3.2',t:'Block direct dealings with any entity 50% or more owned, in aggregate, by sanctioned persons.',hits:['kestrel'],note:'Ownership summed across all paths in the graph'},

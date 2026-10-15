@@ -38,4 +38,4 @@ export DUEDILLY_INTERNAL_URL="${DUEDILLY_INTERNAL_URL:-http://localhost:8080}"
 
 echo "[agents] Starting on http://localhost:${AGENTS_PORT:-8090}  (model: ${AGENTS_MODEL:-none set})"
 cd agents
-exec "$PY" -m uvicorn app.main:app --host 127.0.0.1 --port "${AGENTS_PORT:-8090}"
+exec "$PY" -m uvicorn app.main:app --host "${AGENTS_HOST:-0.0.0.0}" --port "${AGENTS_PORT:-8090}"

@@ -19,6 +19,7 @@ data/uploads/**
 demo-data
 design
 docs
+!docs/policies/**
 python
 .scratch
 data/*.workspaces

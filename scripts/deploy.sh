@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 TARGET="${1:-}"
-PROJECT_ID="${PROJECT_ID:-safe-globe-compliance}"
+PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo safeglobe)}"
 REGION="${REGION:-asia-southeast1}"
 SA_EMAIL="duedilly-run@${PROJECT_ID}.iam.gserviceaccount.com"
 APP_SERVICE="duedilly-uat"
