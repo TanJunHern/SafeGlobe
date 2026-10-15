@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "bash scripts/dev.sh",
     "uat": "bash scripts/uat.sh",
+    "live": "bash scripts/live.sh",
     "demo:reset": "node scripts/demo-reset.js",
     "demo:clean": "node scripts/demo-reset.js --empty",
     "agents": "bash scripts/agents-dev.sh",
