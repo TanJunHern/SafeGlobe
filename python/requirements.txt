@@ -1,6 +1,0 @@
-google-genai
-pydantic
-beautifulsoup4
-requests
-curl_cffi
-python-dotenv

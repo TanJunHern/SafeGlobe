@@ -23,10 +23,7 @@ COPY data/ ./data/
 COPY safe-globe.html ./safe-globe.html
 COPY employee-portal.html ./employee-portal.html
 COPY ddq-portal.html ddq-manager.html ddq-print.html portal-shared.css portal-shared.js ddq-section-status.js duck-tour.js dilly-loader.js dilly-motion.js monitoring-ui.js country-risk-views.js ./
-COPY saf-globe.html ./saf-globe.html
 COPY assets/ ./assets/
-# JSON form: the shell form cannot copy a file name with a space in it
-COPY ["Final PRD.pdf", "./"]
 COPY docs/policies/ ./docs/policies/
 
 # Set file permissions for non-root user (security compliance PRD B.11)
