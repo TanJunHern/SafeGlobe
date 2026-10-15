@@ -237,6 +237,20 @@ test('first instance: a request the first rules had cleared goes to a person whe
   });
 });
 
+test('offline: a counterparty with no scored findings yet is shown without a score, and nothing is stored', async () => {
+  const db = getDb();
+  const events = [];
+  const before = db.getLatestSuggestion('aurora');
+  const result = await withConfig({ agentsServiceUrl: '' }, () =>
+    withStub(riskService, { assessEntity: () => null }, () => pondGuard.screenEntity(db, 'aurora', e => events.push(e))));
+  assert.equal(result.live, false);
+  assert.equal(result.breakdown, null);
+  const scored = events.find(e => e.type === 'scored');
+  assert.ok(scored, 'the run still finishes');
+  assert.equal(scored.breakdown, null);
+  assert.deepEqual(db.getLatestSuggestion('aurora'), before, 'no suggestion is stored without a score');
+});
+
 test('policy: three demo clauses exist, each agent is given its own, and a citation is checked against the clause', async () => {
   const db = getDb();
   const rules = getRules(db);

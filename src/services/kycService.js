@@ -222,11 +222,8 @@ function calculateAiRisk(data, screeningHit = null) {
  * @returns {Promise<Object>}
  */
 async function extractDocumentData({ filename = '', fileContent = '', mimeType = 'text/plain', base64Data = '' }) {
-  const apiKey = (config.geminiApiKey || '').trim();
-  const isRealKey = apiKey && apiKey !== 'YOUR_GOOGLE_AI_STUDIO_API_KEY' && apiKey.length > 15;
-
-  // 1. Try Gemini Multimodal / Text Extraction if API Key is configured
-  if (isRealKey) {
+  // 1. Gemini reads the document whenever the shared client has a backend (AI Studio key, or Vertex AI on UAT)
+  if (gemini.backend() !== 'disabled') {
     try {
       let model = config.geminiModel;
       const prompt = `You are the DueDilly Compliance Document Extraction AI.
@@ -334,8 +331,8 @@ function fallbackDocumentExtraction({ filename = '', fileContent = '' }) {
       extracted.parent_company = 'Gulf Marine Trading Group';
       extracted.relationship_type = '3rd Party Reps & Brokers';
       extracted.anticipated_contract_value = 160000;
-    } else {
-      extracted.counterparty_name = /apex/i.test(text) ? 'Apex Commodities Pte Ltd' : 'Merlion Global Resources Pte Ltd';
+    } else if (/apex/i.test(text)) {
+      extracted.counterparty_name = 'Apex Commodities Pte Ltd';
       extracted.country = 'SGP';
       extracted.registration_number = '202419822K';
       extracted.directors_ubo = 'Tan Wei Liang (60%), Chua Mei Ling (40%)';
@@ -347,7 +344,7 @@ function fallbackDocumentExtraction({ filename = '', fileContent = '' }) {
   // 2. Check if maritime vessel document
   else if (/vessel|imo|tanker|bulker|maritime|aurora|ship registry/i.test(text)) {
     extracted.entity_type = 'Vessel';
-    extracted.counterparty_name = /aurora/i.test(text) ? 'Aurora Venture' : 'Pacific Glory Maritime';
+    extracted.counterparty_name = /aurora/i.test(text) ? 'Aurora Venture' : '';
     extracted.country = /panama|pan/i.test(text) ? 'PAN' : (/liberia|lbr/i.test(text) ? 'LBR' : 'SGP');
     extracted.imo_number = 'IMO 9823411';
     extracted.vessel_flag = extracted.country;
@@ -358,7 +355,7 @@ function fallbackDocumentExtraction({ filename = '', fileContent = '' }) {
   // 3. Check if passport / person document
   else if (/passport|nric|identity|individual|national id|zemtsov/i.test(text)) {
     extracted.entity_type = 'Person';
-    extracted.counterparty_name = /zemtsov/i.test(text) ? 'Arkady Zemtsov' : 'Dr. Alexander Vance';
+    extracted.counterparty_name = /zemtsov/i.test(text) ? 'Arkady Zemtsov' : '';
     extracted.full_name = extracted.counterparty_name;
     extracted.country = /zemtsov|russia/i.test(text) ? 'RUS' : 'GBR';
     extracted.passport = 'P88421094';
@@ -386,7 +383,7 @@ function fallbackDocumentExtraction({ filename = '', fileContent = '' }) {
       extracted.parent_company = 'Gulf Marine Trading Group';
       extracted.relationship_type = '3rd Party Reps & Brokers';
       extracted.anticipated_contract_value = 160000;
-    } else {
+    } else if (/apex/i.test(text)) {
       extracted.counterparty_name = 'Apex Commodities Pte Ltd';
       extracted.country = 'SGP';
       extracted.registration_number = '202419822K';
@@ -395,6 +392,19 @@ function fallbackDocumentExtraction({ filename = '', fileContent = '' }) {
       extracted.relationship_type = 'Vendor/Supplier';
       extracted.anticipated_contract_value = 250000;
     }
+  }
+
+  // Offline the document is not really read: when it names none of the demo records, nothing is suggested
+  // (an invented company would look like a real reading)
+  if (!extracted.counterparty_name) {
+    return {
+      success: true,
+      ai_suggested: false,
+      model: 'SafeGlobe-Extract-Engine',
+      data: { entity_type: extracted.entity_type },
+      extracted_fields: [],
+      message: `Dilly could not read ${filename || 'this document'} without Gemini. Fill in the form yourself.`
+    };
   }
 
   const extractedKeys = Object.keys(extracted).filter(k => extracted[k] !== '' && extracted[k] !== null && extracted[k] !== false);
