@@ -14,7 +14,7 @@
 #   - Document AI processor, Agent Search data store, budget alert: console steps, printed at the end.
 set -euo pipefail
 
-PROJECT_ID="${PROJECT_ID:-safe-globe-compliance}"
+PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo safeglobe)}"
 REGION="${REGION:-asia-southeast1}"
 SA_NAME="duedilly-run"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"

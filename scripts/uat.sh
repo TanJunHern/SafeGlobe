@@ -26,6 +26,8 @@ docker build -t "$IMAGE" .
 CREDS=()
 if [ -f "$ADC" ]; then
   CREDS=(-v "$ADC:/secrets/adc.json:ro" -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/adc.json)
+elif curl -s -m 1 http://169.254.169.254 >/dev/null 2>&1; then
+  echo "[uat] Cloud Shell / GCE metadata server detected (Google Cloud credentials available automatically)."
 else
   echo "[uat] No Application Default Credentials at $ADC."
   echo "[uat] Run:  gcloud auth application-default login   (needed for Vertex AI, Cloud Storage and other Google Cloud services)"
@@ -41,10 +43,14 @@ case "$AGENTS_URL" in
     echo "[uat] Agents service: this computer, port ${AGENTS_URL##*:} (start it with: APP_ENV=uat npm run agents)" ;;
 esac
 
-echo "[uat] Starting on http://localhost:8081"
+UAT_PORT="${PORT:-8081}"
+echo "[uat] Starting on http://localhost:${UAT_PORT}"
+# Remove any existing container with the same name before starting
+docker rm -f duedilly-uat >/dev/null 2>&1 || true
+
 # .env.uat is mounted, not baked in: the app reads it itself, exactly as it reads .env.dev on the dev port
 exec docker run --rm --name duedilly-uat \
-  -p 8081:8080 \
+  -p "${UAT_PORT}:8080" \
   -v "$PWD/.env.uat:/app/.env.uat:ro" \
   -e APP_ENV=uat -e PORT=8080 \
   ${CREDS[@]+"${CREDS[@]}"} \

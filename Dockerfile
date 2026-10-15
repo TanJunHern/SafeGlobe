@@ -27,6 +27,7 @@ COPY saf-globe.html ./saf-globe.html
 COPY assets/ ./assets/
 # JSON form: the shell form cannot copy a file name with a space in it
 COPY ["Final PRD.pdf", "./"]
+COPY docs/policies/ ./docs/policies/
 
 # Set file permissions for non-root user (security compliance PRD B.11)
 RUN chown -R node:node /app

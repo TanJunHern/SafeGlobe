@@ -253,6 +253,11 @@ test('API Integration Tests', async (t) => {
     assert.equal(getRes.status, 200);
     const getData = await getRes.json();
     assert.ok(getData.sources.some(s => s.id === data.source.id));
+
+    // Test GET /api/uploads/:id/download returns the file content even without auth headers (direct link/browser download)
+    const dlRes = await globalThis.fetch(`${BASE_URL}/api/uploads/${data.uploadedFile.id}/download`);
+    assert.equal(dlRes.status, 200);
+    assert.ok(dlRes.headers.get('content-disposition').includes('mas_enforcement_oct2026.pdf'));
   });
 
   await t.test('POST /api/sources/test should simulate PDF entity extraction probe', async () => {

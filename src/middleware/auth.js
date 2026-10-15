@@ -63,10 +63,19 @@ async function authenticate(req, res, next) {
     const demo = config.demoMode;
     let account = null;
 
-    // Check Bearer Token if present
+    // Check Bearer Token if present (headers, query param, or cookie)
     const authHeader = req.headers['authorization'];
+    let token = null;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7).trim();
+      token = authHeader.substring(7).trim();
+    } else if (req.query && req.query.token) {
+      token = String(req.query.token).trim();
+    } else if (req.headers.cookie) {
+      const match = String(req.headers.cookie).match(/(?:^|;\s*)dd_session=([^;]+)/);
+      if (match) token = match[1];
+    }
+
+    if (token) {
       // 1. A DueDilly session
       account = accountFromSession(token);
       // 2. A Google ID token, for a person who already has an account
@@ -87,12 +96,12 @@ async function authenticate(req, res, next) {
     // anyone can send a header, so only a verified sign-in may say who the user is.
     if (!demo) return signInRequired(res);
 
-    let email = normEmail(req.headers['x-user-email']);
+    let email = normEmail(req.headers['x-user-email'] || (req.query && req.query.user_email));
     // A session that is no longer valid (expired, or the account was deleted) must not quietly become a demo persona
-    if (!email && authHeader) return signInRequired(res);
-    let name = req.headers['x-user-name'] || '';
-    let userId = req.headers['x-user-id'] || '';
-    let department = req.headers['x-user-department'] || '';
+    if (!email && (authHeader || (req.query && req.query.token))) return signInRequired(res);
+    let name = req.headers['x-user-name'] || (req.query && req.query.user_name) || '';
+    let userId = req.headers['x-user-id'] || (req.query && req.query.user_id) || '';
+    let department = req.headers['x-user-department'] || (req.query && req.query.user_department) || '';
 
     // Default fallback to standard test persona if completely unauthenticated
     const anonymous = !email;
@@ -147,7 +156,7 @@ function requireRole(allowedRoles = []) {
 
 /** For the few open routes: a caller who says who they are is checked as usual; anyone else lands in the Demo workspace. */
 function optionalAuth(req, res, next) {
-  if (req.headers['authorization'] || (config.demoMode && req.headers['x-user-email'])) return authenticate(req, res, next);
+  if (req.headers['authorization'] || (req.query && req.query.token) || (config.demoMode && (req.headers['x-user-email'] || (req.query && req.query.user_email)))) return authenticate(req, res, next);
   runInWorkspace(DEMO_WORKSPACE_ID, next);
 }
 

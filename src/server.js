@@ -74,7 +74,7 @@ app.use('/api/policies', officerOnly, policiesRouter);
 app.use('/api/cases', officerOnly, casesRouter);
 app.use('/api/ask', authenticate, askRouter);
 app.use('/api/stats', officerOnly, statsRouter);
-app.use('/api/uploads', officerOnly, uploadsRouter);
+app.use('/api/uploads', optionalAuth, uploadsRouter);
 app.use('/api/places', placesRouter);
 app.use('/api/ai', officerOnly, aiRouter);
 app.use('/api/kyc', kycRouter);
