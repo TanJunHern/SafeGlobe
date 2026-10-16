@@ -142,7 +142,7 @@ function demoCases(db, rules) {
   const country = (id, places, readAt) => countryFinding(db, rules, places, { idPrefix: `F-${id}`, readAt });
   const mark = c => { if (c.finding) c.finding.demo = true; return c; };
 
-  // Aurora Venture: the worked example in CLAUDE.md section 4.5
+  // Aurora Venture: the worked example in AI build spec section 4.5
   {
     const readAt = '2026-10-06T09:42:00+08:00';
     const c = mark(country('aurora', [{ value: 'Cameroon', role: 'flag state' }], readAt));

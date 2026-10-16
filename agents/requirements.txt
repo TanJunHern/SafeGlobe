@@ -1,5 +1,5 @@
 # The versions installed with the ADK on the development machine (uv tool google-adk, Python 3.14.8).
-# Keep them in step with that install: CLAUDE.md says to use the installed ADK, not a different one.
+# Keep them in step with that install: AI build spec says to use the installed ADK, not a different one.
 google-adk==2.11.0
 google-genai==2.29.0
 fastapi==0.141.1

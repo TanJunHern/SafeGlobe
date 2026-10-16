@@ -1,6 +1,6 @@
 /**
  * Risk scoring rules: the single definition of the points table, levels, thresholds, confidence weights
- * and routes (CLAUDE.md sections 4.3 to 4.7).
+ * and routes (AI build spec sections 4.3 to 4.7).
  *
  * These are the DEFAULTS. A compliance officer can change the editable numbers in Reviews > Scoring rules;
  * those edits are stored in the database and merged over this file by risk/rulesStore.js. The scorer, the

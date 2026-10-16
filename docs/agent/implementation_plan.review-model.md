@@ -15,7 +15,7 @@ This replaces the earlier Phase 4 plan (forecast, anomalies, name matching), kep
 - Hints in Reviews that explain prediction, inference, suggestion and hyperparameter tuning, tied into the
   risk-by-confidence chart.
 
-## What this changes in `CLAUDE.md`
+## What this changes in the AI build spec (`GEMINI.md`)
 
 - **Rule 5 (no model training, `CREATE MODEL` on hold) is lifted for this one model**, by the user's instruction.
 - Section 10 still holds: the AI never sets the risk number or the route. The model makes a **suggestion** only.

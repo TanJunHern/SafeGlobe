@@ -11,7 +11,7 @@ def backend() -> str:
 
 
 def model() -> str:
-  """Chosen from the models the project can use; there is no built-in default (CLAUDE.md rule 6)."""
+  """Chosen from the models the project can use; there is no built-in default (AI build spec rule 6)."""
   return os.environ.get("AGENTS_MODEL", "").strip()
 
 

@@ -1,6 +1,6 @@
 # Decisions
 
-Answers to the Phase 0 questions (`CLAUDE.md` section 9), given by the user on 12 Oct 2026.
+Answers to the Phase 0 questions (the AI build spec (`GEMINI.md`) section 9), given by the user on 12 Oct 2026.
 Earlier cloud decisions (project, region, public link, Form Parser) are in `docs/CLOUD_PLAN.md` and still stand
 unless a line here changes them.
 
@@ -26,7 +26,7 @@ unless a line here changes them.
 | 15 | Email and roles | Compliance officer: `whitehathud@gmail.com`. Employee: `hud.marcotrex@gmail.com`. DDQ counterparty test address: `thiswhitecap@gmail.com`. Before "Send DDQ to counterparty", the user sees a generated draft email and can edit it. DDQ emails are sent from `whitehathud@gmail.com` (the compliance account). |
 | 16 | "Request more info" | Approved. Label changes; stored action value and route stay the same. |
 
-## What answer 4 changes in `CLAUDE.md`
+## What answer 4 changes in the AI build spec (`GEMINI.md`)
 
 - Section 4.3 still holds: one config file (`src/risk/points.config.js`) is the single definition of rows, bands and
   default numbers. The user's edits are stored as overrides in the database and merged over the defaults. The scorer,
@@ -97,11 +97,11 @@ unless a line here changes them.
 
 ## Paused (12 Oct 2026, end of day)
 
-- `.env.uat` is filled in by Claude at the user's request: `GEMINI_BACKEND=vertex`, location `global`,
+- `.env.uat` is filled in by the coding agent at the user's request: `GEMINI_BACKEND=vertex`, location `global`,
   `VERTEX_GEMINI_MODEL=gemini-3.5-flash-lite` with fallbacks `gemini-3.5-flash,gemini-2.5-flash`,
   `AGENTS_MODEL=gemini-3.5-flash`, `DEMO_MODE=true`, `COMPLIANCE_OFFICER_EMAILS=whitehathud@gmail.com`,
   `AGENTS_SERVICE_URL=http://localhost:8090`, and locally generated `JWT_SECRET` and `AGENTS_INTERNAL_TOKEN`.
-  The models are Claude's proposal; the user did not object. Prices and Google Search grounding support for them
+  The models are the coding agent's proposal; the user did not object. Prices and Google Search grounding support for them
   are not verified.
 - **No live call yet.** The user said to pause and run Vertex AI on 13 Oct. The section 9.1 go-ahead for Vertex AI,
   Secret Manager and Cloud Run is still to be given.
@@ -114,9 +114,9 @@ unless a line here changes them.
   from the deployed services, and Google sign-in.
 - Models in use: app `gemini-3.5-flash-lite` (fallbacks `gemini-3.5-flash`, `gemini-2.5-flash`), agents
   `gemini-3.5-flash`. All three answered on Vertex AI. Grounding with Google Search works with `gemini-3.5-flash`.
-- New optional setting `AGENTS_THINKING_LEVEL`, set to `LOW` in `.env.uat` by Claude: a Pond-Guard run went from
+- New optional setting `AGENTS_THINKING_LEVEL`, set to `LOW` in `.env.uat` by the coding agent: a Pond-Guard run went from
   about 60 seconds to about 20. To confirm.
-- Adverse media, Claude's choice, to confirm: a web article counts only when the page Google Search returned names
+- Adverse media, the coding agent's choice, to confirm: a web article counts only when the page Google Search returned names
   the counterparty, and for a vessel only when any IMO number in it is the same. Reason: the demo names are
   fictional, and the first live search returned news about real ships with other IMO numbers.
 - The user asked to go on to Phases 3 to 6 once the deploy and the smoke test are good.
@@ -170,7 +170,7 @@ unless a line here changes them.
 - Pub/Sub: six push subscriptions and the job `duedilly-uat-crawl-due` exist. `PUBSUB_MODE=pubsub` is set in
   `.env.uat`. **No live publish or push has been made yet:** that happens on the deployed app after the redeploy.
 - `.env.uat` now has `DOCUMENT_STORAGE=gcs`, `GCS_BUCKET`, `PUBSUB_MODE=pubsub`, `AGENT_SEARCH_DATA_STORE`,
-  `AGENT_SEARCH_LOCATION` (added by Claude at the user's request).
+  `AGENT_SEARCH_LOCATION` (added by the coding agent at the user's request).
 - Git: checked that no `.env` file with real values was ever committed on any branch.
 
 ## Phase 3 review (12 Oct 2026)
@@ -189,12 +189,12 @@ unless a line here changes them.
 
 ## Change of direction (12 Oct 2026): machine learning on review labels
 
-- The user asked Claude to **leave workflows and UI to the user and focus on the AI integration** (40% of the
+- The user asked the coding agent to **leave workflows and UI to the user and focus on the AI integration** (40% of the
   scoring), centred on the **Reviews tab**.
 - The user asked for research on Vertex AI machine learning, and for a supervised model trained on the decisions
   compliance officers record, aimed at false negatives, that gets better with more reviews. Vertex AutoML named.
-- This conflicts with `CLAUDE.md` rule 5 (no model training; `CREATE MODEL` on hold) and section 10 (the AI never
-  sets the risk number or the route). Claude reported the research and asked the user to confirm before training
+- This conflicts with the AI build spec (`GEMINI.md`) rule 5 (no model training; `CREATE MODEL` on hold) and section 10 (the AI never
+  sets the risk number or the route). The coding agent reported the research and asked the user to confirm before training
   anything. **Nothing has been trained and no Phase 4 code is written.**
 - The Phase 4 plan in `implementation_plan.md` is on hold until the user answers.
 
@@ -205,13 +205,13 @@ The user's answers ("Do this now"):
 - **The model suggests; it does not score.** "Prediction as you mention": it flags a likely miss for review and
   never changes the score or the route.
 - **Synthetic labelled data: yes**, "because of AI governance and demo purposes".
-- **Claude updates the Reviews UI for this** (the user asked for it here, although the user owns UI in general):
+- **The coding agent updates the Reviews UI for this** (the user asked for it here, although the user owns UI in general):
   the officer can classify a case red or green; keep it simple; add hints that explain prediction, inference,
   suggestion and hyperparameter tuning, tied into the risk-by-confidence chart.
 - The earlier Phase 4 plan (forecast, anomalies, name matching) is **not built** and is kept as
-  `implementation_plan.phase4-bigquery-ai.md`. Features 4, 11 and 13 of `CLAUDE.md` are therefore open.
+  `implementation_plan.phase4-bigquery-ai.md`. Features 4, 11 and 13 of the AI build spec (`GEMINI.md`) are therefore open.
 
-Choices Claude made while building, to confirm:
+Choices the coding agent made while building, to confirm:
 - An officer's own review counts 10 times a synthetic one in training.
 - "Likely miss" at a prediction of 50% or more (a setting); "likely false alarm" at 20% or less.
 - The synthetic officer's miss patterns include "a company whose points come from a vessel it manages", which is
@@ -239,13 +239,13 @@ Choices Claude made while building, to confirm:
 - "Do A and C. B can wait. For D wait." A = reviewer copilot. C = DDQ intelligence (Duck-Scanner and answer
   verification). B = "How Dilly works" page, later. D = old Phase 4 (forecast, anomalies, name matching), on hold.
 - Built the same day. Document AI is not live yet: section 9.1 asked, waiting.
-- Claude's choices, to confirm: answers below 75% confidence are marked for the supplier; a "No" (or nothing
+- the coding agent's choices, to confirm: answers below 75% confidence are marked for the supplier; a "No" (or nothing
   declared) is what gets compared with a finding, never a "Yes"; questions about having a policy or a control are
   not compared; the copilot draft goes into the existing memo box.
 
 ## Document AI: first live call (12 Oct 2026)
 
-- The user said go ahead with Document AI, the commit and the deploy. Claude added the three `DOCUMENT_AI_*`
+- The user said go ahead with Document AI, the commit and the deploy. The coding agent added the three `DOCUMENT_AI_*`
   lines to `.env.uat` (processor `3beb45e235622652`, location `us`).
 - **It worked first time**, from this computer: a one-page fictional returned questionnaire (PDF) was read by the
   Form Parser (8 form fields) and mapped by Gemini to 12 answers in 8.9 seconds; none dropped.
@@ -253,17 +253,17 @@ Choices Claude made while building, to confirm:
   on clean typed text. One of them was a real misreading ("example" read as "examplé"). The marker errs on the
   side of asking; the line is 75% (`CONFIRM_BELOW` in `duckScannerService.js`).
 - Cost: one page.
-- Deploy: `CLAUDE.md` rule 4 says the user runs deploys. Claude did not run it and gave the command.
+- Deploy: the AI build spec (`GEMINI.md`) rule 4 says the user runs deploys. The coding agent did not run it and gave the command.
 
 ## Country risk views on the Globe (13 and 14 Oct 2026)
 
-The user's answers to the plan's questions, in the user's words, and how Claude read them:
+The user's answers to the plan's questions, in the user's words, and how the coding agent read them:
 
 | # | Answer | Reading |
 | --- | --- | --- |
 | 1 | "Ok do the 4 first." | FATF, OFAC, EU and CPI. CPI is the existing "CPI 2025" fill, left as it is (21 countries). FSI and CTHI are not built. |
 | 2 | "Ignore since wont be using." | Basel AML Index and TRACE are left out. |
-| 3 | "Colour depends on them, you can create a legend to show what the colour means." | The colour comes from each view's categories, and the legend explains it. Claude's choice, to confirm: FATF call for action red, increased monitoring amber; "named in an OFAC programme" and "named in an EU regime" amber, because a programme name can mention a country that is not its target. One line in `views.config.js` changes it. |
+| 3 | "Colour depends on them, you can create a legend to show what the colour means." | The colour comes from each view's categories, and the legend explains it. The coding agent's choice, to confirm: FATF call for action red, increased monitoring amber; "named in an OFAC programme" and "named in an EU regime" amber, because a programme name can mention a country that is not its target. One line in `views.config.js` changes it. |
 | 4 | "Yes at the moment make it a weekly default." | Weekly. |
 | 5 | "Just reflect it on the globe." | Display only. No points row. |
 | 6 | "Add a fallback if the weekly rescreen doesnt run." | Question 6 (where the fetch runs) was not answered directly. Built as recommended: the app fetches with the feature 3 guards, the ADK agent extracts. Fallback built: if the scheduled tick has not come 6 hours after a view fell due, opening the Globe starts the check. To confirm. |
@@ -303,7 +303,7 @@ again the next day; new setting `COUNTRY_RISK_FETCH` (off unless `live`) so dev 
 
 - The user gave a new brief in six phases (A to F): Firestore as the live database on Cloud Run, BigQuery as the
   analytics mirror with `AI.FORECAST`, `AI.DETECT_ANOMALIES` and embeddings with `VECTOR_SEARCH`, a HUD on the
-  Globe, and demo readiness. **This track replaces `CLAUDE.md` Phase 4** and adds Firestore and the HUD. The old
+  Globe, and demo readiness. **This track replaces the AI build spec (`GEMINI.md`) Phase 4** and adds Firestore and the HUD. The old
   Phase 4 plan (`implementation_plan.phase4-bigquery-ai.md`) is superseded; features 4, 11 and 13 are built here.
 - Phase A (discovery, no code changes) is done; the findings and the questions are in `implementation_plan.md`.
   **The answers are not given yet.** Nothing is built.
@@ -317,7 +317,7 @@ again the next day; new setting `COUNTRY_RISK_FETCH` (off unless `live`) so dev 
 
 - The user withdrew the HUD, Firestore and BigQuery AI track before answering its questions: "i dont want that
   instead can u see what already being build and to strengthen it i dont want to add the forecast etc." Nothing of
-  it was built. Its plan is kept as `implementation_plan.hud-firestore-bigquery.md`. So `CLAUDE.md` features 4
+  it was built. Its plan is kept as `implementation_plan.hud-firestore-bigquery.md`. So the AI build spec (`GEMINI.md`) features 4
   (forecast), 11 (name matching) and 13 (AIS anomalies) are **not** being built.
 - The user's picture, in their words: "Dilly orchestor agent. It's called pond guard. Idea is to have 5 sub agents
   that reads the sections on sanctions for example and maps it against the policy with the sanctions part. Then
@@ -341,7 +341,7 @@ again the next day; new setting `COUNTRY_RISK_FETCH` (off unless `live`) so dev 
 | 3 | Sub-agents | Five for every entity: Sanctions, PEP, Adverse media, Ownership, Country and contract (§4.1, §2.1, §5.2). Vessels get a sixth, Vessel behaviour (§5.4). Country and contract cites the CPI data and the request's contract value |
 | 4 | Policy gaps | Three clauses added to the demo policy, each labelled "Demo clause", numbered to fit, wording matching the points table. Text and numbers shown to the user before saving |
 | 5 | Final decision | Agreement uses the decision on the request (Approve / Reject). "Request more info" is not final: "Waiting", counted when approved or rejected. The BigQuery ML model keeps using the red and green marks |
-| 6 | Nearness | No new model. 50 points is the line: 50+ and Reject, or under 50 and Approve, is Agreed; 50+ and Approve is "Dilly was stricter"; under 50 and Reject is "Dilly was more lenient". The comparison is a SQL view in BigQuery, with the same logic on SQLite offline. Reviews shows the rate, both counts and the disagreements. The model's probability is shown as "How likely an officer marks this red". The suggestion becomes a feature only when the user reruns training. No retraining by Claude |
+| 6 | Nearness | No new model. 50 points is the line: 50+ and Reject, or under 50 and Approve, is Agreed; 50+ and Approve is "Dilly was stricter"; under 50 and Reject is "Dilly was more lenient". The comparison is a SQL view in BigQuery, with the same logic on SQLite offline. Reviews shows the rate, both counts and the disagreements. The model's probability is shown as "How likely an officer marks this red". The suggestion becomes a feature only when the user reruns training. No retraining by the coding agent |
 
 Priority if time is short: A to D, then the agreement labels and rate; the probability column is cut first.
 
@@ -352,7 +352,7 @@ deadline 300 s, service timeout 300 s, run limit 120 s). When events are inline 
 fails, nothing runs in the background; the page calls a new `POST /api/kyc/:id/screen-now`. No billing setting is
 changed: instance-based billing would be charged for the instance's whole life.
 
-Claude's readings, to confirm: "the same entity" is the same registration, IMO or ID number in the workspace, or
+The coding agent's readings, to confirm: "the same entity" is the same registration, IMO or ID number in the workspace, or
 the same normalised name and country when there is none. The three clauses are proposed as 1.1, 1.2 and 1.3 under
 Section 1, with three wording changes against the user's drafts so they match the points rows (see the plan).
 

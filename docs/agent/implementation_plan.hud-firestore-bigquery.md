@@ -1,7 +1,7 @@
 # Implementation plan: HUD, Firestore and BigQuery AI (Phases A to F)
 
 Status: **Phase A (discovery) written 14 Oct 2026. Withdrawn by the user the same day ("i dont want to add the forecast etc."). Nothing was built. Kept for its findings.**
-This track replaces `CLAUDE.md` Phase 4. Earlier plans: `.phase1.md`, `.phase2.md`, `.accounts.md`, `.phase3.md`,
+This track replaces the AI build spec (`GEMINI.md`) Phase 4. Earlier plans: `.phase1.md`, `.phase2.md`, `.accounts.md`, `.phase3.md`,
 `.phase4-bigquery-ai.md` (not built; this track takes over its features 4, 11 and 13), `.review-model.md`,
 `.country-risk.md`.
 
@@ -283,7 +283,7 @@ under the KPIs, and the other two as a right-hand column under Layers. Say which
 Honest estimate against 16 Oct, 12:00: C, D and E on offline samples, plus live BigQuery AI after your go-ahead,
 fit. B2 fits. B1 does not fit together with the rest. F fits only in part (`demo:reset` exists; `demo:check` with
 Playwright and "passes on UAT twice" need a deployed build with time to spare). Suggested order if you agree:
-**C, D, E first** (what a judge sees), **then B2, then F**. Features 6, 16 and 17 of `CLAUDE.md` (Quack-Back, DDQ
+**C, D, E first** (what a judge sees), **then B2, then F**. Features 6, 16 and 17 of the AI build spec (`GEMINI.md`) (Quack-Back, DDQ
 email, Request more info) and "How Dilly works" (15) are still not built and are not in this track.
 
 ---

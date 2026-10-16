@@ -2,7 +2,7 @@
 
 ## Phase 1: scoring engine, editable rules, "Why <score>?" (12 Oct 2026)
 
-Built by Claude Code. No cloud service was called. Everything below runs offline with Gemini disabled.
+Built with an AI coding agent. No cloud service was called. Everything below runs offline with Gemini disabled.
 
 ### What changed
 
@@ -116,7 +116,7 @@ In "How to see it" above, "Reviews > scroll to Scoring rules" is now "Reviews > 
 
 ## Phase 2: Vertex AI, agents service, Pond-Guard, Ask Dilly, deploy scripts (12 Oct 2026)
 
-Built by Claude Code. **Status: built and tested on fallbacks only. No live call has been made** to Vertex AI, the
+Built with an AI coding agent. **Status: built and tested on fallbacks only. No live call has been made** to Vertex AI, the
 agents' Gemini backend, Secret Manager or Cloud Run. The gate ("Pond-Guard screens Aurora Venture live on UAT") is
 **not met yet**: it needs the user's go-ahead (section 9.1), the model choice, and the user to run the scripts.
 
@@ -333,7 +333,7 @@ Start the app (`npm run dev`) and open `http://localhost:8080/login`.
 
 ## Phase 3: events, crawler agents, self-healing, Ripples triage, policy search (12 Oct 2026)
 
-Built by Claude Code, on this computer only. **Status: built and tested on fallbacks, and the parts that only
+Built with an AI coding agent, on this computer only. **Status: built and tested on fallbacks, and the parts that only
 need Gemini were run live on Vertex AI locally (already approved). Not yet live, and waiting for the section 9.1
 go-ahead: Pub/Sub, Cloud Scheduler, Cloud Storage, Agent Search. Not deployed: the UAT link still runs Phase 2.**
 
@@ -474,7 +474,7 @@ To see the live agents on your computer: `APP_ENV=uat npm run agents` in one ter
 
 ## The review model: Dilly learns from officers' reviews (12 Oct 2026)
 
-Built by Claude Code, on this computer. **Status: built and tested offline. BigQuery ML has not been called yet**
+Built with an AI coding agent, on this computer. **Status: built and tested offline. BigQuery ML has not been called yet**
 (section 9.1: waiting for the go-ahead). Not deployed. This replaces the earlier Phase 4 plan, which is not built.
 
 ### What it is, in one paragraph
@@ -568,8 +568,8 @@ red and the model retrained. The same reviews are held back on every run, so the
    say if you would rather handle it in your own workflow.
 5. **Offline there is a real model too**, so the loop always works. It is labelled "Offline model". With
    `BIGQUERY=bigquery` the same button trains on BigQuery ML and the page waits for it.
-6. **`CLAUDE.md` still says "no model training" (rule 5).** You lifted it for this model; I recorded that in
-   `decisions.md` and did not edit `CLAUDE.md`. Tell me if you want the file itself changed.
+6. **the AI build spec (`GEMINI.md`) still says "no model training" (rule 5).** You lifted it for this model; I recorded that in
+   `decisions.md` and did not edit the AI build spec (`GEMINI.md`). Tell me if you want the file itself changed.
 7. **Not built:** Pond forecast, AIS anomaly checks and embedding name matching (features 4, 13 and 11). The old
    plan is kept in `implementation_plan.phase4-bigquery-ai.md`.
 
@@ -577,7 +577,7 @@ red and the model retrained. The same reviews are held back on every run, so the
 
 ## Reviewer copilot, Duck-Scanner, answer verification (12 Oct 2026)
 
-Built by Claude Code, on this computer. The user chose these two ("Do A and C"). **Status: built, tested
+Built with an AI coding agent, on this computer. The user chose these two ("Do A and C"). **Status: built, tested
 offline, and run live on Gemini on Vertex AI and on Document AI from this computer.** Not deployed.
 
 Also since the last section: **BigQuery ML went live** on the UAT link (see `decisions.md`): the review model
@@ -656,7 +656,7 @@ New variables: `DOCUMENT_AI_DAILY_CAP`, `COPILOT_DAILY_CAP`. The three `DOCUMENT
    per upload.
 5. **A stray draft is in your own dev database** (`data/safe_globe.db`): one copilot draft for Aurora Venture,
    written while I tried the service. It made one call on your AI Studio key. Harmless; say if you want it removed.
-6. **Still open from `CLAUDE.md`:** Quack-Back chat (6), automatic DDQ email (16), Request more info (17), the
+6. **Still open from the AI build spec (`GEMINI.md`):** Quack-Back chat (6), automatic DDQ email (16), Request more info (17), the
    "How Dilly works" page (15), and the old Phase 4 features (4, 11, 13).
 
 
@@ -822,7 +822,7 @@ The fields the tests pin (`is_safe`, `verdict`, `status_label`, `recommended_act
 
 ## Pitch deck and demo GIFs (15 Oct 2026)
 
-Plan and answers: `docs/pitch/deck-plan.md`. Deck: a Claude Slides artifact (29 slides), private until shared.
+Plan and answers: `docs/pitch/deck-plan.md`. Deck: a slides artifact (29 slides), private until shared.
 
 **Recording.** `demovideo/record-gifs.js` films ten scenes against a local copy of the app with the UAT settings
 (Gemini on Vertex AI and the ADK agents live; BigQuery, Pub/Sub, Cloud Storage, Agent Search and Document AI on

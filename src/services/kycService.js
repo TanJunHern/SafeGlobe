@@ -148,7 +148,7 @@ function calculateAiRisk(data, screeningHit = null) {
   const name = data.counterparty_name || '';
   const kind = data.entity_type === 'Vessel' ? 'vessel' : data.entity_type === 'Person' ? 'person' : 'org';
 
-  // Findings in the scoring format (CLAUDE.md 4.8). The score is added up from these by src/risk/scorer.js;
+  // Findings in the scoring format (AI build spec 4.8). The score is added up from these by src/risk/scorer.js;
   // nothing below sets a number. Screening findings come from the hit, the rest from what the intake form declares.
   const readAt = new Date().toISOString();
   const fid = 'F-' + crypto.randomBytes(4).toString('hex');
@@ -587,7 +587,7 @@ function createKycRequest(input, userContext = {}, checks = {}) {
   let requestStatus = input.request_status;
   if (!requestStatus) {
     if (aiRisk.screening_result === 'Sanctions Alert') {
-      // A machine never rejects: a sanctions alert goes to the compliance queue and a person decides (CLAUDE.md section 10)
+      // A machine never rejects: a sanctions alert goes to the compliance queue and a person decides (AI build spec section 10)
       requestStatus = 'Under Review';
     } else if (policyEval.ddq_required) {
       requestStatus = 'Pending DDQ'; // Branch B

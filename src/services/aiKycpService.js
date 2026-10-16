@@ -108,7 +108,7 @@ const tools = {
 /**
  * The AI (or the offline engine) describes the counterparty; the number does not come from it.
  * Whatever risk figure the report carries is replaced by the scorer's: the stored breakdown when the
- * counterparty is already a case, otherwise the offline screening of the name (CLAUDE.md section 4.1).
+ * counterparty is already a case, otherwise the offline screening of the name (AI build spec section 4.1).
  */
 function applyScorer(report, { query, entityKind, jurisdiction }) {
   try {

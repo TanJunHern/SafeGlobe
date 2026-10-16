@@ -23,7 +23,7 @@ const finding = (category, over = {}) => Object.assign({
 }, over);
 const ALL_CHECKS = Object.fromEntries(['sanctions', 'pep', 'adverse_media', 'ownership', 'country', 'vessel_behaviour'].map(k => [k, { ran: true, source_name: 'Lists', read_at: '2026-10-10T00:00:00Z' }]));
 
-test('points table: the defaults are the table in CLAUDE.md 4.5', () => {
+test('points table: the defaults are the table in AI build spec 4.5', () => {
   const expected = {
     sanctions_confirmed: 100, sanctions_possible: 40, pep_owner: 25, pep_associate: 15, country_cpi_low: 20, country_cpi_mid: 10,
     adverse_media_severe: 25, adverse_media_other: 10, ownership_unclear: 15, broker_intermediary: 10, vessel_ais_dark: 20,
@@ -198,7 +198,7 @@ test('recommended changes: a policy that differs from the rules', () => {
   assert.equal(suggestions.readableText('data:text/plain;base64,' + Buffer.from('CPI below 35 in the policy text, long enough to decode').toString('base64')).includes('CPI below 35'), true);
 });
 
-test('Aurora Venture scores 85 from its findings (CLAUDE.md 4.5 worked example)', () => {
+test('Aurora Venture scores 85 from its findings (AI build spec 4.5 worked example)', () => {
   const db = getDb();
   resetRules(db);
   const b = riskService.assessEntity(db, 'aurora', { now: NOW });

@@ -48,7 +48,7 @@ Do these in order. Skipping the first two leaves parts of the demo empty.
    (800 reviews)** > **Train the model**. It runs on BigQuery ML and takes about **27 minutes**. Leave the page
    open. When it is done the card says "BigQuery ML (boosted trees)".
 3. **Rehearse the changed-page step once** (step 19). It has never been run on the link. If no ripple appears
-   within 30 seconds, leave step 19 out and tell Claude.
+   within 30 seconds, leave step 19 out and tell the coding agent.
 4. **Have two browser windows ready:** a normal window for staff, and a private (incognito) window for the
    counterparty, who has no account.
 5. **Have this file ready to upload:** `docs/test-docs/ddq-organisation-red.md` (in this repo).
@@ -299,7 +299,7 @@ Not built, so do not promise: the Quack-Back chat, automatic DDQ email, the "How
 | "Offline sample" under Pond-Guard | The agents service is waking up, or the daily limit of 30 is used | Wait 20 seconds and press again; the reason is written under it |
 | Dilly learns shows no model | The app restarted | Add synthetic data and train again (27 minutes), or show the screens from a recording |
 | The questionnaire will not submit | A section is incomplete | The message names the question; usually 6.11 details or the declaration |
-| No ripple in step 19 | The Pub/Sub round trip failed | Skip the step; tell Claude |
+| No ripple in step 19 | The Pub/Sub round trip failed | Skip the step; tell the coding agent |
 | "Dilly needs a short rest" | 20 AI requests in 10 minutes from one address | Wait, or raise `AI_RATE_LIMIT_MAX` in `.env.uat` and redeploy before the demo |
 | Answer verification shows nothing | The questionnaire was not submitted, or the case has no finding to compare with | Press "Check answers against findings" |
 

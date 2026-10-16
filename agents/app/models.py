@@ -1,7 +1,7 @@
 """Request and response models for the agents service (Pydantic).
 
 The agents return findings, never a risk number or a route: those are computed by the DueDilly app
-from its points table (CLAUDE.md section 4.1).
+from its points table (AI build spec section 4.1).
 """
 from typing import Literal, Optional
 

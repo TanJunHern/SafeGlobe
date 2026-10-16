@@ -39,7 +39,7 @@ function screenCounterparty({ name, entity = 'organisation', jurisdiction = 'SGP
   let autoCleared = false;
   let autoClearReason = '';
 
-  // Findings in the scoring format (CLAUDE.md 4.8). The points come from these, never from a number set here.
+  // Findings in the scoring format (AI build spec 4.8). The points come from these, never from a number set here.
   // This offline engine recognises the demo names by pattern, so what it finds is labelled as demo data.
   const readAt = new Date().toISOString();
   const fid = 'F-' + crypto.randomBytes(4).toString('hex');

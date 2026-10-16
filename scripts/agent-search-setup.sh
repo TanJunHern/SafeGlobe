@@ -68,5 +68,5 @@ Done. Indexing takes a few minutes. Then:
   2. In .env.uat uncomment and set:
        AGENT_SEARCH_DATA_STORE=${DATA_STORE}
        AGENT_SEARCH_LOCATION=${LOCATION}
-  3. Tell Claude it is ready (section 9.1), then redeploy:  bash scripts/deploy.sh uat
+  3. Tell the coding agent it is ready (section 9.1), then redeploy:  bash scripts/deploy.sh uat
 DONE

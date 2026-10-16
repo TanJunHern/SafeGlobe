@@ -1,8 +1,8 @@
 # DEPLOY_GUIDE.md: getting every key, and deploying DueDilly
 
 This guide is for you, not the agent. It shows where to get each key or ID, which line to paste it into, and what
-the app does if you skip it. Claude keeps the variable names and commands in this file in sync with the code
-(rule 12 in `CLAUDE.md`). **If a name here differs from `.env.example`, `.env.example` wins**: each block there
+the app does if you skip it. The coding agent keeps the variable names and commands in this file in sync with the code
+(rule 12 of the AI build spec in `GEMINI.md`). **If a name here differs from `.env.example`, `.env.example` wins**: each block there
 points back to its step number in this guide.
 
 Project: `safe-globe-compliance` · Region: `asia-southeast1` (Singapore) · Environments: `dev` (offline, port 8080)
@@ -143,7 +143,7 @@ The free tier may use your prompts to improve Google products. Use fictional dem
 Vertex AI is now part of Gemini Enterprise Agent Platform. It uses your sign-in (step 0) on your computer and the
 service account (step 2) on Cloud Run, so there is no key to copy.
 
-**Pick the models.** Claude lists the Gemini models the project can use and you choose. To list them yourself:
+**Pick the models.** The coding agent lists the Gemini models the project can use and you choose. To list them yourself:
 ```
 curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "x-goog-user-project: safe-globe-compliance" \
   "https://aiplatform.googleapis.com/v1beta1/publishers/google/models?pageSize=300" | grep '"name"' | grep gemini
@@ -328,7 +328,7 @@ indexes one file per policy clause, the CDDQ template and the demo policy PDF. Y
    AGENT_SEARCH_DATA_STORE=duedilly-policies
    AGENT_SEARCH_LOCATION=global
    ```
-4. Tell Claude it is ready (the section 9.1 go-ahead), then redeploy: `bash scripts/deploy.sh uat`
+4. Tell the coding agent it is ready (the section 9.1 go-ahead), then redeploy: `bash scripts/deploy.sh uat`
 
 Cost, read on 12 Oct 2026 from the pricing page (check it again before you rely on it:
 https://cloud.google.com/generative-ai-app-builder/pricing): Search Standard Edition USD 1.50 per 1,000 searches,
@@ -503,7 +503,7 @@ Settings you can add to `.env.uat` (all optional): `COPILOT_DAILY_CAP` (default 
 
 After the first deploy, `gcloud builds submit --config=cloudbuild.yaml` rebuilds and rolls out the app image only.
 
-**If a deploy fails,** copy the last 20 lines of the error to Claude. `npm run uat` on port 8081 still runs the same
+**If a deploy fails,** copy the last 20 lines of the error to the coding agent. `npm run uat` on port 8081 still runs the same
 container on your computer.
 
 ---

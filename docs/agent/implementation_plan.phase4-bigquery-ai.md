@@ -38,7 +38,7 @@ Not confirmed yet: that the embedding endpoint can be called from a dataset in `
 query will tell. If it cannot, the name table goes in a small dataset in a region where it can (a script for you
 to run), and I tell you before anything is created.
 
-**One conflict with `CLAUDE.md`, for you to decide (question 2).** Section 5 names `AI.GENERATE_EMBEDDING`. That
+**One conflict with the AI build spec (`GEMINI.md`), for you to decide (question 2).** Section 5 names `AI.GENERATE_EMBEDDING`. That
 function needs `CREATE MODEL`, and rule 5 puts `CREATE MODEL` on hold. A remote model trains nothing, but the
 statement is the one the rule names. `AI.EMBED` does the same job with no `CREATE MODEL` and no connection.
 I recommend `AI.EMBED`, with a multilingual embedding model so names match across scripts.
@@ -166,7 +166,7 @@ Search already are.
 
 1. **Approve this plan?**
 2. **Embeddings:** use `AI.EMBED` (no `CREATE MODEL`), as I recommend, or allow a remote model so that
-   `AI.GENERATE_EMBEDDING` is used exactly as `CLAUDE.md` names it?
+   `AI.GENERATE_EMBEDDING` is used exactly as the AI build spec (`GEMINI.md`) names it?
 3. **Sea lanes for the forecast:** Arabian Sea, Strait of Hormuz and Singapore Strait, fitting the Aurora Venture
    story?
 4. **Calibration:** show the real, small counts from the demo's decisions, or also generate a labelled synthetic
