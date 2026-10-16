@@ -135,11 +135,16 @@ class AccountsStore {
 
 let instance = null;
 function getAccountsStore() {
-  if (!instance) instance = new AccountsStore();
+  if (!instance) {
+    const firestoreMirror = require('../db/firestoreMirror');
+    firestoreMirror.prepare();
+    instance = new AccountsStore();
+    firestoreMirror.track('accounts', instance.db);
+  }
   return instance;
 }
 function closeAccountsStore() {
   if (instance) { instance.close(); instance = null; }
 }
 
-module.exports = { getAccountsStore, closeAccountsStore, workspacesDir, normEmail, DEMO_WORKSPACE_ID, DEMO_ACCOUNTS };
+module.exports = { getAccountsStore, closeAccountsStore, accountsPath, workspacesDir, normEmail, DEMO_WORKSPACE_ID, DEMO_ACCOUNTS };

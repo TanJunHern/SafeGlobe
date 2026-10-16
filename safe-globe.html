@@ -2618,6 +2618,7 @@ body.guest-mode .topbar .wordmark{margin-right:auto}
 <script src="/duck-tour.js"></script>
 <script src="/dilly-loader.js"></script>
 <script src="/dilly-motion.js"></script>
+<script src="/ddq-gmail.js"></script>
 <script src="/monitoring-ui.js"></script>
 <script src="/country-risk-views.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -8303,9 +8304,9 @@ function renderAuditDdqActions(r) {
   const sendBtn = box.querySelector('[data-ddq-act="send"]');
   if (sendBtn) sendBtn.addEventListener('click', async () => {
     try {
-      const res = await apiFetch(`/api/kyc/${encodeURIComponent(r.id)}/send-ddq`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || data.error);
+      // From the signed-in person's own Gmail, with their note (ddq-gmail.js); null when they cancel
+      const data = await DdqGmail.send({ request: r, session, clientId: publicConfig.googleClientId, apiFetch });
+      if (!data) return;
       // Paper plane: flies away when the DDQ went out, loops back when only the link was made
       if (window.DillyMotion) DillyMotion.fly(sendBtn, DillyMotion.planeOutcome(data));
       toast(data.message);

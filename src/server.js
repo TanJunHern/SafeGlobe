@@ -168,7 +168,7 @@ app.get('/saf-globe.html', sendApp);
 // Serve static directory for any static assets (PDFs, images, etc.)
 // Only these files are public. The repo root is NOT served: it holds the database, uploaded
 // counterparty documents, source code and config, none of which may be downloadable.
-const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js', 'ddq-section-status.js', 'duck-tour.js', 'dilly-loader.js', 'dilly-motion.js', 'monitoring-ui.js', 'country-risk-views.js'];
+const PUBLIC_ASSETS = ['portal-shared.css', 'portal-shared.js', 'ddq-section-status.js', 'duck-tour.js', 'dilly-loader.js', 'dilly-motion.js', 'ddq-gmail.js', 'monitoring-ui.js', 'country-risk-views.js'];
 for (const file of PUBLIC_ASSETS) {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(config.staticDir, file)));
 }
@@ -221,10 +221,15 @@ function startServer(port = config.port) {
   });
 }
 
-function stopServer() {
+async function stopServer() {
+  // Firestore copy first: Cloud Run stops the container 10 seconds after SIGTERM
+  const firestoreMirror = require('./db/firestoreMirror');
+  await firestoreMirror.flush();
   return new Promise((resolve) => {
     if (server) {
-      server.close(() => {
+      server.close(async () => {
+        await firestoreMirror.flush();
+        firestoreMirror.stop();
         require('./db').closeAll();
         resolve();
       });

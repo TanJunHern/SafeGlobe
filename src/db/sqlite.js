@@ -273,7 +273,9 @@ class SqliteDatabase {
       'ddq_bounce_json TEXT',
       'monitoring_json TEXT',
       // Pond-Guard at the first instance: where the screening of this request stands (screening, done, reused, limit, offline)
-      'pond_guard_json TEXT'
+      'pond_guard_json TEXT',
+      // The DDQ invitation emailed from the sender's own Gmail: from, to, when, Gmail message id, the note
+      'ddq_email_json TEXT'
     ];
     for (const col of migrationCols) {
       try {
@@ -2136,6 +2138,13 @@ class SqliteDatabase {
       .run(cacheKey, language, JSON.stringify(payload));
   }
 
+  /** Remembers the DDQ invitation that went out by Gmail (src/services/gmailService.js). */
+  recordKycDdqEmail(id, email) {
+    this.db.prepare('UPDATE kyc_requests SET ddq_email_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(JSON.stringify(email), id);
+    return this.getKycRequestById(id);
+  }
+
   markKycDdqSent(id, sentBy = 'Employee Portal') {
     this.db.prepare(`
       UPDATE kyc_requests
@@ -2158,7 +2167,7 @@ class SqliteDatabase {
     try { ddq_responses = JSON.parse(r.ddq_responses_json || '{}'); } catch(e){}
 
     // Template snapshot and draft are large; they are served by getKycDdqBundle() instead
-    const { ddq_template_json, ddq_draft_json, agent_json, ddq_bounce_json, monitoring_json, pond_guard_json, ...rest } = r;
+    const { ddq_template_json, ddq_draft_json, agent_json, ddq_bounce_json, monitoring_json, pond_guard_json, ddq_email_json, ...rest } = r;
     r = rest;
     let agent = null;
     let ddq_bounce = null;
@@ -2168,6 +2177,8 @@ class SqliteDatabase {
     try { monitoring = monitoring_json ? JSON.parse(monitoring_json) : null; } catch(e){}
     let pond_guard = null;
     try { pond_guard = pond_guard_json ? JSON.parse(pond_guard_json) : null; } catch(e){}
+    let ddq_email = null;
+    try { ddq_email = ddq_email_json ? JSON.parse(ddq_email_json) : null; } catch(e){}
 
     return {
       ...r,
@@ -2181,6 +2192,7 @@ class SqliteDatabase {
       ddq_bounce,
       monitoring,
       pond_guard,
+      ddq_email,
       ddq_link: r.ddq_token ? `/ddq/portal?token=${r.ddq_token}` : null
     };
   }

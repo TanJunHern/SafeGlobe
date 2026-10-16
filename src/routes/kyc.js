@@ -5,6 +5,8 @@ const kycService = require('../services/kycService');
 const { authenticate, requireRole } = require('../middleware/auth');
 const complianceAgent = require('../agents/complianceAgent');
 const vesselFinder = require('../services/vesselFinderService');
+const gmailService = require('../services/gmailService');
+const config = require('../config');
 
 // Mount auth middleware across KYC routes
 router.use(authenticate);
@@ -453,10 +455,12 @@ router.post('/:id/agent/run', requireRole('compliance_officer'), async (req, res
 });
 
 /**
- * POST /api/kyc/:id/send-ddq
- * Dispatches the signed one-time DDQ guest link to the counterparty
+ * POST /api/kyc/:id/send-ddq   { accessToken?, note? }
+ * Dispatches the signed one-time DDQ guest link to the counterparty.
+ * With accessToken (gmail.send, from the browser's Google pop-up) the link is emailed from the signed-in person's own
+ * Gmail, with their note. Without it the DDQ is only marked as sent and the link is there to copy.
  */
-router.post('/:id/send-ddq', (req, res) => {
+router.post('/:id/send-ddq', async (req, res) => {
   try {
     const db = getDb();
     const existing = db.getKycRequestById(req.params.id);
@@ -470,18 +474,33 @@ router.post('/:id/send-ddq', (req, res) => {
       return res.status(400).json({ error: 'No DDQ is required for this request' });
     }
 
+    const { accessToken, note } = req.body || {};
+    let delivery = { sent: false, reason: 'Not emailed. Copy the link and send it yourself.' };
+    if (accessToken) {
+      const link = `${config.publicBaseUrl || `${req.protocol}://${req.get('host')}`}${existing.ddq_link}`;
+      try {
+        delivery = await gmailService.sendDdqEmail({ accessToken, user: req.user, request: existing, link, note });
+      } catch (err) {
+        return res.status(err.status || 502).json({ error: 'DDQ email not sent', code: err.code, message: err.message });
+      }
+      db.recordKycDdqEmail(existing.id, { ...delivery, sentBy: req.user.name });
+    }
+
     const updated = existing.ddq_status === 'Triggered'
       ? db.markKycDdqSent(existing.id, req.user.name)
-      : existing;
+      : db.getKycRequestById(existing.id);
 
     res.json({
       success: true,
-      message: `DDQ link dispatched to ${updated.counterparty_email || 'counterparty'}`,
+      message: delivery.sent
+        ? `DDQ emailed to ${delivery.to} from ${delivery.from}`
+        : `DDQ marked as sent to ${updated.counterparty_email || 'the counterparty'}. Copy the link to send it.`,
+      delivery,
       ddq_link: updated.ddq_link,
       request: updated
     });
   } catch (err) {
-    console.error('Error dispatching DDQ link:', err);
+    console.error('Error dispatching DDQ link:', err.message);
     res.status(500).json({ error: 'Failed to dispatch DDQ link', message: err.message });
   }
 });
