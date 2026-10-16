@@ -22,7 +22,7 @@ COPY src/ ./src/
 COPY data/ ./data/
 COPY safe-globe.html ./safe-globe.html
 COPY employee-portal.html ./employee-portal.html
-COPY ddq-portal.html ddq-manager.html ddq-print.html portal-shared.css portal-shared.js ddq-section-status.js duck-tour.js dilly-loader.js dilly-motion.js monitoring-ui.js country-risk-views.js ./
+COPY ddq-portal.html ddq-manager.html ddq-print.html portal-shared.css portal-shared.js ddq-section-status.js duck-tour.js dilly-loader.js dilly-motion.js ddq-gmail.js monitoring-ui.js country-risk-views.js ./
 COPY assets/ ./assets/
 COPY docs/policies/ ./docs/policies/
 

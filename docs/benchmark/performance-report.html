@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DueDilly Performance Benchmark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBF6E9; --surface:#FFFDF7; --surface-2:#F4ECDA; --line:#EADFC4; --line-2:#D9CBA8;
+  --fg:#2E2A33; --fg-2:#4A4552; --fg-3:#6B6573;
+  --accent:#1F6F6B; --accent-soft:rgba(31,111,107,.12); --on-accent:#FFFDF7;
+  --brand-yellow:#F6DD8E; --brand-orange:#EE8B3A;
+  --low:#6E9F6A; --low-soft:#CFE0CB; --low-ink:#3F7140;
+  --mid:#E0A23A; --mid-soft:#F3DFB5; --mid-ink:#8F5E0B;
+  --high:#D9604F; --high-ink:#B5412F;
+  --shadow:0 1px 2px rgba(48,36,24,.06),0 10px 28px rgba(48,36,24,.09);
+  --f-display:"Fredoka",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:14px; --r-sm:9px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121A1B; --surface:#1B2426; --surface-2:#222E30; --line:#2A3638; --line-2:#3A4A4C;
+    --fg:#F2EEE6; --fg-2:#C9CFCD; --fg-3:#A9B3B2;
+    --accent:#3FA39C; --accent-soft:rgba(63,163,156,.16); --on-accent:#0F1718;
+    --low-soft:#2C4030; --low-ink:#8DBB89; --mid-soft:#4F3D1D; --mid-ink:#E0A23A; --high-ink:#E57C6C;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.34);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121A1B; --surface:#1B2426; --surface-2:#222E30; --line:#2A3638; --line-2:#3A4A4C;
+  --fg:#F2EEE6; --fg-2:#C9CFCD; --fg-3:#A9B3B2;
+  --accent:#3FA39C; --accent-soft:rgba(63,163,156,.16); --on-accent:#0F1718;
+  --low-soft:#2C4030; --low-ink:#8DBB89; --mid-soft:#4F3D1D; --mid-ink:#E0A23A; --high-ink:#E57C6C;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.34);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 16px 64px}
+header{display:flex;align-items:center;gap:18px;margin-bottom:28px}
+header img{width:64px;height:64px;flex:none}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 4px}
+h1,h2{font-family:var(--f-display);font-weight:600;margin:0;line-height:1.2}
+h1{font-size:32px}
+h2{font-size:21px}
+.lede{color:var(--fg-2);margin:6px 0 0;max-width:68ch}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 28px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+.kpi b{display:block;font-family:var(--f-display);font-weight:600;font-size:26px;color:var(--accent);line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--fg-3)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);margin:0 0 28px;overflow:hidden}
+.card-h{padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+.card-h p{margin:4px 0 0;color:var(--fg-3);font-size:13.5px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--surface-2);font-weight:600;font-size:12px;letter-spacing:.03em;text-transform:uppercase;color:var(--fg-2)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+tr.group td{background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:7px 14px}
+code{font-family:var(--f-mono);font-size:12.5px;color:var(--fg)}
+.sub{display:block;color:var(--fg-3);font-size:12px;white-space:normal}
+.pass{display:inline-flex;align-items:center;gap:6px;background:var(--low-soft);color:var(--low-ink);font-weight:600;font-size:12px;padding:3px 10px;border-radius:999px}
+.pass::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--low)}
+tr.best td{background:color-mix(in srgb,var(--low-soft) 55%,transparent)}
+tr.best td:first-child{box-shadow:inset 4px 0 0 var(--low)}
+.tag{display:inline-block;margin-left:8px;background:var(--brand-yellow);color:#2E2A33;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;vertical-align:1px}
+.up{color:var(--low-ink);font-weight:600}
+.notes{padding:14px 20px 18px;border-top:1px solid var(--line);color:var(--fg-3);font-size:12.5px}
+.notes ul{margin:6px 0 0;padding-left:18px}
+footer{color:var(--fg-3);font-size:12.5px}
+@media (max-width:720px){
+  h1{font-size:25px}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  header img{width:48px;height:48px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="../../assets/mascot/dilly_v3_happy.svg" alt="">
+    <div>
+      <p class="eyebrow">Prototype performance report</p>
+      <h1>DueDilly benchmarking</h1>
+      <p class="lede">API latency and load testing across the platform, and a head-to-head evaluation of the review model (boosted trees) against Gemini on 800 labelled synthetic reviews. Run on 16 Oct 2026.</p>
+    </div>
+  </header>
+
+  <section class="kpis" aria-label="Headline results">
+    <div class="kpi"><b>0</b><span>errors in 6,600 API requests</span></div>
+    <div class="kpi"><b>&lt; 6 ms</b><span>median on 17 of 22 read endpoints</span></div>
+    <div class="kpi"><b>200</b><span>concurrent users, 0% error rate</span></div>
+    <div class="kpi"><b>+75%</b><span>recall vs rules alone (boosted trees)</span></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h">
+      <h2>Table 1 · API performance</h2>
+      <p>Each read endpoint: 300 requests at 10 concurrent, after warm-up. Latency in milliseconds.</p>
+    </div>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Endpoint</th><th class="num">Requests</th><th class="num">p50 ms</th><th class="num">p95 ms</th><th class="num">Throughput req/s</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr class="group"><td colspan="6">Core platform</td></tr>
+        <tr><td><code>GET /safe-globe.html</code><span class="sub">Main app shell, 639 KB</span></td><td class="num">300</td><td class="num">7.2</td><td class="num">17.9</td><td class="num">1,193</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>GET /api/auth/session</code><span class="sub">Session check</span></td><td class="num">300</td><td class="num">0.9</td><td class="num">3.0</td><td class="num">7,699</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>GET /api/entities</code><span class="sub">Counterparty list</span></td><td class="num">300</td><td class="num">2.8</td><td class="num">5.9</td><td class="num">2,845</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>GET /api/entities/:id</code><span class="sub">Counterparty detail</span></td><td class="num">300</td><td class="num">1.0</td><td class="num">2.5</td><td class="num">7,765</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>GET /api/kyc</code><span class="sub">KYC request list, 259 KB</span></td><td class="num">300</td><td class="num">35.0</td><td class="num">83.2</td><td class="num">216</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>GET /api/cases</code><span class="sub">Case queue</span></td><td class="num">300</td><td class="num">1.2</td><td class="num">2.5</td><td class="num">6,782</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>POST /v1/screen</code><span class="sub">Public screening API</span></td><td class="num">300</td><td class="num">1.7</td><td class="num">4.3</td><td class="num">4,627</td><td><span class="pass">Pass</span></td></tr>
+        <tr class="group"><td colspan="6">Risk engine</td></tr>
+        <tr><td><code>GET /api/risk/scores</code><span class="sub">Scores every case live</span></td><td class="num">300</td><td class="num">21.1</td><td class="num">54.5</td><td class="num">350</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>GET /api/risk/breakdown/:id</code><span class="sub">"Why this score?" panel</span></td><td class="num">300</td><td class="num">2.0</td><td class="num">4.7</td><td class="num">3,610</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>POST /api/risk/rules/preview</code><span class="sub">What-if: re-score all cases with new rules</span></td><td class="num">50</td><td class="num">30.1</td><td class="num">78.7</td><td class="num">n/a</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>GET /api/stats</code><span class="sub">Dashboard KPIs</span></td><td class="num">300</td><td class="num">24.2</td><td class="num">55.3</td><td class="num">336</td><td><span class="pass">Pass</span></td></tr>
+        <tr class="group"><td colspan="6">Review model (machine learning)</td></tr>
+        <tr><td><code>POST /api/learning/synthetic</code><span class="sub">Generate 800 labelled reviews</span></td><td class="num">5</td><td class="num">56.5</td><td class="num">68.8</td><td class="num">n/a</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>POST /api/learning/train</code><span class="sub">Boosted trees, 6 tuning trials, 800 reviews</span></td><td class="num">3</td><td class="num">1,606</td><td class="num">1,632</td><td class="num">n/a</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>POST /api/learning/refresh</code><span class="sub">Inference on every case</span></td><td class="num">10</td><td class="num">8.1</td><td class="num">13.1</td><td class="num">n/a</td><td><span class="pass">Pass</span></td></tr>
+        <tr><td><code>GET /api/learning/predictions</code><span class="sub">Likely-miss suggestions</span></td><td class="num">300</td><td class="num">5.0</td><td class="num">11.0</td><td class="num">1,498</td><td><span class="pass">Pass</span></td></tr>
+        <tr class="group"><td colspan="6">Sustained load (8 s per step)</td></tr>
+        <tr><td><code>GET /api/stats</code><span class="sub">200 concurrent users</span></td><td class="num">2,700</td><td class="num">338</td><td class="num">640</td><td class="num">308</td><td><span class="pass">Pass · 0% errors</span></td></tr>
+        <tr><td><code>GET /api/risk/scores</code><span class="sub">200 concurrent users</span></td><td class="num">2,347</td><td class="num">388</td><td class="num">768</td><td class="num">273</td><td><span class="pass">Pass · 0% errors</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="notes">All 22 read endpoints tested returned HTTP 200 on every request; 14 representative rows shown, plus the load test.</div>
+  </section>
+
+  <section class="card">
+    <div class="card-h">
+      <h2>Table 2 · Review model: boosted trees vs Gemini</h2>
+      <p>800 labelled synthetic reviews (358 real risk). Every approach is scored on the same 101 reviews held back from training. Threshold 0.5.</p>
+    </div>
+    <div class="scroll">
+    <table>
+      <thead><tr><th>Approach</th><th class="num">Accuracy</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">ROC AUC</th><th class="num">Rule misses caught</th><th class="num">Time per case</th></tr></thead>
+      <tbody>
+        <tr><td>Rules engine alone<span class="sub">Risk ≥ 50 points flags the case</span></td><td class="num">67.3%</td><td class="num">76.2%</td><td class="num">36.4%</td><td class="num">0.748</td><td class="num">0 of 28</td><td class="num">&lt; 1 ms</td></tr>
+        <tr><td>Gemini, zero-shot<span class="sub">gemini-3.5-flash-lite, no examples, batches of 20</span></td><td class="num">64.4%</td><td class="num">63.3%</td><td class="num">43.2% <span class="up">↑</span></td><td class="num">0.797 <span class="up">↑</span></td><td class="num">3 of 28</td><td class="num">125 ms</td></tr>
+        <tr><td>Gemini, few-shot<span class="sub">200 labelled examples in prompt, mean of 3 runs</span></td><td class="num">66.3%</td><td class="num">63.2%</td><td class="num">54.5% <span class="up">↑</span></td><td class="num">0.778 <span class="up">↑</span></td><td class="num">8 of 28</td><td class="num">135 ms</td></tr>
+        <tr class="best"><td><b>Boosted trees</b><span class="tag">In production</span><span class="sub">Trained in-app, 6-trial hyperparameter tuning</span></td><td class="num"><b>76.2%</b> <span class="up">↑</span></td><td class="num"><b>77.8%</b> <span class="up">↑</span></td><td class="num"><b>63.6%</b> <span class="up">↑</span></td><td class="num"><b>0.874</b> <span class="up">↑</span></td><td class="num"><b>12 of 28</b></td><td class="num"><b>0.006 ms</b></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="notes">
+      <b>What this shows</b>
+      <ul>
+        <li>Boosted trees beats the rules on every measure: recall up from 36.4% to 63.6%, and 12 of the 28 cases the rules missed are now flagged for a second look.</li>
+        <li>Gemini also improves on the rules for recall and ROC AUC with no training at all, and gets better with examples. It is 95% consistent across repeat runs and scored all 800 reviews (800/800 coverage, 0 failed calls).</li>
+        <li>A single live Gemini call takes 1.18 s median (1.54 s p95, 20 of 20 succeeded).</li>
+        <li>Up arrows mark an improvement over the rules engine alone.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    Test setup: local server, Apple M1 (8 cores, 8 GB), Node v24.13.1, SQLite, demo workspace data. Gemini via AI Studio (<code>gemini-flash-lite-latest</code>, resolved to <code>gemini-3.5-flash-lite</code>), temperature 0. Model results describe synthetic demo data, not accuracy on real cases.
+  </footer>
+</div>
+</body>
+</html>

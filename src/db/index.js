@@ -2,6 +2,7 @@ const path = require('path');
 const { AsyncLocalStorage } = require('node:async_hooks');
 const config = require('../config');
 const SqliteDatabase = require('./sqlite');
+const firestoreMirror = require('./firestoreMirror');
 
 // Database abstraction layer
 // Each workspace has its own database file. The Demo workspace is the original file (DATABASE_PATH); it is also
@@ -13,13 +14,13 @@ const workspaceInstances = new Map();
 
 function demoDb() {
   if (!instance) {
-    if (config.dbType === 'sqlite') {
-      instance = new SqliteDatabase(config.dbPath);
-    } else {
-      // Future GCP Firestore or Cloud SQL adapter
+    if (config.dbType !== 'sqlite' && config.dbType !== 'firestore') {
       console.warn(`Database type "${config.dbType}" not yet configured, falling back to SQLite`);
-      instance = new SqliteDatabase(config.dbPath);
     }
+    // firestore: SQLite stays the working copy, and Firestore keeps the permanent copy (./firestoreMirror.js)
+    firestoreMirror.prepare();
+    instance = new SqliteDatabase(config.dbPath);
+    firestoreMirror.track('demo', instance.db);
   }
   return instance;
 }
@@ -40,7 +41,9 @@ function workspaceDb(workspaceId) {
   let db = workspaceInstances.get(workspaceId);
   if (!db) {
     // A created workspace starts empty: reference data only, nothing from the demo
+    firestoreMirror.prepare();
     db = new SqliteDatabase(`${workspaceFolder(workspaceId)}.db`, { empty: true });
+    firestoreMirror.track(workspaceId, db.db);
     try { require('../services/vesselFinderService').ensureSource(db); } catch (err) { console.error('[DueDilly] Vessel source skipped:', err.message); }
     workspaceInstances.set(workspaceId, db);
   }
