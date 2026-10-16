@@ -1,7 +1,7 @@
 """Builds the Dilly loader preview page and a standalone animated SVG from one source."""
 import os
 
-SCR = "/tmp/gemini-0/-home-gemini/4467025d-057e-5da9-bb3b-c45f0b9ca5aa/scratchpad"
+SCR = "/tmp/dilly-loader-scratch"
 OUT = "/tmp/dilly_loader"
 os.makedirs(OUT, exist_ok=True)
 

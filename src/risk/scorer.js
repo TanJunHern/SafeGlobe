@@ -1,5 +1,5 @@
 /**
- * The scorer: findings in; risk points, confidence and route out (GEMINI.md section 4).
+ * The scorer: findings in; risk points, confidence and route out (AI build spec section 4).
  * Pure functions, no database and no AI. "The AI understands; the rules score; a person decides."
  */
 

@@ -1,5 +1,5 @@
 /**
- * The findings format (GEMINI.md section 4.8) and its validation.
+ * The findings format (AI build spec section 4.8) and its validation.
  * A finding is one sourced fact. It is checked here before it is saved; a rejected finding is still stored,
  * with the reason, so the user can audit what was left out.
  */

@@ -1,7 +1,7 @@
 # Tasks
 
 ## Phase 0: read and ask
-- [x] Read `GEMINI.md`, `DEPLOY_GUIDE.md`, `GEMINI.md`, `docs/CLOUD_PLAN.md` and the repo
+- [x] Read the AI build spec (`GEMINI.md`), `DEPLOY_GUIDE.md`, `GEMINI.md`, `docs/CLOUD_PLAN.md` and the repo
 - [x] Run the test suite offline (137 pass)
 - [x] Ask the section 9 questions
 - [x] Record the answers in `docs/agent/decisions.md`
@@ -28,7 +28,7 @@
 - [x] Plan approved by the user (`implementation_plan.md`), questions 1 to 3 answered
 - [x] Step A: `DEMO_MODE`, rate limit and caps, demo label, `.env.example` placeholder shape
 - [x] Step B: Vertex AI in the shared client; models listed
-- [x] Step B: models chosen (Gemini's proposal, kept by the user): app `gemini-3.5-flash-lite`, agents `gemini-3.5-flash`
+- [x] Step B: models chosen (The coding agent's proposal, kept by the user): app `gemini-3.5-flash-lite`, agents `gemini-3.5-flash`
 - [x] Step C: agents service (Pond-Guard, Ask Dilly), Express client, internal read-only API
 - [x] Step D: drawer live progress; Ask Dilly on the new agent
 - [x] Step E: fallbacks visible in the UI
